@@ -36,82 +36,14 @@ export async function POST(req: NextRequest) {
     const nextParam = searchParams.get("next") || body.next;
     const redirectUrl = sanitizeRedirectUrl(nextParam, "/dashboard");
 
-    // Check for development test accounts (Instant Mock Session)
-    const isMockStudent =
-      (email.toLowerCase() === "student@faroschool.com" ||
-        email.toLowerCase() === "etudiant@faroschool.com") &&
-      password === "Student123!";
-
-    const isMockAdmin =
-      email.toLowerCase() === "admin@faroschool.com" &&
-      password === "Admin123!";
-
-    const isMockInstructor =
-      (email.toLowerCase() === "instructor@faroschool.com" ||
-        email.toLowerCase() === "formateur@faroschool.com") &&
-      password === "Instructor123!";
-
-    if (isMockStudent || isMockAdmin || isMockInstructor) {
-      let mockUser;
-      let defaultTarget = redirectUrl;
-
-      if (isMockAdmin) {
-        mockUser = {
-          id: "mock-admin-id",
-          email: "admin@faroschool.com",
-          role: "admin",
-          fullName: "Professeur Faro",
-          phone: "+509 36 00 0000",
-          locale: "fr",
-        };
-        defaultTarget = nextParam || "/admin";
-      } else if (isMockInstructor) {
-        mockUser = {
-          id: "mock-instructor-id",
-          email: "instructor@faroschool.com",
-          role: "instructor",
-          fullName: "Jean-Baptiste Formateur",
-          phone: "+509 38 11 2233",
-          locale: "fr",
-        };
-        defaultTarget = nextParam || "/admin/formations";
-      } else {
-        mockUser = {
-          id: "mock-student-id",
-          email: "student@faroschool.com",
-          role: "student",
-          fullName: "Alexandre Jean",
-          phone: "+509 37 12 3456",
-          locale: "fr",
-        };
-      }
-
-      const sessionValue = Buffer.from(JSON.stringify(mockUser)).toString("base64");
-      const targetUrl = defaultTarget;
-      const res = NextResponse.json({
-        success: true,
-        redirectUrl: targetUrl,
-      });
-
-      res.cookies.set("faro_session", sessionValue, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: rememberMe ? 60 * 60 * 24 * 90 : 60 * 60 * 24 * 30, // 30-90 days for persistent PWA login
-      });
-
-      return res;
-    }
-
-    // Supabase sign in
+    // Authenticate exclusively through Supabase Auth (no hardcoded passwords or mock bypasses)
     const supabase = await createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (authError) {
+    if (authError || !authData.user) {
       // Return GENERIC error message (never reveal whether email exists)
       return NextResponse.json(
         { error: "invalidCredentials" },

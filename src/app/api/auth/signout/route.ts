@@ -11,11 +11,6 @@ export async function POST() {
     } catch {}
 
     const response = NextResponse.json({ success: true });
-    response.cookies.set("faro_session", "", {
-      path: "/",
-      httpOnly: true,
-      maxAge: 0,
-    });
     return response;
   } catch (err: any) {
     console.error("Signout route error:", err);

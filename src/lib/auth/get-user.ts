@@ -1,5 +1,6 @@
+import "server-only";
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
 
 export interface CurrentUser {
   id: string;
@@ -12,32 +13,12 @@ export interface CurrentUser {
 
 /**
  * Returns the currently authenticated user with their profile role, or null if not logged in.
+ * Identity is verified strictly server-side with supabase.auth.getUser().
+ * Role is always fetched directly from the database (profiles.role) for the verified user id.
+ * Cached only for the duration of the current request via React cache().
  */
-export async function getCurrentUser(): Promise<CurrentUser | null> {
-  if ((globalThis as any).__mockUser) {
-    return (globalThis as any).__mockUser;
-  }
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get("faro_session")?.value;
-    if (sessionCookie) {
-      try {
-        const decoded = JSON.parse(
-          Buffer.from(sessionCookie, "base64").toString("utf-8")
-        );
-        if (decoded && decoded.id) {
-          return {
-            id: decoded.id,
-            email: decoded.email ?? null,
-            role: (decoded.role as "student" | "instructor" | "admin") ?? "student",
-            fullName: decoded.fullName ?? "Utilisateur Test",
-            phone: decoded.phone ?? null,
-            locale: (decoded.locale as "fr" | "ht") ?? "fr",
-          };
-        }
-      } catch {}
-    }
-
     const supabase = await createClient();
     const {
       data: { user },
@@ -48,21 +29,31 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
       return null;
     }
 
-    const { data: profile } = await supabase
+    // Role is ALWAYS verified from the database profiles table
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role, full_name, phone, locale")
       .eq("id", user.id)
       .single();
 
+    if (profileError || !profile) {
+      return null;
+    }
+
+    const validRoles = ["student", "instructor", "admin"] as const;
+    const role = validRoles.includes(profile.role as any)
+      ? (profile.role as "student" | "instructor" | "admin")
+      : "student";
+
     return {
       id: user.id,
       email: user.email ?? null,
-      role: (profile?.role as "student" | "instructor" | "admin") ?? "student",
-      fullName: profile?.full_name ?? "",
-      phone: profile?.phone ?? null,
-      locale: (profile?.locale as "fr" | "ht") ?? "fr",
+      role,
+      fullName: profile.full_name ?? "",
+      phone: profile.phone ?? null,
+      locale: (profile.locale as "fr" | "ht") ?? "fr",
     };
   } catch {
     return null;
   }
-}
+});

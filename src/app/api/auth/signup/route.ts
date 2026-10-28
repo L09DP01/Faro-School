@@ -62,31 +62,12 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (authError) {
-      // If live Supabase is offline / mock in dev mode, grant instant session
-      const mockUser = {
-        id: `mock-user-${Date.now()}`,
-        email,
-        role: "student",
-        fullName,
-        phone: formattedPhone,
-        locale,
-      };
-      const sessionValue = Buffer.from(JSON.stringify(mockUser)).toString("base64");
-      const res = NextResponse.json({
-        success: true,
-        redirectUrl,
-      });
-
-      res.cookies.set("faro_session", sessionValue, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-      });
-
-      return res;
+    if (authError || !authData.user) {
+      console.error("Supabase Auth signup error:", authError?.message);
+      return NextResponse.json(
+        { error: "signupFailed", message: authError?.message || "Impossible de créer le compte." },
+        { status: 400 }
+      );
     }
 
     // 2. Ensure profile exists in profiles table

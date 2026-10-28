@@ -96,44 +96,6 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathWithoutLocale.startsWith("/admin");
 
   if (isDashboardRoute || isAdminRoute) {
-    // 1. Check development/test session cookie first
-    const faroSession = request.cookies.get("faro_session")?.value;
-    if (faroSession) {
-      try {
-        const decoded = JSON.parse(
-          Buffer.from(faroSession, "base64").toString("utf-8")
-        );
-        if (decoded && decoded.id) {
-          const userRole = decoded.role;
-          if (isAdminRoute) {
-            if (userRole !== "admin" && userRole !== "instructor") {
-              return NextResponse.redirect(
-                new URL(`/${locale}/dashboard`, request.url)
-              );
-            }
-
-            if (userRole === "instructor") {
-              const isExactAdminRoot =
-                pathWithoutLocale === "/admin" || pathWithoutLocale === "/admin/";
-              const isForbiddenPath = [
-                "/admin/paiements",
-                "/admin/promotions",
-                "/admin/formateurs",
-                "/admin/parametres",
-              ].some((prefix) => pathWithoutLocale.startsWith(prefix));
-
-              if (isExactAdminRoot || isForbiddenPath) {
-                return NextResponse.redirect(
-                  new URL(`/${locale}/admin/unauthorized`, request.url)
-                );
-              }
-            }
-          }
-          return response;
-        }
-      } catch {}
-    }
-
     const {
       data: { user },
     } = await supabase.auth.getUser();

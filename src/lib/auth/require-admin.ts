@@ -30,6 +30,27 @@ export async function requireAdmin(
  * Ensures the user is logged in and is either an admin or an instructor.
  * Redirects to /connexion or /dashboard otherwise.
  */
+export async function requireInstructor(
+  currentLocale: string = "fr",
+  redirectTo: string = "/admin/formations"
+): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect(`/${currentLocale}/connexion?redirectTo=/${currentLocale}${redirectTo}`);
+  }
+
+  if (user.role !== "instructor" && user.role !== "admin") {
+    redirect(`/${currentLocale}/admin/unauthorized`);
+  }
+
+  return user;
+}
+
+/**
+ * Ensures the user is logged in and is either an admin or an instructor.
+ * Redirects to /connexion or /dashboard otherwise.
+ */
 export async function requireStaff(
   currentLocale: string = "fr",
   redirectTo: string = "/admin"
