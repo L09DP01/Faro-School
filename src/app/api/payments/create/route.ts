@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getPaymentProvider, type PaymentMethod } from "@/lib/payments";
+import { maskSensitiveData } from "@/lib/payments/mask";
 import { validateAndFormatHaitianPhone } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
@@ -212,11 +213,11 @@ export async function POST(request: NextRequest) {
         provider: paymentMethod,
         payer_phone: formattedPhone,
         status: "pending",
-        raw: {
+        raw: maskSensitiveData({
           gateway: "kobara",
           selected_provider: paymentMethod,
           initiated_at: new Date().toISOString(),
-        },
+        }),
       })
       .select("id")
       .single();

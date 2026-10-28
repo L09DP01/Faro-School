@@ -105,3 +105,64 @@ Ce document répertorie chronologiquement les vulnérabilités auditées, les co
   3. Exécution avec succès de `pnpm test:db`.
 - **Typecheck** : `tsc --noEmit` validé avec code 0.
 
+
+---
+
+## STEP S1-C: Sécurisation des Paiements et Webhooks
+
+### Ce qui n'allait pas (Vulnérabilités critiques)
+1. **Simulation automatique en production en l'absence de clés** :
+   - Dans `src/lib/payments/kobara.ts`, le constructeur basculait automatiquement en mode simulation (`isMock = true`) dès que `KOBARA_SECRET_KEY` était absente ou préfixée par `mock_`. En production, un défaut de configuration créait des paiements simulés sans jamais refuser la transaction.
+2. **Vulnérabilité aux attaques par temporisation et absence de vérification temporelle sur les webhooks** :
+   - `verifyWebhookSignature` n'utilisait pas de comparaison en temps constant contre les attaques temporelles, et ne validait pas l'en-tête d'horodatage (`timestamp`), ouvrant la voie à des attaques par rejeu.
+3. **Sélection arbitraire du dernier paiement en base de données** :
+   - Dans `src/app/api/webhooks/kobara/route.ts`, si un webhook ne contenait ni `order_id` ni `payment_id`, le code exécutait une requête `.order("created_at", { ascending: false }).limit(1)` et validait aveuglément le paiement le plus récent de la base ! Un attaquant pouvait envoyer un événement tronqué pour faire valider la commande d'une autre personne.
+4. **Mises à jour fractionnées sans verrouillage transactionnel** :
+   - La validation effectuait des `update` indépendants sur `payments` et `orders` sans verrouillage de ligne (`FOR UPDATE`) ni validation atomique du montant exact ou de la devise (HTG).
+5. **Altération d'état par paramètres de requête sur la route de retour** :
+   - `src/app/api/payments/kobara/return/route.ts` acceptait `status=failed` depuis l'URL et marquait la commande et le paiement comme échoués directement en base. N'importe qui pouvait annuler la commande d'un tiers en visitant l'URL avec son `orderId`. De même, la page de confirmation affichait le statut "succès" sur la simple présence de `?status=success`.
+6. **Stockage en clair de données sensibles dans `payments.raw`** :
+   - Numéros de téléphone complets et jetons pouvaient être persistés sans masquage.
+
+### Ce qui a été modifié
+1. **Principe "Fail Closed" en production (`src/lib/payments/kobara.ts`)** :
+   - `isMock` est désormais strictement conditionné par `isDemoMode()` (`APP_MODE=demo` et environnement non-production).
+   - En production ou sans mode démo, `createPayment` et `verifyPayment` lèvent une exception bloquante si `KOBARA_SECRET_KEY` est absente.
+   - `verifyWebhookSignature` lève une exception bloquante si `KOBARA_WEBHOOK_SECRET` est absent.
+2. **Vérification cryptographique HMAC-SHA256 en temps constant** :
+   - Utilisation de `crypto.timingSafeEqual` sur le corps brut de la requête (`rawBody`), avant tout parsing JSON.
+   - Vérification de la fenêtre de tolérance temporelle de 5 minutes (300 secondes) contre les attaques par rejeu.
+3. **Validation transactionnelle atomique en base de données** :
+   - Nouvelle migration `supabase/migrations/20250119000000_transactional_payment_validation.sql` :
+     - Création d'un index unique partiel : `UNIQUE(provider, provider_txn_id)` sur les paiements validés non vides.
+     - Création de la fonction RPC `validate_payment_transactional(p_payment_id, p_provider_txn_id, p_expected_amount_htg, p_admin_id, p_note, p_metadata)` :
+       - Verrouillage exclusif des lignes `payments` et `orders` via `FOR UPDATE`.
+       - Vérification stricte du statut de départ (`pending` ou `awaiting_validation`).
+       - Vérification exacte du montant en HTG (`p_expected_amount_htg = amount_htg`).
+       - Vérification d'unicité du code de transaction contre toute collision.
+       - Mise à jour atomique du paiement à `validated` et de la commande à `paid`.
+       - Création idempotente de l'inscription (`enrollments`) via `ON CONFLICT DO NOTHING`.
+       - Incrémentation atomique du compteur de coupon le cas échéant.
+       - Enregistrement immédiat de l'audit log dans `admin_audit_logs`.
+4. **Sécurisation du Webhook Kobara (`src/app/api/webhooks/kobara/route.ts`)** :
+   - Rejet immédiat (HTTP 400) de tout événement dépourvu de `provider_transaction_id` ou d'identifiant de commande.
+   - Rejet de toute devise différente de HTG.
+   - Recherche stricte de la commande par ID ou référence (aucun repli sur "dernier paiement").
+   - Idempotence : si le paiement est déjà validé, réponse HTTP 200 immédiate sans réexécution.
+   - Appel exclusif de la fonction RPC transactionnelle `validate_payment_transactional`.
+5. **Neutralisation de la route de retour (`src/app/api/payments/kobara/return/route.ts`)** :
+   - Suppression totale des mutations de statut basées sur les paramètres de requête.
+   - La route redirige uniquement l'apprenant vers la page de confirmation, laquelle lit le statut réel en base de données.
+   - Suppression du paramètre de complaisance `?status=success` dans `ConfirmationPage`.
+6. **Sécurisation de la validation manuelle NatCash (`src/app/actions/admin-payments.ts`)** :
+   - `validatePaymentAction` s'appuie désormais sur la même RPC transactionnelle `validate_payment_transactional` avec consignation de l'`admin.id`.
+7. **Masquage des données sensibles (`src/lib/payments/mask.ts`)** :
+   - Masquage automatique des numéros de téléphone (`+509 38** **12`) et caviardage des jetons/mots de passe (`[REDACTED]`) dans tous les objets enregistrés dans `payments.raw` et les journaux d'audit.
+
+### Comment cela a été vérifié
+- **Test automatisé (`tests/step-s1c-payments.test.ts`)** :
+  1. *Masquage des données* : vérification du caviardage de `token`, `api_key`, `authorization`, `password` et du masquage des numéros de téléphone.
+  2. *Fail Closed en production* : vérification que l'absence de `KOBARA_SECRET_KEY` ou `KOBARA_WEBHOOK_SECRET` hors mode démo lève des erreurs explicites bloquantes.
+  3. *Vérification cryptographique et tolérance d'horodatage* : validation de signatures valides, rejet des signatures altérées (1 octet modifié) et rejet des horodatages obsolètes (> 5 minutes).
+  4. *Conformité de la migration SQL* : présence de `FOR UPDATE`, vérification de montant, unicité d'index et traçabilité d'audit.
+- **Typecheck** : `npm run typecheck` validé sans aucune erreur.

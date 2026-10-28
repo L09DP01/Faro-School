@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import { isDemoMode } from "@/lib/config";
 import type {
   PaymentProvider,
   OrderDetails,
@@ -17,8 +19,10 @@ export class KobaraProvider implements PaymentProvider {
     this.secretKey = process.env.KOBARA_SECRET_KEY;
     this.webhookSecret = process.env.KOBARA_WEBHOOK_SECRET;
 
-    // Automatic MOCK mode if no secret key is provided
-    this.isMock = !this.secretKey || this.secretKey.startsWith("mock_");
+    // Simulation is ONLY allowed when isDemoMode() is true (APP_MODE=demo and not production)
+    this.isMock = Boolean(
+      isDemoMode() && (!this.secretKey || this.secretKey.startsWith("mock_"))
+    );
   }
 
   async createPayment(
@@ -28,7 +32,7 @@ export class KobaraProvider implements PaymentProvider {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
     if (this.isMock) {
-      // Simulation mode for local development
+      // Simulation mode for demo development only
       const mockPaymentId = `kbr_mock_${Date.now()}`;
       const redirectUrl = `${appUrl}/api/payments/kobara/mock-gate?paymentId=${mockPaymentId}&orderId=${encodeURIComponent(
         order.orderId
@@ -44,6 +48,12 @@ export class KobaraProvider implements PaymentProvider {
         kobaraPaymentId: mockPaymentId,
         status: "pending",
       };
+    }
+
+    if (!this.secretKey) {
+      throw new Error(
+        "KOBARA_SECRET_KEY is missing. Payment creation refused."
+      );
     }
 
     // Live Kobara API request
@@ -67,10 +77,10 @@ export class KobaraProvider implements PaymentProvider {
         },
         success_url: `${appUrl}/api/payments/kobara/return?orderId=${encodeURIComponent(
           order.orderId
-        )}&reference=${encodeURIComponent(order.reference)}&status=success`,
+        )}&reference=${encodeURIComponent(order.reference)}`,
         cancel_url: `${appUrl}/api/payments/kobara/return?orderId=${encodeURIComponent(
           order.orderId
-        )}&reference=${encodeURIComponent(order.reference)}&status=cancelled`,
+        )}&reference=${encodeURIComponent(order.reference)}`,
         metadata: {
           order_id: order.orderId,
           course_id: order.courseId,
@@ -134,6 +144,12 @@ export class KobaraProvider implements PaymentProvider {
       return "validated";
     }
 
+    if (!this.secretKey) {
+      throw new Error(
+        "KOBARA_SECRET_KEY is missing. Payment verification refused."
+      );
+    }
+
     try {
       const response = await fetch(
         `${this.apiUrl}/v1/payments/${encodeURIComponent(paymentIdOrRef)}`,
@@ -157,7 +173,11 @@ export class KobaraProvider implements PaymentProvider {
         };
       };
 
-      const paymentStatus = (json.data?.status || json.status || "").toLowerCase();
+      const paymentStatus = (
+        json.data?.status ||
+        json.status ||
+        ""
+      ).toLowerCase();
 
       if (
         paymentStatus === "succeeded" ||
@@ -178,37 +198,83 @@ export class KobaraProvider implements PaymentProvider {
     }
   }
 
+  /**
+   * Verifies the webhook signature using crypto.timingSafeEqual on the raw body.
+   * Never parses JSON prior to verification.
+   * Rejects requests if timestamp exceeds 5 minutes (300 seconds) tolerance.
+   */
   async verifyWebhookSignature(
-    payload: string,
-    signature: string
+    rawBody: string,
+    signature: string,
+    timestampHeader?: string | null
   ): Promise<boolean> {
-    if (!this.webhookSecret || this.isMock) {
-      return true;
+    if (!this.webhookSecret) {
+      if (this.isMock) {
+        return true;
+      }
+      throw new Error(
+        "KOBARA_WEBHOOK_SECRET is missing. Webhook verification refused."
+      );
+    }
+
+    if (!signature || signature.trim() === "") {
+      return false;
+    }
+
+    // 1. Verify timestamp if provided (tolerance: 5 minutes = 300 seconds)
+    if (timestampHeader) {
+      const ts = Number(timestampHeader);
+      if (isNaN(ts) || ts <= 0) {
+        return false;
+      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      const tsSec = ts > 1e11 ? Math.floor(ts / 1000) : ts;
+      if (Math.abs(nowSec - tsSec) > 300) {
+        // Timestamp is too far in the past or future (replay attack guard)
+        return false;
+      }
     }
 
     try {
-      const encoder = new TextEncoder();
-      const keyData = encoder.encode(this.webhookSecret);
-      const key = await crypto.subtle.importKey(
-        "raw",
-        keyData,
-        { name: "HMAC", hash: "SHA-256" },
-        false,
-        ["sign"]
-      );
+      // Clean signature string
+      let sigToCompare = signature.trim();
+      if (sigToCompare.includes("v1=")) {
+        const part = sigToCompare.split(",").find((p) => p.trim().startsWith("v1="));
+        if (part) {
+          sigToCompare = part.trim().substring(3);
+        }
+      } else if (sigToCompare.startsWith("sha256=")) {
+        sigToCompare = sigToCompare.substring(7);
+      }
 
-      const signatureBuffer = await crypto.subtle.sign(
-        "HMAC",
-        key,
-        encoder.encode(payload)
-      );
+      // Compute expected HMAC SHA-256 over raw payload
+      const hmac = crypto.createHmac("sha256", this.webhookSecret);
+      hmac.update(rawBody);
+      const expectedHex = hmac.digest("hex");
 
-      const hashArray = Array.from(new Uint8Array(signatureBuffer));
-      const expectedSignature = hashArray
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
+      const sigBuf = Buffer.from(sigToCompare, "hex");
+      const expBuf = Buffer.from(expectedHex, "hex");
 
-      return expectedSignature === signature;
+      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+        return true;
+      }
+
+      // If timestamp header was supplied, also verify if signed payload was `${timestamp}.${rawBody}`
+      if (timestampHeader) {
+        const hmacWithTs = crypto.createHmac("sha256", this.webhookSecret);
+        hmacWithTs.update(`${timestampHeader}.${rawBody}`);
+        const expectedHexWithTs = hmacWithTs.digest("hex");
+        const expBufWithTs = Buffer.from(expectedHexWithTs, "hex");
+
+        if (
+          sigBuf.length === expBufWithTs.length &&
+          crypto.timingSafeEqual(sigBuf, expBufWithTs)
+        ) {
+          return true;
+        }
+      }
+
+      return false;
     } catch {
       return false;
     }

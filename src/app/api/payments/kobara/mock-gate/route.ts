@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isDemoMode } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
+  if (!isDemoMode()) {
+    return NextResponse.json(
+      { error: "Forbidden: Mock gateway is only accessible when APP_MODE=demo in non-production." },
+      { status: 403 }
+    );
+  }
   const { searchParams } = request.nextUrl;
   const paymentId = searchParams.get("paymentId") || `kbr_mock_${Date.now()}`;
   const reference = searchParams.get("reference") || "";

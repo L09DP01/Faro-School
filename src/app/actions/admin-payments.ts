@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import { maskSensitiveData } from "@/lib/payments/mask";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -42,11 +43,10 @@ export async function validatePaymentAction(
   try {
     const admin = await assertAdmin();
 
-    const supabase = await createClient();
     const adminDb = createAdminClient();
 
     // 1. Fetch current payment details
-    const { data: payment, error: fetchErr } = await supabase
+    const { data: payment, error: fetchErr } = await adminDb
       .from("payments")
       .select(`
         id,
@@ -59,6 +59,7 @@ export async function validatePaymentAction(
           id,
           reference,
           amount_htg,
+          status,
           user_id,
           course_id,
           profiles (
@@ -75,15 +76,19 @@ export async function validatePaymentAction(
       return { success: false, error: "Paiement introuvable." };
     }
 
-    // Idempotency: If already validated, return success immediately
-    if (payment.status === "validated") {
+    const order = payment.orders as any;
+    if (!order) {
+      return { success: false, error: "Commande associée introuvable." };
+    }
+
+    // Idempotency: If already validated or order already paid
+    if (payment.status === "validated" || order.status === "paid") {
       return { success: true };
     }
 
-    // 2. Duplicate Transaction ID Guard
-    // Check if the same provider_txn_id was already validated for another order
+    // Check duplicate transaction ID beforehand to provide user-friendly error
     if (payment.provider_txn_id && payment.provider_txn_id.trim() !== "") {
-      const { data: conflict } = await supabase
+      const { data: conflict } = await adminDb
         .from("payments")
         .select("id, order_id, orders(reference)")
         .eq("provider_txn_id", payment.provider_txn_id.trim())
@@ -101,42 +106,43 @@ export async function validatePaymentAction(
       }
     }
 
-    const now = new Date().toISOString();
-
-    // 3. Update payment status to 'validated'
-    const { error: updateErr } = await adminDb
-      .from("payments")
-      .update({
-        status: "validated",
-        validated_by: admin.id,
-        validated_at: now,
-      })
-      .eq("id", paymentId);
-
-    if (updateErr) {
-      return { success: false, error: updateErr.message };
-    }
-
-    // 4. Write audit log entry
-    await adminDb.from("admin_audit_logs").insert({
+    // Call atomic transactional RPC
+    const sanitizedMetadata = maskSensitiveData({
+      validated_manually: true,
       admin_id: admin.id,
-      action: "payment_validated",
-      payment_id: paymentId,
-      note: internalNote?.trim() || null,
-      metadata: {
-        provider: payment.provider,
-        provider_txn_id: payment.provider_txn_id,
-        amount_htg: (payment.orders as any)?.amount_htg,
-        order_reference: (payment.orders as any)?.reference,
-      },
+      admin_email: admin.email,
+      validated_at: new Date().toISOString(),
     });
 
-    // 5. Optional notification stub
-    const studentProfile = (payment.orders as any)?.profiles;
+    const { data: rpcResult, error: rpcErr } = await adminDb.rpc(
+      "validate_payment_transactional",
+      {
+        p_payment_id: paymentId,
+        p_provider_txn_id: payment.provider_txn_id,
+        p_expected_amount_htg: order.amount_htg,
+        p_admin_id: admin.id,
+        p_note: internalNote?.trim() || "Validation manuelle administrateur",
+        p_metadata: sanitizedMetadata,
+      }
+    );
+
+    if (rpcErr) {
+      if (rpcErr.message.includes("DUPLICATE_TRANSACTION_ID")) {
+        return {
+          success: false,
+          duplicate: true,
+          error: `Opération bloquée : ce code de transaction est déjà utilisé sur une autre commande.`,
+        };
+      }
+      return { success: false, error: rpcErr.message };
+    }
+
+    // Optional notification dispatch
+    const studentProfile = order.profiles;
     await notifyStudent(
       studentProfile?.phone || payment.payer_phone,
       studentProfile?.email,
-      `Votre paiement pour la commande ${(payment.orders as any)?.reference} a été validé.`
+      `Votre paiement pour la commande ${order.reference} a été validé.`
     );
 
     revalidatePath("/admin/paiements");
@@ -201,10 +207,12 @@ export async function rejectPaymentAction(
       action: "payment_rejected",
       payment_id: paymentId,
       note: reason.trim(),
-      metadata: {
+      metadata: maskSensitiveData({
         reason: reason.trim(),
         order_reference: (payment.orders as any)?.reference,
-      },
+        admin_email: admin.email,
+        rejected_at: new Date().toISOString(),
+      }),
     });
 
     // 3. Notify student

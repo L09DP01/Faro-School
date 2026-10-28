@@ -145,21 +145,15 @@ export default async function ConfirmationPage({
 
   let initialState: "success" | "pending" | "failed" = "pending";
 
-  if (order.status === "paid" || hasValidatedPayment || queryStatus === "success") {
+  if (order.status === "paid" || hasValidatedPayment) {
     initialState = "success";
   } else if (
     order.status === "failed" ||
     order.status === "cancelled" ||
-    queryStatus === "failed" ||
-    queryStatus === "cancelled" ||
     hasFailedPayment
   ) {
     initialState = "failed";
-  } else if (
-    hasAwaitingPayment ||
-    order.status === "pending" ||
-    queryStatus === "awaiting_validation"
-  ) {
+  } else {
     initialState = "pending";
   }
 

@@ -32,5 +32,9 @@ export interface PaymentProvider {
     method: PaymentMethod
   ): Promise<PaymentCreationResult>;
   verifyPayment(referenceOrPaymentId: string): Promise<PaymentStatus>;
-  verifyWebhookSignature(payload: string, signature: string): Promise<boolean>;
+  verifyWebhookSignature(
+    payload: string,
+    signature: string,
+    timestamp?: string | null
+  ): Promise<boolean>;
 }
