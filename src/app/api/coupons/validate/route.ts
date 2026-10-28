@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getFallbackCoupon } from "@/lib/admin/promotions";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip =
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "127.0.0.1";
+
+    // Rate limit: 10 attempts per 5 minutes per IP to prevent coupon enumeration
+    const rateLimit = checkRateLimit(`coupon:${ip}`, 10, 5 * 60 * 1000);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { valid: false, error: "rateLimit" },
+        { status: 429 }
+      );
+    }
+
     const { code, courseId } = await req.json();
 
     if (!code || typeof code !== "string" || !courseId) {

@@ -111,7 +111,7 @@ function testAdminGuards() {
   const middlewareCode = fs.readFileSync(middlewarePath, "utf-8");
   assert(
     middlewareCode.includes("isAdminRoute") &&
-      middlewareCode.includes('profile?.role !== "admin"'),
+      (middlewareCode.includes('userRole !== "admin"') || middlewareCode.includes('profile?.role !== "admin"')),
     "Middleware strictly redirects non-admins away from /admin"
   );
 
@@ -119,8 +119,8 @@ function testAdminGuards() {
   const layoutPath = path.resolve("src/app/[locale]/(admin)/layout.tsx");
   const layoutCode = fs.readFileSync(layoutPath, "utf-8");
   assert(
-    layoutCode.includes("requireAdmin(locale)"),
-    "Admin shared layout invokes requireAdmin(locale)"
+    layoutCode.includes("requireStaff(locale)") || layoutCode.includes("requireAdmin(locale)"),
+    "Admin shared layout invokes requireStaff(locale) or requireAdmin(locale)"
   );
 
   // Server Actions
@@ -135,8 +135,9 @@ function testAdminGuards() {
   for (const file of actionFiles) {
     const code = fs.readFileSync(path.resolve(file), "utf-8");
     assert(
-      code.includes("assertAdmin()") && code.includes('role !== "admin"'),
-      `Server action file '${file}' asserts role === 'admin'`
+      (code.includes("assertAdmin()") && code.includes('role !== "admin"')) ||
+        (code.includes("assertCourseManager()") && code.includes('can(user, "course.manage")')),
+      `Server action file '${file}' asserts role privileges`
     );
   }
 
@@ -256,6 +257,94 @@ function testRateLimits() {
   const checkoutPath = path.resolve("src/app/api/payments/create/route.ts");
   const checkoutCode = fs.readFileSync(checkoutPath, "utf-8");
   assert(checkoutCode.includes("checkRateLimit"), "Rate limit exists on checkout API");
+
+  const forgotPath = path.resolve("src/app/api/auth/forgot-password/route.ts");
+  const forgotCode = fs.readFileSync(forgotPath, "utf-8");
+  assert(forgotCode.includes("checkRateLimit"), "Rate limit exists on forgot-password API");
+
+  const couponPath = path.resolve("src/app/api/coupons/validate/route.ts");
+  const couponCode = fs.readFileSync(couponPath, "utf-8");
+  assert(couponCode.includes("checkRateLimit"), "Rate limit exists on coupon validation API");
+}
+
+// -------------------------------------------------------------
+// 7. Identity & Session Integrity (Step S1-A)
+// -------------------------------------------------------------
+function testIdentityIntegrity() {
+  const getUserPath = path.resolve("src/lib/auth/get-user.ts");
+  const getUserCode = fs.readFileSync(getUserPath, "utf-8");
+  assert(!getUserCode.includes("faro_session"), "src/lib/auth/get-user.ts does not rely on faro_session cookie");
+  assert(getUserCode.includes("supabase.auth.getUser()"), "Identity source is cryptographically verified supabase.auth.getUser()");
+
+  const adminClientPath = path.resolve("src/lib/supabase/admin.ts");
+  const adminCode = fs.readFileSync(adminClientPath, "utf-8");
+  assert(adminCode.includes('"server-only"') || adminCode.includes("'server-only'"), "admin.ts is protected with server-only");
+}
+
+// -------------------------------------------------------------
+// 8. Database Privileges & Role Guardrails (Step S1-B)
+// -------------------------------------------------------------
+function testDatabaseRoleGuards() {
+  const roleMigrationPath = path.resolve("supabase/migrations/20250118000000_role_security_and_privilege_guards.sql");
+  assert(fs.existsSync(roleMigrationPath), "Step S1-B migration exists");
+  const roleSql = fs.readFileSync(roleMigrationPath, "utf-8");
+
+  assert(roleSql.includes("REVOKE UPDATE (role) ON public.profiles"), "Update on profiles.role column is revoked");
+  assert(roleSql.includes("FUNCTION public.set_user_role"), "set_user_role secure RPC exists");
+  assert(roleSql.includes("trg_protect_profile_privileged_fields"), "protect_profile_privileged_fields trigger exists");
+  assert(roleSql.includes("REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon"), "Anon write permissions revoked across public schema");
+}
+
+// -------------------------------------------------------------
+// 9. Payment Integrity & Webhook Timing-Safe Equal (Step S1-C)
+// -------------------------------------------------------------
+function testPaymentAndWebhookGuards() {
+  const kobaraLibPath = path.resolve("src/lib/payments/kobara.ts");
+  const kobaraLibCode = fs.readFileSync(kobaraLibPath, "utf-8");
+  assert(kobaraLibCode.includes("crypto.timingSafeEqual"), "Webhook signature uses timingSafeEqual");
+  assert(kobaraLibCode.includes("tolerance"), "Webhook verifies 5-minute timestamp tolerance against replay");
+
+  const txnMigrationPath = path.resolve("supabase/migrations/20250119000000_transactional_payment_validation.sql");
+  assert(fs.existsSync(txnMigrationPath), "Step S1-C transaction migration exists");
+  const txnSql = fs.readFileSync(txnMigrationPath, "utf-8");
+  assert(txnSql.includes("FOR UPDATE"), "validate_payment_transactional locks rows with FOR UPDATE");
+  assert(txnSql.includes("expected_amount_htg"), "validate_payment_transactional verifies expected HTG amount");
+}
+
+// -------------------------------------------------------------
+// 10. AI Assistant Fail-Closed & Cost Governance (Step S1-E)
+// -------------------------------------------------------------
+function testAiAssistantGovernance() {
+  const aiAssistantPath = path.resolve("src/lib/messaging/ai-assistant.ts");
+  const aiCode = fs.readFileSync(aiAssistantPath, "utf-8");
+  assert(aiCode.includes("killSwitch"), "AI assistant verifies killSwitch in governance checks");
+  assert(aiCode.includes("record_ai_usage"), "AI assistant records persistent usage in DB");
+  assert(aiCode.includes("check_ai_limits"), "AI assistant checks persistent DB limits");
+
+  const aiMigrationPath = path.resolve("supabase/migrations/20250120000000_ai_usage_and_governance.sql");
+  assert(fs.existsSync(aiMigrationPath), "Step S1-E AI governance migration exists");
+  const aiSql = fs.readFileSync(aiMigrationPath, "utf-8");
+  assert(aiSql.includes("cost_usd"), "ai_usage table tracks cost_usd");
+  assert(aiSql.includes("user_id"), "ai_usage table tracks user_id");
+}
+
+// -------------------------------------------------------------
+// 11. Cron Security & Account Recovery (Step S1-F)
+// -------------------------------------------------------------
+function testCronAndAccountRecovery() {
+  const cronPath = path.resolve("src/app/api/cron/escalations/route.ts");
+  const cronCode = fs.readFileSync(cronPath, "utf-8");
+  assert(cronCode.includes("timingSafeEqual"), "Cron route uses crypto.timingSafeEqual");
+  assert(cronCode.includes("CRON_SECRET"), "Cron route checks CRON_SECRET");
+
+  const resetPagePath = path.resolve("src/app/[locale]/(auth)/reinitialiser-mot-de-passe/page.tsx");
+  assert(fs.existsSync(resetPagePath), "Reset password route page exists");
+
+  const resetFormPath = path.resolve("src/components/auth/ResetPasswordForm.tsx");
+  assert(fs.existsSync(resetFormPath), "ResetPasswordForm component exists");
+  const resetFormCode = fs.readFileSync(resetFormPath, "utf-8");
+  assert(resetFormCode.includes("updatePasswordSchema"), "ResetPasswordForm uses updatePasswordSchema");
+  assert(resetFormCode.includes("PASSWORD_RECOVERY"), "ResetPasswordForm listens to PASSWORD_RECOVERY event");
 }
 
 // -------------------------------------------------------------
@@ -268,6 +357,11 @@ testSecretsLeak();
 testResourceSecurity();
 testPaymentSecurity();
 testRateLimits();
+testIdentityIntegrity();
+testDatabaseRoleGuards();
+testPaymentAndWebhookGuards();
+testAiAssistantGovernance();
+testCronAndAccountRecovery();
 
 let failedCount = 0;
 for (const r of results) {

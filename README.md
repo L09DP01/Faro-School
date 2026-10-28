@@ -98,18 +98,20 @@ L'intégration des paiements est unifiée via **Kobara.app** (`https://docs.koba
 - Le bouton **Payer avec MonCash** envoie `provider: "moncash"` à l'API Kobara et redirige instantanément l'étudiant vers l'écran de paiement MonCash.
 - Le bouton **Payer avec NatCash** envoie `provider: "natcash"` à l'API Kobara et redirige instantanément l'étudiant vers l'écran de paiement NatCash.
 
-### Mode MOCK pour le développement
-Lorsque `KOBARA_SECRET_KEY` est vide ou commence par `mock_` dans `.env.local` :
-1. Cliquer sur l'un des boutons de paiement génère une URL pointant vers le simulateur Kobara `/api/payments/kobara/mock-gate`.
-2. Le simulateur affiche l'interface fidèle Kobara avec l'onglet du mode choisi (MonCash ou NatCash).
-3. Cliquez sur **Valider le paiement** : la redirection vers `/api/payments/kobara/return` valide le paiement.
-4. Le déclencheur Postgres `on_payment_status_validated` inscrit instantanément l'étudiant et passe la commande en `paid` !
+### Mode Démo Local (`APP_MODE=demo`)
+Les simulateurs et fixtures locales sont accessibles **uniquement** en environnement de développement lorsque `APP_MODE=demo` est explicitement défini dans `.env.local` et que `NODE_ENV !== 'production'`.
+
+En production :
+- Le système applique le principe **Fail Closed** : toute clé manquante (`KOBARA_SECRET_KEY`, `KOBARA_WEBHOOK_SECRET`, `ANTHROPIC_API_KEY`, `CRON_SECRET`) refuse immédiatement l'opération et consigne une erreur serveur explicite.
+- Aucun paiement ne peut être validé par un paramètre d'URL de retour (`/return`). La validation des paiements s'effectue exclusivement par webhook serveur sécurisé (signature HMAC SHA-256 avec vérification de l'horodatage sous 5 minutes) via la fonction transactionnelle PostgreSQL `validate_payment_transactional` avec verrouillage de ligne `FOR UPDATE`.
+- Le démarrage en production lève une exception bloquante si `APP_MODE=demo` est détecté.
 
 ### Webhooks en production
-En production, configurez votre URL de webhook sur votre dashboard Kobara :
-- URL : `https://votre-domaine.com/api/webhooks/kobara`
-- Événement : `payment.succeeded`
-- Signature : vérification HMAC SHA-256 via `x-kobara-signature` et `KOBARA_WEBHOOK_SECRET`.
+Sur votre tableau de bord **Kobara.app** :
+- **URL du webhook** : `https://votre-domaine.com/api/webhooks/kobara`
+- **Événements écoutés** : `payment.succeeded`
+- **En-têtes requis** : `x-kobara-signature` et `x-kobara-timestamp`
+- **Secret de signature** : configuré dans `KOBARA_WEBHOOK_SECRET`
 
 ---
 
@@ -119,11 +121,42 @@ Lors d'une 3ème connexion, la fonction `registerDeviceSession` termine automati
 
 ---
 
-## 6. Scripts de Build et Déploiement Cloudflare Workers
+## 6. Variables d'Environnement Obligatoires en Production
+
+| Variable | Description & Rôle |
+| :--- | :--- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL de votre instance Supabase de production |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clé publique anonyme Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Clé secrète d'administration Supabase (`server-only`) |
+| `KOBARA_SECRET_KEY` | Clé secrète de l'API Kobara (`kobara_sk_live_...`) |
+| `KOBARA_WEBHOOK_SECRET` | Secret HMAC de signature des webhooks Kobara |
+| `ANTHROPIC_API_KEY` | Clé d'API Claude (Anthropic) pour l'assistant pédagogique |
+| `CRON_SECRET` | Jeton secret de déclenchement des tâches planifiées cron |
+| `BUNNY_API_KEY` | Clé de gestion Bunny.net |
+| `BUNNY_STREAM_API_KEY` | Clé d'administration Bunny Stream |
+| `BUNNY_STREAM_TOKEN_AUTH_KEY` | Clé de signature des jetons de lecture vidéo HLS |
+| `BUNNY_STORAGE_ACCESS_KEY` | Clé d'accès au stockage Bunny Storage |
+| `BUNNY_STORAGE_TOKEN_KEY` | Clé de signature des URL de téléchargement des ressources |
+
+---
+
+## 7. Scripts de Build, Audit de Sécurité et Déploiement
 
 ```bash
+# Vérification globale de sécurité et tests d'intégrité (Recommandé avant chaque déploiement)
+pnpm verify
+
 # Vérification TypeScript stricte
 pnpm typecheck
+
+# Exécution de l'audit complet de sécurité (66 assertions de sécurité et RLS)
+pnpm audit
+
+# Exécution des tests de base de données et RLS
+pnpm test:db
+
+# Exécution de la suite de tests complète
+pnpm test
 
 # Linting ESLint
 pnpm lint

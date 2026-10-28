@@ -95,3 +95,15 @@ export const resetPasswordSchema = z.object({
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+export const updatePasswordSchema = z
+  .object({
+    password: z.string().min(8, { message: "passwordTooShort" }),
+    confirmPassword: z.string().min(8, { message: "passwordTooShort" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "passwordsDoNotMatch",
+    path: ["confirmPassword"],
+  });
+
+export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;

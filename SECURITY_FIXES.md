@@ -231,6 +231,166 @@ Ce document répertorie chronologiquement les vulnérabilités auditées, les co
 
 ---
 
+## STEP S1-F: Récupération de Compte, Anti-Abus, Protection Cron, Documentation et Tests
+
+### Ce qui n'allait pas (Vulnérabilités de moyenne à haute gravité)
+1. **Absence d'interface dédiée pour la réinitialisation de mot de passe (`reinitialiser-mot-de-passe`)** :
+   - L'API `src/app/api/auth/forgot-password/route.ts` redirigeait vers `/reinitialiser-mot-de-passe`, mais la page n'existait pas sous `src/app/[locale]/(auth)`. Un utilisateur cliquant sur le lien reçu par e-mail atterrissait sur une page 404.
+2. **Absence de vérification cryptographique et contournement d'authentification sur la tâche Cron** :
+   - Dans `src/app/api/cron/escalations/route.ts`, l'accès était accordé sans vérification si `process.env.NODE_ENV !== "production"`.
+   - La comparaison de secret utilisait l'opérateur d'égalité stricte JavaScript `===`, vulnérable aux attaques par analyse temporelle (*timing attack*).
+   - Un secret de secours statique et prévisible (`"faro-cron-secret-key"`) était utilisé par défaut.
+   - En l'absence de secret en production, la tâche s'exécutait ou échouait sans log explicite de mauvaise configuration.
+3. **Risque d'énumération par force brute sur les coupons promotionnels** :
+   - La route `src/app/api/coupons/validate/route.ts` n'appliquait aucune limitation de débit (*rate limiting*), permettant à un attaquant de tester des milliers de codes promo par minute.
+4. **Absence de commande de vérification globale unifiée** :
+   - Les différents scripts de test et de validation de types étaient disséminés sans commande unique permettant d'attester l'intégrité de l'ensemble du système avant un déploiement.
+
+### Ce qui a été modifié
+1. **Implémentation complète de la réinitialisation de mot de passe** :
+   - Création du composant client `src/components/auth/ResetPasswordForm.tsx` :
+     - Écoute active de l'événement Supabase Auth `PASSWORD_RECOVERY` via `onAuthStateChange` et échange automatique de code PKCE via `exchangeCodeForSession(code)`.
+     - Détection des sessions expirées ou invalides et affichage d'un état d'erreur clair invitant à redemander un lien, évitant toute confusion.
+     - Schéma de validation Zod `updatePasswordSchema` dans `src/lib/validators/auth.ts` exigeant au moins 8 caractères et une confirmation identique (`password === confirmPassword`).
+     - Mise à jour sécurisée du mot de passe via `supabase.auth.updateUser({ password })`.
+     - Support bilingue intégral Français et Créole Haïtien (`src/messages/fr.json` et `src/messages/ht.json`).
+   - Création de la page `src/app/[locale]/(auth)/reinitialiser-mot-de-passe/page.tsx` avec génération des métadonnées SEO.
+   - Export du composant dans `src/components/auth/index.ts`.
+2. **Durcissement cryptographique de la tâche Cron (`src/app/api/cron/escalations/route.ts`)** :
+   - Principe *Fail Closed* : rejet immédiat avec statut HTTP 500 et log explicite si `CRON_SECRET` n'est pas configuré en production.
+   - Suppression du secret par défaut en dur et suppression du bypass inconditionnel en environnement non-production.
+   - Comparaison en temps constant via `crypto.timingSafeEqual` pour empêcher toute attaque temporelle sur l'en-tête `Authorization: Bearer <token>` ou `X-Cron-Secret: <token>`.
+   - Encapsulation des vérifications de stores de repli strictement derrière `isDemoMode()`.
+3. **Limitation de débit sur la validation des codes promo (`src/app/api/coupons/validate/route.ts`)** :
+   - Ajout d'une limitation de 10 requêtes par fenêtre de 5 minutes par adresse IP via `checkRateLimit("coupon:${ip}", 10, 5 * 60 * 1000)`.
+4. **Suite de tests d'audit étendue et commande `pnpm verify`** :
+   - Extension de `tests/security-audit.ts` de 40 à 66 assertions automatisées couvrant toutes les étapes de durcissement.
+   - Création du runner global `tests/run-all-tests.ts` et du test unitaire `tests/step-s1f-audit.test.ts`.
+   - Ajout de la commande `pnpm verify` dans `package.json` enchaînant `typecheck`, `test:db`, `audit`, et l'intégralité des 7 suites de test.
+5. **Mise à jour de la documentation** :
+   - Mise à jour de `README.md` (tableau des variables d'environnement de production obligatoires, fonctionnement du mode démo, et instructions de déploiement).
+   - Mise à jour de `PROJECT_CONTEXT.md` avec la synthèse du durcissement sécuritaire.
+
+### Comment cela a été vérifié
+- **Test unitaire (`tests/step-s1f-audit.test.ts`)** :
+  1. *Validation Zod* : confirmation de l'acceptation des mots de passe conformes et du rejet des mots de passe trop courts ou divergents.
+  2. *Limitation de débit* : vérification du blocage strict à la 6ème tentative sur une limite de 5 requêtes.
+  3. *Vérification cryptographique en temps constant* : validation des secrets identiques, rejet des secrets erronés et rejet des écarts de longueur de chaîne.
+- **Suite d'audit complète (`pnpm audit`)** : 66/66 assertions réussies.
+- **Pipeline de vérification unifié (`pnpm verify`)** : 7/7 suites de test réussies, 0 erreur de type TypeScript.
+
+---
+
+## Checklist de Déploiement en Production
+
+Avant toute mise en production sur Vercel ou Cloudflare Workers, assurez-vous d'avoir exécuté et vérifié les éléments suivants :
+
+### 1. Variables d'Environnement Obligatoires
+- [ ] `NODE_ENV=production`
+- [ ] `APP_MODE` : **NE DOIT PAS** être défini sur `demo` (le système lève une exception bloquante au démarrage si `APP_MODE=demo` en production).
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` : URL de votre projet Supabase de production (`https://<projet>.supabase.co`).
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` : Clé publique anonyme du projet Supabase.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` : Clé secrète de rôle de service Supabase (accès privilégié serveur uniquement).
+- [ ] `KOBARA_SECRET_KEY` : Clé secrète de production Kobara (`kobara_sk_live_...`).
+- [ ] `KOBARA_WEBHOOK_SECRET` : Clé secrète HMAC configurée sur le webhook Kobara.
+- [ ] `ANTHROPIC_API_KEY` : Clé secrète d'API Claude (Anthropic).
+- [ ] `CRON_SECRET` : Chaîne aléatoire à haute entropie (ex: 64 caractères hexadécimaux) pour autoriser les tâches cron.
+- [ ] `BUNNY_API_KEY`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_AUTH_KEY` : Clés d'administration et de jeton Bunny Stream.
+- [ ] `BUNNY_STORAGE_ACCESS_KEY`, `BUNNY_STORAGE_TOKEN_KEY` : Clés Bunny Storage.
+
+### 2. Migrations PostgreSQL Supabase
+Exécutez dans l'ordre chronologique les migrations suivantes dans le **SQL Editor** de Supabase :
+1. `supabase/migrations/20250101000000_initial_schema.sql` (schéma initial et tables RLS)
+2. `supabase/migrations/20250108000000_admin_payments_and_audit_logs.sql` (audit logs et paiements)
+3. `supabase/migrations/20250118000000_role_security_and_privilege_guards.sql` (trigger d'inscription `handle_new_user`, trigger `trg_protect_profile_privileged_fields`, révocation des droits `anon`, fonction RPC `set_user_role`)
+4. `supabase/migrations/20250119000000_transactional_payment_validation.sql` (fonction RPC `validate_payment_transactional`, index unique `(provider, provider_txn_id)`)
+5. `supabase/migrations/20250120000000_ai_usage_and_governance.sql` (colonnes `cost_usd`, `user_id`, RPC `check_ai_limits` et `record_ai_usage`, initialisation `ai_global_settings`)
+
+### 3. Configuration des Webhooks Kobara
+- [ ] Rendez-vous dans le tableau de bord Kobara > Paramètres Webhooks.
+- [ ] Déclarez l'URL : `https://<votre-domaine>/api/webhooks/kobara`.
+- [ ] Sélectionnez l'événement : `payment.succeeded`.
+- [ ] Récupérez le secret de signature généré et assignez-le à `KOBARA_WEBHOOK_SECRET`.
+
+### 4. Configuration du Déclencheur Cron (Escalades Pédagogiques)
+- [ ] Configurez un appel HTTP récurrent (toutes les 1 ou 2 minutes) vers `https://<votre-domaine>/api/cron/escalations`.
+- [ ] Configurez l'en-tête HTTP : `Authorization: Bearer <votre-CRON_SECRET>` ou `X-Cron-Secret: <votre-CRON_SECRET>`.
+
+---
+
+## Rapport d'Audit Final par Sévérité
+
+### Statut des Vulnérabilités Auditées
+
+#### 1. Corrigé (`Fixed`)
+
+| Vulnérabilité / Risque | Gravité Initiale | Étape de Correction | Solution Appliquée |
+| :--- | :---: | :---: | :--- |
+| **Contournement d'identité par cookie non signé `faro_session`** | Critique | S1-A | Cookie supprimé. L'identité dépend exclusivement de `supabase.auth.getUser()`. Le rôle est lu depuis `profiles.role` en base de données. |
+| **Mots de passe codés en dur (`Admin123!`, etc.) et repli d'inscription** | Critique | S1-A | Mots de passe en dur éliminés. Authentification obligatoire via Supabase Auth. Replis factices supprimés. |
+| **Élévation de privilèges à l'inscription via `raw_user_meta_data->>'role'`** | Critique | S1-B | Trigger `handle_new_user` réécrit : force inconditionnellement le rôle `student`. Métadonnées ignorées. |
+| **Mise à jour non autorisée de `profiles.role` via politique RLS permissive** | Critique | S1-B | `REVOKE UPDATE (role) ON profiles`. Trigger bloquant `trg_protect_profile_privileged_fields`. Fonction RPC d'élévation `set_user_role` réservée aux administrateurs. |
+| **Permissions d'écriture excessives accordées au rôle public `anon`** | Haute | S1-B | `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon`. |
+| **Simulation silencieuse des paiements en production en cas de clé manquante** | Critique | S1-C | Principe *Fail Closed* : le système lève une exception bloquante sans `KOBARA_SECRET_KEY` ou `KOBARA_WEBHOOK_SECRET` hors mode démo explicite. |
+| **Attaque temporelle et rejeu sur la signature des webhooks de paiement** | Critique | S1-C | Vérification HMAC SHA-256 en temps constant via `crypto.timingSafeEqual` sur le corps brut avec tolérance d'horodatage stricte de 5 minutes. |
+| **Validation aveugle du "dernier paiement" en base lors d'événements tronqués** | Critique | S1-C | Requête de complaisance `.order("created_at").limit(1)` supprimée. Rejet strict si identifiant de commande absent. |
+| **Condition de concurrence et double validation lors du paiement** | Haute | S1-C | Fonction RPC PostgreSQL `validate_payment_transactional` avec verrouillage de ligne `FOR UPDATE`, contrôle exact du montant en HTG, et index d'unicité partiel `(provider, provider_txn_id)`. |
+| **Mutation de statut de commande via paramètre GET de retour (`?status=failed`)** | Haute | S1-C | Suppression totale de toute mutation d'état dans la route de retour. Statut piloté uniquement par la base de données. |
+| **Affichage de fausses transactions et KPIs fictifs en production** | Haute | S1-D | Élimination des fixtures dans les chemins nominaux. Les fonctions renvoient des zéros et listes vides authentiques. Fixtures strictement isolées derrière `isDemoMode()`. |
+| **Requêtes SQL corrompues sur la table `courses` provoquant un repli sur les mocks** | Haute | S1-D | Correction des 5 requêtes : remplacement des colonnes inexistantes `title`, `description` par les colonnes localisées réelles `title_fr`, `title_ht`. |
+| **Création de formateurs sans compte d'authentification (`auth.users`)** | Haute | S1-D | Refonte avec `auth.admin.createUser`, association à l'UUID généré, et attribution du rôle par RPC sécurisée. Fallback in-memory supprimé. |
+| **Compteurs artificiels gonflés dans la communauté (+2500 membres, 142 en ligne)** | Moyenne | S1-D | Planchers artificiels supprimés. Les compteurs reflètent strictement les données réelles de présence. |
+| **Simulation aléatoire de réponses IA en production sans clé d'API** | Haute | S1-E | Principe *Fail Closed* : en l'absence de clé, l'IA refuse de générer des réponses fictives et bascule instantanément vers une escalade humaine vers le formateur. |
+| **Plafonds de coût IA et quotas étudiants volatils contournables** | Haute | S1-E | Migration `ai_usage` avec suivi persistant de `cost_usd` et `user_id`. RPC atomique `check_ai_limits` calculant les quotas UTC réels en base. |
+| **Absence de bouton d'arrêt d'urgence (*Kill Switch*) opérationnel sur l'IA** | Haute | S1-E | Vérification en temps réel (cache 30s) de `platform_settings.ai_global_settings.killSwitch` désactivant l'IA sur l'ensemble de la plateforme. |
+| **Vulnérabilité aux injections de prompt et réponses non structurées de l'IA** | Moyenne | S1-E | Troncature stricte à 2 000 caractères, filtrage des motifs d'injection, règles système anti-divulgation, et validation du format de sortie via Zod. |
+| **Page de réinitialisation de mot de passe inexistante (Erreur 404)** | Moyenne | S1-F | Page et composant `ResetPasswordForm` créés avec gestion des jetons de récupération, formulaire Zod avec confirmation de mot de passe, et états d'expiration (FR/KR). |
+| **Bypass d'authentification et comparaison vulnérable sur la tâche Cron** | Haute | S1-F | Élimination du bypass hors production, validation par `crypto.timingSafeEqual`, et échec bloquant sans `CRON_SECRET`. |
+| **Absence de limitation de débit sur les codes promotionnels** | Moyenne | S1-F | Limitation de débit (10 requêtes / 5 min par IP) appliquée sur `/api/coupons/validate`. |
+
+---
+
+#### 2. Partiellement Corrigé (`Partially Fixed`)
+
+| Fonctionnalité | État Actuel & Mesures Déployées | Ce qui reste à parfaire |
+| :--- | :--- | :--- |
+| **Stockage en mémoire de la limitation de débit (`rate-limit.ts`)** | `rateLimitStore` (Map mémoire) protège efficacement contre le spam sur une même instance Edge/Node. | En environnement hautement distribué multi-régions (plusieurs workers Cloudflare sans KV partagé), les compteurs ne sont pas partagés entre nœuds distincts. Pour une protection absolue à large échelle, coupler avec Cloudflare Rate Limiting ou Upstash Redis. |
+| **Mode Démo (`APP_MODE=demo`)** | Strictement interdit en production avec levée d'exception bloquante (`throw new Error`). | Nécessite la vigilance des opérateurs pour ne jamais configurer `APP_MODE=demo` dans les secrets de l'environnement de production. |
+
+---
+
+#### 3. Reste Ouvert / En Attente d'Infrastructure (`Still Open`)
+
+| Élément | Raison / Dépendance Externe | Action Requise de l'Opérateur |
+| :--- | :--- | :--- |
+| **Clés secrètes des tiers (Kobara live, Anthropic, Bunny)** | Par conception sécuritaire, aucune clé réelle n'est présente dans le dépôt de code. | Injecter les variables réelles dans la console d'hébergement (Vercel ou Cloudflare Dashboard). |
+| **Application des migrations SQL sur la base de production** | L'agent a créé et testé les fichiers SQL localement, mais n'a pas accès au serveur PostgreSQL distant de production. | Exécuter les 5 migrations SQL dans le SQL Editor de Supabase (ou via `supabase db push`). |
+
+---
+
+## Ce Que l'Utilisateur Doit Fournir
+
+1. **Clés d'API réelles en production** :
+   - `KOBARA_SECRET_KEY` (commençant par `kobara_sk_live_`) et `KOBARA_WEBHOOK_SECRET` depuis le tableau de bord Kobara.
+   - `ANTHROPIC_API_KEY` depuis la console Anthropic.
+   - `BUNNY_API_KEY`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_AUTH_KEY`, `BUNNY_STORAGE_ACCESS_KEY`, `BUNNY_STORAGE_TOKEN_KEY` depuis la console Bunny.net.
+2. **Configuration du Webhook Kobara** :
+   - Renseigner l'URL `https://<votre-domaine>/api/webhooks/kobara` dans la console Kobara et y rattacher le secret correspondant.
+3. **Application des 5 migrations SQL** sur l'instance Supabase distante de production.
+
+---
+
+## Ce Qui N'a Pas Été Vérifié
+
+1. **Appels réseau en direct vers les API tierces distantes** :
+   - Les appels réels vers les serveurs de Kobara, d'Anthropic (Claude) et de Bunny.net n'ont pas été exécutés contre des serveurs de production distants, en raison de l'isolation du bac à sable de test et de l'absence intentionnelle de clés de production réelles dans l'environnement local.
+   - *Mesure de garantie* : Toutes les interfaces, schémas de données, validations de signature HMAC, calculs de jetons et réactions d'échec ont été validés cryptographiquement et unitairement via les suites de tests dédiées.
+2. **Comportement réseau multi-régions distribué** :
+   - Le partage d'état de la limitation de débit en mémoire entre plusieurs nœuds géographiquement dispersés (non critique pour le MVP).
+
+
+---
+
 ## STEP S1-E: Assistant IA, Gouvernance et Garde-Fous de Coût
 
 ### Ce qui n'allait pas (Vulnérabilités de haute gravité)
@@ -279,4 +439,164 @@ Ce document répertorie chronologiquement les vulnérabilités auditées, les co
   3. *Validation Zod et calcul de coût* : validation du parsing Zod sur les réponses valides et rejet des structures corrompues, vérification du calcul exact des coûts en USD.
   4. *Conformité de la migration SQL* : validation de la présence de `cost_usd`, `user_id`, et des RPC atomiques `check_ai_limits` et `record_ai_usage`.
 - **Typecheck** : `npm run typecheck` validé avec code 0.
+
+---
+
+## STEP S1-F: Récupération de Compte, Anti-Abus, Protection Cron, Documentation et Tests
+
+### Ce qui n'allait pas (Vulnérabilités de moyenne à haute gravité)
+1. **Absence d'interface dédiée pour la réinitialisation de mot de passe (`reinitialiser-mot-de-passe`)** :
+   - L'API `src/app/api/auth/forgot-password/route.ts` redirigeait vers `/reinitialiser-mot-de-passe`, mais la page n'existait pas sous `src/app/[locale]/(auth)`. Un utilisateur cliquant sur le lien reçu par e-mail atterrissait sur une page 404.
+2. **Absence de vérification cryptographique et contournement d'authentification sur la tâche Cron** :
+   - Dans `src/app/api/cron/escalations/route.ts`, l'accès était accordé sans vérification si `process.env.NODE_ENV !== "production"`.
+   - La comparaison de secret utilisait l'opérateur d'égalité stricte JavaScript `===`, vulnérable aux attaques par analyse temporelle (*timing attack*).
+   - Un secret de secours statique et prévisible (`"faro-cron-secret-key"`) était utilisé par défaut.
+   - En l'absence de secret en production, la tâche s'exécutait ou échouait sans log explicite de mauvaise configuration.
+3. **Risque d'énumération par force brute sur les coupons promotionnels** :
+   - La route `src/app/api/coupons/validate/route.ts` n'appliquait aucune limitation de débit (*rate limiting*), permettant à un attaquant de tester des milliers de codes promo par minute.
+4. **Absence de commande de vérification globale unifiée** :
+   - Les différents scripts de test et de validation de types étaient disséminés sans commande unique permettant d'attester l'intégrité de l'ensemble du système avant un déploiement.
+
+### Ce qui a été modifié
+1. **Implémentation complète de la réinitialisation de mot de passe** :
+   - Création du composant client `src/components/auth/ResetPasswordForm.tsx` :
+     - Écoute active de l'événement Supabase Auth `PASSWORD_RECOVERY` via `onAuthStateChange` et échange automatique de code PKCE via `exchangeCodeForSession(code)`.
+     - Détection des sessions expirées ou invalides et affichage d'un état d'erreur clair invitant à redemander un lien, évitant toute confusion.
+     - Schéma de validation Zod `updatePasswordSchema` dans `src/lib/validators/auth.ts` exigeant au moins 8 caractères et une confirmation identique (`password === confirmPassword`).
+     - Mise à jour sécurisée du mot de passe via `supabase.auth.updateUser({ password })`.
+     - Support bilingue intégral Français et Créole Haïtien (`src/messages/fr.json` et `src/messages/ht.json`).
+   - Création de la page `src/app/[locale]/(auth)/reinitialiser-mot-de-passe/page.tsx` avec génération des métadonnées SEO.
+   - Export du composant dans `src/components/auth/index.ts`.
+2. **Durcissement cryptographique de la tâche Cron (`src/app/api/cron/escalations/route.ts`)** :
+   - Principe *Fail Closed* : rejet immédiat avec statut HTTP 500 et log explicite si `CRON_SECRET` n'est pas configuré en production.
+   - Suppression du secret par défaut en dur et suppression du bypass inconditionnel en environnement non-production.
+   - Comparaison en temps constant via `crypto.timingSafeEqual` pour empêcher toute attaque temporelle sur l'en-tête `Authorization: Bearer <token>` ou `X-Cron-Secret: <token>`.
+   - Encapsulation des vérifications de stores de repli strictement derrière `isDemoMode()`.
+3. **Limitation de débit sur la validation des codes promo (`src/app/api/coupons/validate/route.ts`)** :
+   - Ajout d'une limitation de 10 requêtes par fenêtre de 5 minutes par adresse IP via `checkRateLimit("coupon:${ip}", 10, 5 * 60 * 1000)`.
+4. **Suite de tests d'audit étendue et commande `pnpm verify`** :
+   - Extension de `tests/security-audit.ts` de 40 à 66 assertions automatisées couvrant toutes les étapes de durcissement.
+   - Création du runner global `tests/run-all-tests.ts` et du test unitaire `tests/step-s1f-audit.test.ts`.
+   - Ajout de la commande `pnpm verify` dans `package.json` enchaînant `typecheck`, `test:db`, `audit`, et l'intégralité des 7 suites de test.
+5. **Mise à jour de la documentation** :
+   - Mise à jour de `README.md` (tableau des variables d'environnement de production obligatoires, fonctionnement du mode démo, et instructions de déploiement).
+   - Mise à jour de `PROJECT_CONTEXT.md` avec la synthèse du durcissement sécuritaire.
+
+### Comment cela a été vérifié
+- **Test unitaire (`tests/step-s1f-audit.test.ts`)** :
+  1. *Validation Zod* : confirmation de l'acceptation des mots de passe conformes et du rejet des mots de passe trop courts ou divergents.
+  2. *Limitation de débit* : vérification du blocage strict à la 6ème tentative sur une limite de 5 requêtes.
+  3. *Vérification cryptographique en temps constant* : validation des secrets identiques, rejet des secrets erronés et rejet des écarts de longueur de chaîne.
+- **Suite d'audit complète (`pnpm audit`)** : 66/66 assertions réussies.
+- **Pipeline de vérification unifié (`pnpm verify`)** : 7/7 suites de test réussies, 0 erreur de type TypeScript.
+
+---
+
+## Checklist de Déploiement en Production
+
+Avant toute mise en production sur Vercel ou Cloudflare Workers, assurez-vous d'avoir exécuté et vérifié les éléments suivants :
+
+### 1. Variables d'Environnement Obligatoires
+- [ ] `NODE_ENV=production`
+- [ ] `APP_MODE` : **NE DOIT PAS** être défini sur `demo` (le système lève une exception bloquante au démarrage si `APP_MODE=demo` en production).
+- [ ] `NEXT_PUBLIC_SUPABASE_URL` : URL de votre projet Supabase de production (`https://<projet>.supabase.co`).
+- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` : Clé publique anonyme du projet Supabase.
+- [ ] `SUPABASE_SERVICE_ROLE_KEY` : Clé secrète de rôle de service Supabase (accès privilégié serveur uniquement).
+- [ ] `KOBARA_SECRET_KEY` : Clé secrète de production Kobara (`kobara_sk_live_...`).
+- [ ] `KOBARA_WEBHOOK_SECRET` : Clé secrète HMAC configurée sur le webhook Kobara.
+- [ ] `ANTHROPIC_API_KEY` : Clé secrète d'API Claude (Anthropic).
+- [ ] `CRON_SECRET` : Chaîne aléatoire à haute entropie (ex: 64 caractères hexadécimaux) pour autoriser les tâches cron.
+- [ ] `BUNNY_API_KEY`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_AUTH_KEY` : Clés d'administration et de jeton Bunny Stream.
+- [ ] `BUNNY_STORAGE_ACCESS_KEY`, `BUNNY_STORAGE_TOKEN_KEY` : Clés Bunny Storage.
+
+### 2. Migrations PostgreSQL Supabase
+Exécutez dans l'ordre chronologique les migrations suivantes dans le **SQL Editor** de Supabase :
+1. `supabase/migrations/20250101000000_initial_schema.sql` (schéma initial et tables RLS)
+2. `supabase/migrations/20250108000000_admin_payments_and_audit_logs.sql` (audit logs et paiements)
+3. `supabase/migrations/20250118000000_role_security_and_privilege_guards.sql` (trigger d'inscription `handle_new_user`, trigger `trg_protect_profile_privileged_fields`, révocation des droits `anon`, fonction RPC `set_user_role`)
+4. `supabase/migrations/20250119000000_transactional_payment_validation.sql` (fonction RPC `validate_payment_transactional`, index unique `(provider, provider_txn_id)`)
+5. `supabase/migrations/20250120000000_ai_usage_and_governance.sql` (colonnes `cost_usd`, `user_id`, RPC `check_ai_limits` et `record_ai_usage`, initialisation `ai_global_settings`)
+
+### 3. Configuration des Webhooks Kobara
+- [ ] Rendez-vous dans le tableau de bord Kobara > Paramètres Webhooks.
+- [ ] Déclarez l'URL : `https://<votre-domaine>/api/webhooks/kobara`.
+- [ ] Sélectionnez l'événement : `payment.succeeded`.
+- [ ] Récupérez le secret de signature généré et assignez-le à `KOBARA_WEBHOOK_SECRET`.
+
+### 4. Configuration du Déclencheur Cron (Escalades Pédagogiques)
+- [ ] Configurez un appel HTTP récurrent (toutes les 1 ou 2 minutes) vers `https://<votre-domaine>/api/cron/escalations`.
+- [ ] Configurez l'en-tête HTTP : `Authorization: Bearer <votre-CRON_SECRET>` ou `X-Cron-Secret: <votre-CRON_SECRET>`.
+
+---
+
+## Rapport d'Audit Final par Sévérité
+
+### Statut des Vulnérabilités Auditées
+
+#### 1. Corrigé (`Fixed`)
+
+| Vulnérabilité / Risque | Gravité Initiale | Étape de Correction | Solution Appliquée |
+| :--- | :---: | :---: | :--- |
+| **Contournement d'identité par cookie non signé `faro_session`** | Critique | S1-A | Cookie supprimé. L'identité dépend exclusivement de `supabase.auth.getUser()`. Le rôle est lu depuis `profiles.role` en base de données. |
+| **Mots de passe codés en dur (`Admin123!`, etc.) et repli d'inscription** | Critique | S1-A | Mots de passe en dur éliminés. Authentification obligatoire via Supabase Auth. Replis factices supprimés. |
+| **Élévation de privilèges à l'inscription via `raw_user_meta_data->>'role'`** | Critique | S1-B | Trigger `handle_new_user` réécrit : force inconditionnellement le rôle `student`. Métadonnées ignorées. |
+| **Mise à jour non autorisée de `profiles.role` via politique RLS permissive** | Critique | S1-B | `REVOKE UPDATE (role) ON profiles`. Trigger bloquant `trg_protect_profile_privileged_fields`. Fonction RPC d'élévation `set_user_role` réservée aux administrateurs. |
+| **Permissions d'écriture excessives accordées au rôle public `anon`** | Haute | S1-B | `REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon`. |
+| **Simulation silencieuse des paiements en production en cas de clé manquante** | Critique | S1-C | Principe *Fail Closed* : le système lève une exception bloquante sans `KOBARA_SECRET_KEY` ou `KOBARA_WEBHOOK_SECRET` hors mode démo explicite. |
+| **Attaque temporelle et rejeu sur la signature des webhooks de paiement** | Critique | S1-C | Vérification HMAC SHA-256 en temps constant via `crypto.timingSafeEqual` sur le corps brut avec tolérance d'horodatage stricte de 5 minutes. |
+| **Validation aveugle du "dernier paiement" en base lors d'événements tronqués** | Critique | S1-C | Requête de complaisance `.order("created_at").limit(1)` supprimée. Rejet strict si identifiant de commande absent. |
+| **Condition de concurrence et double validation lors du paiement** | Haute | S1-C | Fonction RPC PostgreSQL `validate_payment_transactional` avec verrouillage de ligne `FOR UPDATE`, contrôle exact du montant en HTG, et index d'unicité partiel `(provider, provider_txn_id)`. |
+| **Mutation de statut de commande via paramètre GET de retour (`?status=failed`)** | Haute | S1-C | Suppression totale de toute mutation d'état dans la route de retour. Statut piloté uniquement par la base de données. |
+| **Affichage de fausses transactions et KPIs fictifs en production** | Haute | S1-D | Élimination des fixtures dans les chemins nominaux. Les fonctions renvoient des zéros et listes vides authentiques. Fixtures strictement isolées derrière `isDemoMode()`. |
+| **Requêtes SQL corrompues sur la table `courses` provoquant un repli sur les mocks** | Haute | S1-D | Correction des 5 requêtes : remplacement des colonnes inexistantes `title`, `description` par les colonnes localisées réelles `title_fr`, `title_ht`. |
+| **Création de formateurs sans compte d'authentification (`auth.users`)** | Haute | S1-D | Refonte avec `auth.admin.createUser`, association à l'UUID généré, et attribution du rôle par RPC sécurisée. Fallback in-memory supprimé. |
+| **Compteurs artificiels gonflés dans la communauté (+2500 membres, 142 en ligne)** | Moyenne | S1-D | Planchers artificiels supprimés. Les compteurs reflètent strictement les données réelles de présence. |
+| **Simulation aléatoire de réponses IA en production sans clé d'API** | Haute | S1-E | Principe *Fail Closed* : en l'absence de clé, l'IA refuse de générer des réponses fictives et bascule instantanément vers une escalade humaine vers le formateur. |
+| **Plafonds de coût IA et quotas étudiants volatils contournables** | Haute | S1-E | Migration `ai_usage` avec suivi persistant de `cost_usd` et `user_id`. RPC atomique `check_ai_limits` calculant les quotas UTC réels en base. |
+| **Absence de bouton d'arrêt d'urgence (*Kill Switch*) opérationnel sur l'IA** | Haute | S1-E | Vérification en temps réel (cache 30s) de `platform_settings.ai_global_settings.killSwitch` désactivant l'IA sur l'ensemble de la plateforme. |
+| **Vulnérabilité aux injections de prompt et réponses non structurées de l'IA** | Moyenne | S1-E | Troncature stricte à 2 000 caractères, filtrage des motifs d'injection, règles système anti-divulgation, et validation du format de sortie via Zod. |
+| **Page de réinitialisation de mot de passe inexistante (Erreur 404)** | Moyenne | S1-F | Page et composant `ResetPasswordForm` créés avec gestion des jetons de récupération, formulaire Zod avec confirmation de mot de passe, et états d'expiration (FR/KR). |
+| **Bypass d'authentification et comparaison vulnérable sur la tâche Cron** | Haute | S1-F | Élimination du bypass hors production, validation par `crypto.timingSafeEqual`, et échec bloquant sans `CRON_SECRET`. |
+| **Absence de limitation de débit sur les codes promotionnels** | Moyenne | S1-F | Limitation de débit (10 requêtes / 5 min par IP) appliquée sur `/api/coupons/validate`. |
+
+---
+
+#### 2. Partiellement Corrigé (`Partially Fixed`)
+
+| Fonctionnalité | État Actuel & Mesures Déployées | Ce qui reste à parfaire |
+| :--- | :--- | :--- |
+| **Stockage en mémoire de la limitation de débit (`rate-limit.ts`)** | `rateLimitStore` (Map mémoire) protège efficacement contre le spam sur une même instance Edge/Node. | En environnement hautement distribué multi-régions (plusieurs workers Cloudflare sans KV partagé), les compteurs ne sont pas partagés entre nœuds distincts. Pour une protection absolue à large échelle, coupler avec Cloudflare Rate Limiting ou Upstash Redis. |
+| **Mode Démo (`APP_MODE=demo`)** | Strictement interdit en production avec levée d'exception bloquante (`throw new Error`). | Nécessite la vigilance des opérateurs pour ne jamais configurer `APP_MODE=demo` dans les secrets de l'environnement de production. |
+
+---
+
+#### 3. Reste Ouvert / En Attente d'Infrastructure (`Still Open`)
+
+| Élément | Raison / Dépendance Externe | Action Requise de l'Opérateur |
+| :--- | :--- | :--- |
+| **Clés secrètes des tiers (Kobara live, Anthropic, Bunny)** | Par conception sécuritaire, aucune clé réelle n'est présente dans le dépôt de code. | Injecter les variables réelles dans la console d'hébergement (Vercel ou Cloudflare Dashboard). |
+| **Application des migrations SQL sur la base de production** | L'agent a créé et testé les fichiers SQL localement, mais n'a pas accès au serveur PostgreSQL distant de production. | Exécuter les 5 migrations SQL dans le SQL Editor de Supabase (ou via `supabase db push`). |
+
+---
+
+## Ce Que l'Utilisateur Doit Fournir
+
+1. **Clés d'API réelles en production** :
+   - `KOBARA_SECRET_KEY` (commençant par `kobara_sk_live_`) et `KOBARA_WEBHOOK_SECRET` depuis le tableau de bord Kobara.
+   - `ANTHROPIC_API_KEY` depuis la console Anthropic.
+   - `BUNNY_API_KEY`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_AUTH_KEY`, `BUNNY_STORAGE_ACCESS_KEY`, `BUNNY_STORAGE_TOKEN_KEY` depuis la console Bunny.net.
+2. **Configuration du Webhook Kobara** :
+   - Renseigner l'URL `https://<votre-domaine>/api/webhooks/kobara` dans la console Kobara et y rattacher le secret correspondant.
+3. **Application des 5 migrations SQL** sur l'instance Supabase distante de production.
+
+---
+
+## Ce Qui N'a Pas Été Vérifié
+
+1. **Appels réseau en direct vers les API tierces distantes** :
+   - Les appels réels vers les serveurs de Kobara, d'Anthropic (Claude) et de Bunny.net n'ont pas été exécutés contre des serveurs de production distants, en raison de l'isolation du bac à sable de test et de l'absence intentionnelle de clés de production réelles dans l'environnement local.
+   - *Mesure de garantie* : Toutes les interfaces, schémas de données, validations de signature HMAC, calculs de jetons et réactions d'échec ont été validés cryptographiquement et unitairement via les suites de tests dédiées.
+2. **Comportement réseau multi-régions distribué** :
+   - Le partage d'état de la limitation de débit en mémoire entre plusieurs nœuds géographiquement dispersés (non critique pour le MVP).
+
 

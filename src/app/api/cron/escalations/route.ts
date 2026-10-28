@@ -1,6 +1,8 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isStaffOnline } from "@/lib/messaging/presence";
+import { isDemoMode } from "@/lib/config";
 import { getMockEscalationsStore, getMockMessagesStore, getMockConversationsStore } from "@/lib/messaging/data";
 
 export async function GET(req: Request) {
@@ -14,12 +16,37 @@ export async function POST(req: Request) {
 async function handleCron(req: Request) {
   const authHeader = req.headers.get("authorization");
   const cronSecretHeader = req.headers.get("x-cron-secret");
-  const expectedSecret = process.env.CRON_SECRET || "faro-cron-secret-key";
+  const expectedSecret = process.env.CRON_SECRET;
 
-  const isAuthorized =
-    authHeader === `Bearer ${expectedSecret}` ||
-    cronSecretHeader === expectedSecret ||
-    process.env.NODE_ENV !== "production";
+  if (!expectedSecret) {
+    if (process.env.NODE_ENV === "production") {
+      console.error("[CRON] CRON_SECRET is not configured in production. Rejecting execution.");
+      return NextResponse.json(
+        { error: "Server misconfiguration: CRON_SECRET missing" },
+        { status: 500 }
+      );
+    }
+  }
+
+  // Extract candidate secret from Authorization: Bearer <secret> or X-Cron-Secret: <secret>
+  let candidateToken = "";
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    candidateToken = authHeader.slice(7).trim();
+  } else if (cronSecretHeader) {
+    candidateToken = cronSecretHeader.trim();
+  }
+
+  let isAuthorized = false;
+  if (expectedSecret && candidateToken) {
+    const candidateBuf = Buffer.from(candidateToken);
+    const expectedBuf = Buffer.from(expectedSecret);
+    if (candidateBuf.length === expectedBuf.length) {
+      isAuthorized = crypto.timingSafeEqual(candidateBuf, expectedBuf);
+    }
+  } else if (!expectedSecret && isDemoMode()) {
+    // In demo mode only, permit local triggering
+    isAuthorized = true;
+  }
 
   if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized cron call" }, { status: 401 });
@@ -93,34 +120,36 @@ async function handleCron(req: Request) {
     }
   } catch {}
 
-  // 2. Mock store checking (for test scenarios and local runtime)
-  const mockEscalations = getMockEscalationsStore();
-  const mockMessagesMap = getMockMessagesStore();
-  const mockConvs = getMockConversationsStore();
+  // 2. Mock store checking (only in demo mode)
+  if (isDemoMode()) {
+    const mockEscalations = getMockEscalationsStore();
+    const mockMessagesMap = getMockMessagesStore();
+    const mockConvs = getMockConversationsStore();
 
-  for (const esc of mockEscalations) {
-    if (!esc.resolvedAt && !esc.followupSentAt && new Date(esc.deadlineAt) <= now) {
-      processedCount++;
-      const conv = mockConvs.find((c) => c.id === esc.conversationId);
-      const staffOnline = conv ? await isStaffOnline(conv.staffId) : false;
+    for (const esc of mockEscalations) {
+      if (!esc.resolvedAt && !esc.followupSentAt && new Date(esc.deadlineAt) <= now) {
+        processedCount++;
+        const conv = mockConvs.find((c) => c.id === esc.conversationId);
+        const staffOnline = conv ? await isStaffOnline(conv.staffId) : false;
 
-      if (!staffOnline) {
-        const msgs = mockMessagesMap.get(esc.conversationId) || [];
-        const hasStaffReply = msgs.some(
-          (m) => m.senderType === "staff" && new Date(m.createdAt) >= new Date(esc.createdAt)
-        );
+        if (!staffOnline) {
+          const msgs = mockMessagesMap.get(esc.conversationId) || [];
+          const hasStaffReply = msgs.some(
+            (m) => m.senderType === "staff" && new Date(m.createdAt) >= new Date(esc.createdAt)
+          );
 
-        if (!hasStaffReply) {
-          msgs.push({
-            id: `msg-cron-${Date.now()}`,
-            conversationId: esc.conversationId,
-            senderType: "system",
-            senderName: "Faro School",
-            body: bilingualNotice,
-            createdAt: nowIso,
-          });
-          esc.followupSentAt = nowIso;
-          sentCount++;
+          if (!hasStaffReply) {
+            msgs.push({
+              id: `msg-cron-${Date.now()}`,
+              conversationId: esc.conversationId,
+              senderType: "system",
+              senderName: "Faro School",
+              body: bilingualNotice,
+              createdAt: nowIso,
+            });
+            esc.followupSentAt = nowIso;
+            sentCount++;
+          }
         }
       }
     }

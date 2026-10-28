@@ -11,6 +11,9 @@
     "deploy": "opennextjs-cloudflare deploy",
     "typecheck": "tsc --noEmit",
     "test:db": "npx tsx tests/db-roles-and-rls.test.ts",
+    "audit": "npx tsx tests/security-audit.ts",
+    "test": "npx tsx tests/run-all-tests.ts",
+    "verify": "npm run typecheck && npm test",
     "lint": "next lint"
   },
   "dependencies": {
