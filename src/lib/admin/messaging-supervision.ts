@@ -65,7 +65,7 @@ export async function getGlobalAiSettings(): Promise<GlobalAiSettings> {
     const { data } = await supabase
       .from("platform_settings")
       .select("value")
-      .eq("key", "global_ai_settings")
+      .eq("key", "ai_global_settings")
       .single();
 
     if (data?.value) {
@@ -95,7 +95,7 @@ export async function saveGlobalAiSettings(
     const supabase = await createClient();
     await supabase.from("platform_settings").upsert(
       {
-        key: "global_ai_settings",
+        key: "ai_global_settings",
         value: {
           default_model: settings.defaultModel,
           default_confidence_threshold: settings.defaultConfidenceThreshold,

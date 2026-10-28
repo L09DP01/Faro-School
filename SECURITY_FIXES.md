@@ -228,3 +228,55 @@ Ce document répertorie chronologiquement les vulnérabilités auditées, les co
   4. *Création formateur* : vérification que `createInstructorAction` utilise `auth.admin.createUser` et `set_user_role` sans store de repli.
 - **Suite de tests globale** : exécution simultanée de `tests/step-s1a-identity.test.ts`, `tests/step-s1c-payments.test.ts` et `tests/step-s1d-data-integrity.test.ts` avec 100% de succès.
 - **Typecheck** : `npm run typecheck` validé avec code 0.
+
+---
+
+## STEP S1-E: Assistant IA, Gouvernance et Garde-Fous de Coût
+
+### Ce qui n'allait pas (Vulnérabilités de haute gravité)
+1. **Simulation automatique de réponses IA en production** :
+   - `src/lib/messaging/ai-assistant.ts` basculait silencieusement sur une réponse simulée aléatoire (`"Bonjour ! Je suis l'assistant pédagogique..."`) dès que `ANTHROPIC_API_KEY` était absente ou invalide. En production, un défaut de configuration générait de fausses réponses sans jamais alerter ni escalader vers un formateur humain.
+2. **Plafonds de coût et quotas étudiants non persistés (contournables)** :
+   - Le suivi des jetons et la limitation de débit étaient stockés dans un tableau en mémoire volatile (`globalThis.__mockAiUsageStore`). Dans un environnement serverless (Vercel, Cloudflare) ou lors d'un redémarrage, la mémoire était réinitialisée, permettant le contournement illimité des quotas journaliers par étudiant et du plafond budgétaire de la plateforme.
+3. **Absence de suivi financier réel en base de données** :
+   - La table `ai_usage` ne stockait ni le coût réel en dollars (`cost_usd`) ni l'identifiant de l'étudiant (`user_id`).
+4. **Divergence de configuration entre la supervision et le runtime IA** :
+   - `src/app/actions/admin-supervision.ts` et `src/lib/admin/messaging-supervision.ts` utilisaient des clés et structures hétérogènes pour la configuration globale et le bouton d'arrêt d'urgence (*kill switch*).
+5. **Vulnérabilité aux injections de prompt et absence de validation stricte du format de sortie** :
+   - Aucune troncature d'entrée (risque de déni de service et d'explosion des coûts par injection de textes volumineux).
+   - Aucun filtre préventif sur les tentatives d'extraction du prompt système ou de manipulation de prix/remboursements.
+   - Parsing JSON sans schéma de validation strict Zod sur la réponse du modèle.
+
+### Ce qui a été modifié
+1. **Migration SQL `supabase/migrations/20250120000000_ai_usage_and_governance.sql`** :
+   - Ajout des colonnes `user_id UUID REFERENCES public.profiles(id)` et `cost_usd NUMERIC(10,6) DEFAULT 0` sur `public.ai_usage`.
+   - Indexation optimisée : `idx_ai_usage_user_created` et `idx_ai_usage_created_at`.
+   - Fonction RPC atomique `public.check_ai_limits(p_student_id, p_daily_limit, p_daily_cost_cap_usd)` :
+     - Vérifie le délai de refroidissement anti-spam (2 secondes minimum entre deux requêtes d'un même élève).
+     - Calcule la consommation du jour UTC pour l'étudiant et compare au quota (`p_daily_limit`).
+     - Calcule la dépense totale de la plateforme du jour UTC et compare au plafond budgétaire (`p_daily_cost_cap_usd`).
+   - Fonction RPC atomique `public.record_ai_usage(p_student_id, p_model, p_input_tokens, p_output_tokens, p_cost_usd, p_response_time_ms, p_status)` : consigne de manière transactionnelle les métriques d'inférence.
+   - Initialisation dans `public.platform_settings` de la configuration par défaut sous la clé `'ai_global_settings'`.
+2. **Gouvernance et arrêt d'urgence dans `src/lib/messaging/ai-assistant.ts`** :
+   - Principe *Fail Closed* : si `ANTHROPIC_API_KEY` est absente en production, le système refuse toute génération simulée et déclenche immédiatement une escalade propre vers un formateur humain avec message explicatif (`"Un formateur humain a été notifié"`).
+   - Le bouton d'arrêt d'urgence (*Kill Switch*) est vérifié en temps réel (mise en cache maximale de 30 secondes en mémoire) depuis `platform_settings` (ou via variable d'environnement `DISABLE_AI=true` / `AI_ASSISTANT_ENABLED=false`). S'il est activé, l'IA est désactivée sur l'ensemble de la plateforme et toutes les questions sont directement dirigées vers les formateurs.
+3. **Garde-fous de prompt et sécurité des entrées/sorties** :
+   - Troncature stricte de la question à 2 000 caractères maximum.
+   - Filtre d'entrée contre les injections courantes (*prompt injection*, extraction d'instructions système, requêtes sur les tarifs/remboursements non autorisées).
+   - Règles système renforcées (*anti-leak*) : interdiction formelle de révéler le prompt système, interdiction de divulguer des informations sur d'autres apprenants ou sur les transactions financières.
+   - Validation stricte du JSON de sortie de Claude via le schéma Zod `aiOutputSchema` (vérification de conformité des champs `confidence`, `suggest_escalation`, etc.).
+4. **Calcul financier précis** :
+   - Calcul du coût réel en USD selon la grille tarifaire officielle de Claude 3 Haiku ($0.25 par million de jetons en entrée, $1.25 par million de jetons en sortie).
+   - Enregistrement immédiat dans `ai_usage.cost_usd`.
+5. **Harmonisation de la supervision administrateur** :
+   - `src/lib/admin/messaging-supervision.ts` et `src/app/actions/admin-supervision.ts` utilisent la clé unifiée `'ai_global_settings'`.
+   - Les fixtures de repli sont strictement conditionnées par `isDemoMode()`.
+
+### Comment cela a été vérifié
+- **Test automatisé (`tests/step-s1e-ai-guardrails.test.ts`)** :
+  1. *Fail Closed en production* : confirmation que sans clé d'API, le moteur ne renvoie aucune réponse factice et bascule en escalade humaine.
+  2. *Arrêt d'urgence (Kill Switch)* : confirmation du blocage instantané de l'IA et de l'escalade vers les formateurs lorsque le kill switch est actif.
+  3. *Validation Zod et calcul de coût* : validation du parsing Zod sur les réponses valides et rejet des structures corrompues, vérification du calcul exact des coûts en USD.
+  4. *Conformité de la migration SQL* : validation de la présence de `cost_usd`, `user_id`, et des RPC atomiques `check_ai_limits` et `record_ai_usage`.
+- **Typecheck** : `npm run typecheck` validé avec code 0.
+

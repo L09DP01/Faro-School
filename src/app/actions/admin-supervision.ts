@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
 import {
+  getGlobalAiSettings,
   saveGlobalAiSettings,
   logBreakGlassAccess,
   hasAdminUnlockedConversation,
@@ -36,16 +37,9 @@ export async function toggleAiKillSwitchAction(
       return { success: false, error: "Réservé aux administrateurs." };
     }
 
-    const currentStore = (globalThis as any).__mockGlobalAiSettingsStore || {
-      defaultModel: "claude-3-haiku-20240307",
-      defaultConfidenceThreshold: 0.75,
-      dailyCostCapUsd: 5.0,
-      studentDailyLimit: 30,
-      killSwitch: false,
-    };
-
+    const current = await getGlobalAiSettings();
     const updated: GlobalAiSettings = {
-      ...currentStore,
+      ...current,
       killSwitch,
     };
 
