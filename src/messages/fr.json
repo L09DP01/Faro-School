@@ -1,0 +1,1203 @@
+{
+  "common": {
+    "appName": "Faro School",
+    "tagline": "Plateforme de formation vidéo en ligne pour Haïti",
+    "language": "Langue",
+    "loading": "Chargement...",
+    "empty": "Aucun contenu disponible",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "submit": "Valider",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "view": "Consulter",
+    "continue": "Continuer",
+    "currency": "HTG"
+  },
+  "nav": {
+    "home": "Accueil",
+    "courses": "Formations",
+    "about": "À propos",
+    "contact": "Contact",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "dashboard": "Mon espace",
+    "admin": "Administration",
+    "logout": "Déconnexion"
+  },
+  "footer": {
+    "copyright": "© 2025 Faro School. Tous droits réservés.",
+    "description": "Formations professionnelles et pratiques en ligne conçues pour le marché haïtien. Paiements directs par MonCash et NatCash.",
+    "links": "Navigation",
+    "legal": "Légal",
+    "terms": "Conditions d'utilisation",
+    "privacy": "Politique de confidentialité",
+    "refund": "Politique de remboursement",
+    "paymentMethods": "Moyens de paiement acceptés :"
+  },
+  "landing": {
+    "meta": {
+      "title": "Faro School — Formations en Ligne Pratiques pour Haïti",
+      "description": "Apprenez les compétences les plus demandées en Haïti. Payez facilement en gourdes avec MonCash ou NatCash. Accès à vie et vidéos optimisées mobile."
+    },
+    "hero": {
+      "badge": "100% adapté à Haïti",
+      "headline": "Développez vos compétences avec les meilleures formations pratiques en Haïti",
+      "subtitle": "Apprenez à votre rythme depuis votre smartphone ou ordinateur. Payez simplement et en toute sécurité en gourdes via MonCash ou NatCash.",
+      "ctaPrimary": "Explorer les formations",
+      "ctaSecondary": "Regarder la présentation",
+      "videoTitle": "Présentation de Faro School",
+      "stats": {
+        "students": "Étudiants formés",
+        "courses": "Formations pratiques",
+        "rating": "Note moyenne"
+      }
+    },
+    "categories": {
+      "badge": "Thématiques",
+      "title": "Explorez nos catégories",
+      "subtitle": "Des programmes concrets pour accélérer votre carrière ou votre entreprise.",
+      "viewAll": "Voir tout le catalogue",
+      "items": {
+        "marketing": {
+          "title": "Marketing & Vente",
+          "desc": "Facebook, WhatsApp Business et stratégies locales"
+        },
+        "business": {
+          "title": "Business & Entrepreneuriat",
+          "desc": "Lancer, gérer et structurer une entreprise en Haïti"
+        },
+        "bureautique": {
+          "title": "Bureautique & Données",
+          "desc": "Excel, outils collaboratifs et automatisation"
+        },
+        "creation": {
+          "title": "Création & Vidéo",
+          "desc": "Tournage sur smartphone, montage CapCut et réseaux sociaux"
+        }
+      }
+    },
+    "popular": {
+      "badge": "Recommandé",
+      "title": "Formations les plus populaires",
+      "subtitle": "Les compétences les plus recherchées actuellement par nos apprenants.",
+      "viewAll": "Consulter toutes les formations",
+      "empty": "Aucune formation publiée pour le moment."
+    },
+    "howItWorks": {
+      "badge": "Simplicité",
+      "title": "Comment ça fonctionne ?",
+      "subtitle": "Un parcours clair en 4 étapes pour commencer à apprendre dès aujourd'hui.",
+      "steps": {
+        "step1": {
+          "number": "01",
+          "title": "Choisissez votre formation",
+          "desc": "Sélectionnez le cours adapté à vos objectifs personnels ou professionnels."
+        },
+        "step2": {
+          "number": "02",
+          "title": "Payez avec MonCash ou NatCash",
+          "desc": "Paiement direct en gourdes, instantané et sécurisé, sans carte bancaire."
+        },
+        "step3": {
+          "number": "03",
+          "title": "Apprenez sur mobile ou PC",
+          "desc": "Vidéos de haute qualité optimisées pour les connexions haïtiennes à bande passante limitée."
+        },
+        "step4": {
+          "number": "04",
+          "title": "Obtenez votre certificat",
+          "desc": "Validez vos acquis à la fin des modules et téléchargez votre attestation officielle vérifiable."
+        }
+      }
+    },
+    "instructor": {
+      "badge": "Formateur dévoué",
+      "title": "Rencontrez votre instructeur",
+      "name": "Jean-Marc Joseph",
+      "role": "Consultant & Formateur Numérique en Haïti",
+      "bio": "Passionné par la transmission du savoir et le potentiel des talents haïtiens. Avec plus de 8 ans d'expérience dans l'accompagnement des PME, créateurs et indépendants locaux, mon objectif est de vous apporter des compétences concrètes et applicables dès le premier jour.",
+      "statExp": "8+ années d'expérience",
+      "statStudents": "1 500+ apprenants",
+      "statSatisfaction": "98% satisfaction"
+    },
+    "testimonials": {
+      "badge": "Avis vérifiés",
+      "title": "Ce que disent nos apprenants",
+      "subtitle": "Des retours d'expérience authentiques d'entrepreneurs et professionnels en Haïti.",
+      "fallback1": {
+        "name": "Wideline Pierre",
+        "role": "Propriétaire de boutique",
+        "city": "Port-au-Prince",
+        "course": "Marketing Digital",
+        "comment": "Grâce à la formation, j'ai doublé mes commandes sur WhatsApp en trois semaines. Le paiement par MonCash s'est fait en 1 minute !"
+      },
+      "fallback2": {
+        "name": "Samuel Desrosiers",
+        "role": "Comptable junior",
+        "city": "Cap-Haïtien",
+        "course": "Excel pour Entreprise",
+        "comment": "Les cours sur Excel m'ont permis de décrocher une promotion. Les vidéos se chargent rapidement même sur mon forfait Digicel."
+      },
+      "fallback3": {
+        "name": "Fabienne Saint-Louis",
+        "role": "Créatrice de contenu",
+        "city": "Delmas",
+        "course": "Créer du Contenu Vidéo",
+        "comment": "Des explications claires, sans blabla théorique inutile. C'est exactement le genre de contenu pratique dont nous avons besoin en Haïti."
+      }
+    },
+    "faq": {
+      "badge": "Réponses",
+      "title": "Foire aux questions",
+      "subtitle": "Tout ce que vous devez savoir avant de commencer.",
+      "q1": "Comment payer avec MonCash ou NatCash ?",
+      "a1": "Sur la page de commande, cliquez simplement sur 'Payer avec MonCash' ou 'Payer avec NatCash'. Vous serez redirigé vers l'écran sécurisé Kobara où vous indiquerez votre numéro de téléphone pour valider la transaction en gourdes.",
+      "q2": "Combien de temps ai-je accès aux formations ?",
+      "a2": "Vous bénéficiez d'un accès illimité dans le temps (à vie). Vous pouvez visionner les cours à votre rythme et y revenir chaque fois que vous en avez besoin.",
+      "q3": "Les vidéos fonctionnent-elles avec une connexion internet lente ?",
+      "a3": "Oui ! Nos vidéos sont hébergées sur une infrastructure ultra-rapide avec streaming adaptatif (HLS). La qualité s'adapte automatiquement à votre débit pour éviter les coupures, même sur réseau mobile.",
+      "q4": "Comment recevoir mon certificat ?",
+      "a4": "Une fois que vous avez terminé l'ensemble des leçons d'un cours, un certificat officiel avec un code de vérification unique est automatiquement généré dans votre tableau de bord.",
+      "q5": "Que faire si j'ai un souci lors du paiement ?",
+      "a5": "Si une transaction est interrompue, notre système garde la trace de votre commande. Vous pouvez contacter notre assistance par WhatsApp ou via le formulaire de contact avec votre numéro de référence pour une validation rapide."
+    },
+    "cta": {
+      "headline": "Prêt à transformer vos compétences professionnelles ?",
+      "subtitle": "Rejoignez notre communauté d'apprenants et démarrez votre première leçon dès aujourd'hui.",
+      "btnCatalog": "Découvrir toutes les formations",
+      "btnRegister": "Créer un compte gratuit"
+    }
+  },
+  "catalog": {
+    "meta": {
+      "title": "Catalogue des Formations — Faro School",
+      "description": "Explorez toutes nos formations pratiques en ligne en marketing, finance, Excel et création de contenu en Haïti. Paiements MonCash & NatCash."
+    },
+    "title": "Catalogue des formations",
+    "subtitle": "Développez les compétences les plus recherchées sur le marché avec des cours pratiques créés pour Haïti.",
+    "searchPlaceholder": "Rechercher une formation (ex: Marketing, Excel, Comptabilité...)",
+    "filtersTitle": "Filtres",
+    "filterButton": "Filtrer les cours",
+    "categories": "Catégories",
+    "levels": "Niveau",
+    "maxPrice": "Prix maximum",
+    "allLevels": "Tous les niveaux",
+    "allCategories": "Toutes les catégories",
+    "sort": "Trier par",
+    "sortPopular": "Les plus populaires",
+    "sortNewest": "Plus récents",
+    "sortPriceAsc": "Prix croissant",
+    "sortPriceDesc": "Prix décroissant",
+    "resultsCount": "{count, plural, =0 {Aucune formation trouvée} =1 {1 formation trouvée} other {# formations trouvées}}",
+    "clearFilters": "Effacer tous les filtres",
+    "noResults": "Aucune formation trouvée pour vos critères",
+    "noResultsDesc": "Essayez d'ajuster vos filtres de recherche ou de retirer certains critères pour voir plus de cours.",
+    "page": "Page {current} sur {total}",
+    "prevPage": "Précédent",
+    "nextPage": "Suivant"
+  },
+  "courseCard": {
+    "lessonsCount": "{count, plural, =0 {0 leçon} =1 {1 leçon} other {# leçons}}",
+    "durationMin": "{count} min",
+    "viewCourse": "Voir la formation",
+    "enroll": "S'inscrire",
+    "freePreview": "Aperçu gratuit"
+  },
+  "payments": {
+    "moncash": "Payer avec MonCash",
+    "natcash": "Payer avec NatCash",
+    "kobara": "Passerelle Kobara",
+    "poweredBy": "Paiements sécurisés propulsés par Kobara.app",
+    "instructionsTitle": "Instructions de paiement",
+    "statusPending": "En attente de paiement",
+    "statusAwaitingValidation": "En attente de validation",
+    "statusValidated": "Paiement validé",
+    "statusFailed": "Paiement échoué"
+  },
+  "routes": {
+    "landing": {
+      "title": "Accueil",
+      "todo": "TODO page 01 - Page d'accueil"
+    },
+    "catalog": {
+      "title": "Catalogue des formations",
+      "todo": "TODO page 02 - Catalogue des formations"
+    },
+    "course": {
+      "title": "Détails de la formation",
+      "todo": "TODO page 03 - Page formation"
+    },
+    "login": {
+      "title": "Connexion",
+      "todo": "TODO page 04 - Page de connexion"
+    },
+    "register": {
+      "title": "Inscription",
+      "todo": "TODO page 04 - Page d'inscription"
+    },
+    "checkout": {
+      "title": "Paiement sécurisé",
+      "todo": "TODO page 05 - Page de paiement"
+    },
+    "confirmation": {
+      "title": "Confirmation de commande",
+      "todo": "TODO page 06 - Page de confirmation"
+    },
+    "dashboard": {
+      "title": "Tableau de bord étudiant",
+      "todo": "TODO page 07 - Tableau de bord étudiant"
+    },
+    "player": {
+      "title": "Espace de visionnage",
+      "todo": "TODO page 08 - Lecteur de cours"
+    },
+    "adminDashboard": {
+      "title": "Administration",
+      "todo": "TODO page 09 - Tableau de bord admin"
+    },
+    "adminCourses": {
+      "title": "Gestion des formations",
+      "todo": "TODO page 10 - Liste des formations admin"
+    },
+    "adminCourseNew": {
+      "title": "Nouvelle formation",
+      "todo": "TODO page 10 - Création formation admin"
+    },
+    "adminPayments": {
+      "title": "Gestion des paiements",
+      "todo": "TODO page 11 - Suivi des paiements admin"
+    },
+    "about": {
+      "title": "À propos de Faro School",
+      "todo": "TODO page 12 - Page à propos"
+    },
+    "contact": {
+      "title": "Contactez-nous",
+      "todo": "TODO page 12 - Page de contact"
+    }
+  },
+  "courseDetail": {
+    "breadcrumb": "Formations",
+    "level": "Niveau {level}",
+    "ratingStats": "★ {rating} ({count, plural, =0 {aucun avis} =1 {1 avis} other {# avis}})",
+    "enrolledStudents": "{count, plural, =0 {0 apprenant} =1 {1 apprenant} other {# apprenants}}",
+    "curriculumSummary": "{modules} modules • {lessons} leçons • {duration} au total",
+    "languages": "Langues : Français et Kreyòl Ayisyen (KR)",
+    "priceCard": {
+      "enrollNow": "Acheter maintenant",
+      "continueLearning": "Continuer la formation",
+      "freePreview": "Aperçu gratuit",
+      "enrolledAlert": "Vous êtes déjà inscrit à cette formation.",
+      "savePercent": "Économisez {percent}%",
+      "benefitsTitle": "Cette formation comprend :",
+      "benefit1": "Accès illimité et à vie aux leçons",
+      "benefit2": "Certificat officiel de réussite vérifiable",
+      "benefit3": "Vidéos adaptées aux connexions mobiles",
+      "benefit4": "Support et entraide sur WhatsApp",
+      "moncashNatcash": "Paiement direct sécurisé par MonCash & NatCash",
+      "poweredBy": "Propulsé par Kobara.app"
+    },
+    "whatYouLearn": {
+      "title": "Ce que vous allez apprendre",
+      "subtitle": "Les compétences concrètes et immédiatement applicables à la fin de cette formation"
+    },
+    "curriculum": {
+      "title": "Programme complet",
+      "subtitle": "Explorez les modules et leçons détaillés",
+      "freePreview": "Aperçu gratuit",
+      "locked": "Verrouillé",
+      "play": "Voir l'aperçu gratuit"
+    },
+    "instructor": {
+      "title": "Votre formateur",
+      "badge": "Instructeur certifié",
+      "name": "Jean-Marc Joseph",
+      "role": "Consultant & Formateur Numérique en Haïti",
+      "bio": "Spécialiste de la transformation numérique en Haïti avec plus de 8 ans d'expérience. Formateur de plus de 1 500 professionnels et entrepreneurs locaux."
+    },
+    "reviews": {
+      "title": "Avis des apprenants",
+      "empty": "Aucun avis pour cette formation pour le moment.",
+      "basedOn": "Note moyenne calculée sur les avis vérifiés"
+    },
+    "faq": {
+      "title": "Questions fréquentes sur cette formation",
+      "q1": "Puis-je payer avec mon compte MonCash ou NatCash ?",
+      "a1": "Oui ! Il vous suffit de cliquer sur 'Acheter maintenant' puis de choisir MonCash ou NatCash. Vous entrez votre numéro de téléphone et la transaction est instantanément validée.",
+      "q2": "Quand aurai-je accès aux vidéos après mon paiement ?",
+      "a2": "L'accès est immédiat dès la confirmation du paiement. La formation apparaît directement dans votre espace étudiant.",
+      "q3": "Les vidéos sont-elles lisibles sur smartphone avec peu de données ?",
+      "a3": "Absolument. Nos flux vidéo adaptatifs sont optimisés pour fonctionner même avec un faible débit internet."
+    },
+    "cta": {
+      "title": "Développez vos compétences dès aujourd'hui",
+      "subtitle": "Rejoignez la formation et apprenez à votre rythme, où que vous soyez en Haïti."
+    },
+    "previewModal": {
+      "title": "Aperçu vidéo gratuit",
+      "loading": "Chargement du lecteur vidéo...",
+      "close": "Fermer",
+      "unlock": "Débloquer l'accès complet au cours"
+    }
+  },
+  "aboutPage": {
+    "meta": {
+      "title": "À Propos — Faro School",
+      "description": "Découvrez la mission de Faro School : rendre les formations professionnelles et le savoir numérique accessibles à tous en Haïti."
+    },
+    "badge": "Notre Vision",
+    "title": "Démocratiser l'apprentissage des compétences pratiques en Haïti",
+    "subtitle": "Faro School est la première plateforme de formation vidéo en ligne 100% conçue pour le contexte, les opportunités et les réalités économiques haïtiennes.",
+    "mission": {
+      "badge": "Notre Mission",
+      "title": "Apporter la lumière du savoir actionnable",
+      "text1": "En Haïti, des milliers de talents et d'entrepreneurs motivés se heurtent chaque jour à deux barrières majeures : l'accès difficile à des formations modernes et la contrainte des cartes bancaires internationales exigées par les plateformes étrangères.",
+      "text2": "Faro School a été créée pour abattre ces obstacles. Nous permettons à chacun d'apprendre directement depuis son téléphone portable et de payer facilement en gourdes via MonCash ou NatCash."
+    },
+    "values": {
+      "title": "Nos 3 piliers fondamentaux",
+      "subtitle": "Une pédagogie pensée pour avoir un impact direct et mesurable sur votre avenir.",
+      "v1Title": "Accessible",
+      "v1Desc": "Vidéos légères adaptées aux connexions mobiles à faible débit. Paiements directs par MonCash et NatCash en gourdes sans carte de crédit.",
+      "v2Title": "Pratique",
+      "v2Desc": "Zéro théorie inutile. Chaque leçon est axée sur des cas concrets et des outils immédiatement utilisables pour booster vos revenus.",
+      "v3Title": "Bilingue",
+      "v3Desc": "Des cours dispensés en français et en créole haïtien (Kreyòl Ayisyen), dans le respect de notre culture et pour une clarté optimale."
+    },
+    "story": {
+      "badge": "L'instructeur",
+      "title": "La passion derrière l'académie",
+      "instructorName": "Jean-Marc Joseph",
+      "instructorRole": "Fondateur & Formateur principal",
+      "p1": "Après plus de 8 ans passés sur le terrain en Haïti à accompagner des PME, des commerçants et des créateurs indépendants, j'ai constaté un immense fossé entre ce que le marché recherche et ce qui est enseigné dans les cursus traditionnels.",
+      "p2": "J'ai conçu Faro School pour partager sans filtre les compétences concrètes qui m'ont permis d'accompagner des centaines d'entreprises locales dans leur réussite numérique."
+    },
+    "numbers": {
+      "n1Val": "1 500+",
+      "n1Label": "Apprenants accompagnés",
+      "n2Val": "8+",
+      "n2Label": "Années d'expérience locale",
+      "n3Val": "100%",
+      "n3Label": "Paiements MonCash & NatCash",
+      "n4Val": "98%",
+      "n4Label": "Taux de satisfaction"
+    },
+    "cta": {
+      "title": "Prêt à transformer vos compétences ?",
+      "subtitle": "Explorez notre catalogue et commencez votre apprentissage dès maintenant.",
+      "btn": "Découvrir toutes les formations"
+    }
+  },
+  "contactPage": {
+    "meta": {
+      "title": "Contact & Support — Faro School",
+      "description": "Besoin d'aide ou d'informations sur nos formations en ligne ? Contactez l'équipe Faro School par WhatsApp, email ou formulaire."
+    },
+    "badge": "Support & Assistance",
+    "title": "Contactez notre équipe",
+    "subtitle": "Une question sur une formation ou un paiement par MonCash / NatCash ? Nous sommes là pour vous aider.",
+    "cards": {
+      "whatsappTitle": "WhatsApp Direct",
+      "whatsappDesc": "Assistance rapide par message et vocal",
+      "whatsappBtn": "Discuter sur WhatsApp",
+      "emailTitle": "Email Support",
+      "emailDesc": "Réponse sous 24h ouvrées",
+      "addressTitle": "Siège & Localisation",
+      "addressDesc": "Port-au-Prince, Haïti"
+    },
+    "form": {
+      "title": "Envoyez-nous un message",
+      "subtitle": "Remplissez ce formulaire et nous vous répondrons dans les plus brefs délais.",
+      "nameLabel": "Votre nom complet",
+      "namePlaceholder": "Ex: Jean-Baptiste Pierre",
+      "contactLabel": "Téléphone (MonCash / NatCash) ou Email",
+      "contactPlaceholder": "Ex: +509 36 00 00 00 ou email@domaine.com",
+      "messageLabel": "Votre message",
+      "messagePlaceholder": "Expliquez-nous votre demande ou question...",
+      "submit": "Envoyer le message",
+      "submitting": "Envoi en cours...",
+      "successTitle": "Message envoyé avec succès !",
+      "successMessage": "Merci pour votre message. Notre équipe va vous répondre très rapidement.",
+      "sendAnother": "Envoyer un autre message",
+      "errors": {
+        "nameRequired": "Veuillez entrer votre nom complet (au moins 2 caractères).",
+        "contactRequired": "Veuillez renseigner un numéro de téléphone ou un email valide.",
+        "messageRequired": "Votre message doit contenir au moins 10 caractères.",
+        "rateLimit": "Vous avez dépassé la limite de messages (5 par heure). Veuillez patienter avant de réessayer.",
+        "serverError": "Une erreur est survenue lors de l'enregistrement de votre message. Veuillez réessayer."
+      }
+    }
+  },
+  "auth": {
+    "loginTitle": "Connexion à votre espace",
+    "loginSubtitle": "Accédez à vos cours et continuez votre apprentissage en ligne.",
+    "registerTitle": "Créer votre compte étudiant",
+    "registerSubtitle": "Inscrivez-vous en 30 secondes pour payer par MonCash/NatCash et apprendre immédiatement.",
+    "forgotPasswordTitle": "Mot de passe oublié",
+    "forgotPasswordSubtitle": "Indiquez votre adresse email pour recevoir un lien de réinitialisation sécurisé.",
+    "resetPasswordTitle": "Nouveau mot de passe",
+    "resetPasswordSubtitle": "Définissez votre nouveau mot de passe (8 caractères minimum).",
+    "fullNameLabel": "Nom complet",
+    "fullNamePlaceholder": "Ex: Jean-Marc Joseph",
+    "phoneLabel": "Numéro de téléphone en Haïti",
+    "phonePlaceholder": "Ex: +509 36 12 34 56 ou 36123456",
+    "emailLabel": "Adresse email",
+    "emailPlaceholder": "nom@domaine.com",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "•••••••• (8 caractères min)",
+    "newPasswordLabel": "Nouveau mot de passe",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPasswordLink": "Mot de passe oublié ?",
+    "loginSubmit": "Se connecter",
+    "registerSubmit": "Créer mon compte",
+    "resetSubmit": "Envoyer le lien de réinitialisation",
+    "updatePasswordSubmit": "Mettre à jour le mot de passe",
+    "googleContinue": "Continuer avec Google",
+    "hasAccount": "Vous avez déjà un compte ?",
+    "noAccount": "Vous n'avez pas encore de compte ?",
+    "loginLink": "Connectez-vous",
+    "registerLink": "Inscrivez-vous",
+    "backToLogin": "Retour à la connexion",
+    "showPassword": "Afficher le mot de passe",
+    "hidePassword": "Masquer le mot de passe",
+    "forgotSuccessTitle": "Lien de réinitialisation envoyé",
+    "forgotSuccessDesc": "Si un compte est associé à cette adresse email, un lien sécurisé vous a été envoyé. Vérifiez votre boîte de réception et vos spams.",
+    "resetSuccessTitle": "Mot de passe mis à jour",
+    "resetSuccessDesc": "Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter.",
+    "redirecting": "Connexion réussie, redirection...",
+    "acceptTermsPrefix": "J'accepte les",
+    "termsOfService": "Conditions d'utilisation",
+    "and": "et la",
+    "privacyPolicy": "Politique de confidentialité",
+    "errors": {
+      "invalidCredentials": "Identifiants incorrects. Veuillez vérifier votre adresse email et votre mot de passe.",
+      "invalidName": "Veuillez entrer votre nom complet (au moins 2 caractères).",
+      "invalidPhone": "Numéro de téléphone haïtien invalide. Le numéro doit comporter 8 chiffres après +509 (ex: +509 36123456).",
+      "invalidEmail": "Veuillez entrer une adresse email valide.",
+      "passwordTooShort": "Le mot de passe doit comporter au moins 8 caractères.",
+      "acceptTermsRequired": "Vous devez accepter les conditions d'utilisation et la politique de confidentialité pour créer un compte.",
+      "rateLimit": "Trop de tentatives de connexion infructueuses. Veuillez patienter 15 minutes avant de réessayer.",
+      "serverError": "Une erreur est survenue lors de l'authentification. Veuillez réessayer."
+    }
+  },
+  "checkout": {
+    "title": "Finaliser votre inscription",
+    "subtitle": "Accès immédiat et à vie à votre formation dès validation du paiement.",
+    "summaryTitle": "Récapitulatif de commande",
+    "course": "Formation",
+    "price": "Prix standard",
+    "compareDiscount": "Économisez {percent}%",
+    "discount": "Réduction coupon",
+    "total": "Total à payer",
+    "coupon": {
+      "label": "Code promo ou coupon",
+      "placeholder": "Ex: FARO20",
+      "apply": "Appliquer",
+      "applied": "Coupon appliqué !",
+      "remove": "Retirer",
+      "saving": "Vous économisez {amount} HTG",
+      "errors": {
+        "invalid": "Code coupon invalide ou introuvable.",
+        "expired": "Ce code coupon a expiré.",
+        "maxUses": "Ce coupon a atteint sa limite maximale d'utilisations.",
+        "general": "Impossible d'appliquer ce coupon."
+      }
+    },
+    "methods": {
+      "title": "Choisissez votre moyen de paiement",
+      "moncash": {
+        "title": "MonCash",
+        "badge": "Automatisé",
+        "description": "Paiement direct et validation instantanée en ligne"
+      },
+      "natcash": {
+        "title": "NatCash",
+        "badge": "Automatisé",
+        "description": "Paiement direct et validation instantanée en ligne"
+      }
+    },
+    "moncash": {
+      "phoneLabel": "Votre numéro de téléphone MonCash",
+      "phonePlaceholder": "Ex: +509 36 00 00 00 ou 36000000",
+      "phoneHelp": "Numéro Digicel Haïti associé à votre compte MonCash.",
+      "submit": "Payer {amount} HTG avec MonCash",
+      "submitting": "Initialisation du paiement...",
+      "redirectNotice": "Vous serez redirigé vers l'interface sécurisée Kobara pour confirmer votre paiement MonCash."
+    },
+    "natcash": {
+      "phoneLabel": "Votre numéro de téléphone NatCash",
+      "phonePlaceholder": "Ex: +509 40 00 00 00 ou 40000000",
+      "phoneHelp": "Numéro Natcom Haïti associé à votre compte NatCash.",
+      "submit": "Payer {amount} HTG avec NatCash",
+      "submitting": "Initialisation du paiement...",
+      "redirectNotice": "Vous serez redirigé vers l'interface sécurisée Kobara pour confirmer votre paiement NatCash."
+    },
+    "trust": {
+      "secure": "Paiement 100% sécurisé",
+      "secureDesc": "Vos données sont protégées via les passerelles agréées en Haïti.",
+      "guarantee": "Garantie 7 jours",
+      "guaranteeDesc": "Satisfait ou remboursé sous 7 jours sans conditions.",
+      "whatsapp": "Besoin d'aide ?",
+      "whatsappDesc": "Contactez notre assistance sur WhatsApp au"
+    },
+    "errors": {
+      "invalidPhone": "Veuillez entrer un numéro de téléphone haïtien valide (ex: +509 36123456).",
+      "missingTxnId": "Veuillez renseigner le code de transaction reçu par SMS NatCash.",
+      "duplicateTxnId": "Ce numéro de transaction a déjà été enregistré. Veuillez contacter le support si vous pensez qu'il s'agit d'une erreur.",
+      "alreadyEnrolled": "Vous êtes déjà inscrit à cette formation. Redirection vers votre tableau de bord...",
+      "serverError": "Une erreur est survenue lors de l'initialisation du paiement. Veuillez réessayer.",
+      "retry": "Réessayer"
+    }
+  },
+  "confirmation": {
+    "title": "Confirmation de commande",
+    "successTitle": "Félicitations ! Votre inscription est validée 🎉",
+    "successMessage": "Votre paiement a été confirmé avec succès. Vous avez désormais un accès immédiat et illimité à votre formation.",
+    "awaitingTitle": "Paiement en cours de vérification ⏳",
+    "awaitingMessage": "Votre transaction est en cours de vérification. La validation prend généralement entre 5 et 15 minutes. Vous pouvez laisser cette page ouverte.",
+    "failedTitle": "Échec du paiement",
+    "failedMessage": "Le paiement n'a pas pu aboutir ou a été annulé. Aucun débit n'a été effectué sur votre compte.",
+    "cancelledTitle": "Paiement annulé",
+    "cancelledMessage": "Vous avez annulé la procédure de paiement.",
+    "orderDetails": "Détails de la transaction",
+    "orderRef": "Référence commande",
+    "course": "Formation",
+    "method": "Moyen de paiement",
+    "amount": "Montant réglé",
+    "date": "Date de la commande",
+    "status": "Statut",
+    "statusPaid": "Payé et validé",
+    "statusPending": "En attente de validation",
+    "statusFailed": "Échoué",
+    "startCourse": "Commencer la formation",
+    "downloadReceipt": "Télécharger le reçu (PDF)",
+    "receiptLoading": "Génération du reçu...",
+    "checkingStatus": "Vérification automatique du statut...",
+    "retry": "Réessayer le paiement",
+    "backToCatalog": "Explorer d'autres formations",
+    "goToDashboard": "Mon espace apprenant",
+    "supportHelp": "Besoin d'aide ? Contactez notre assistance WhatsApp :",
+    "needHelp": "Une question ou un retard ? Écrivez-nous directement sur WhatsApp"
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Vue d'ensemble",
+      "courses": "Mes formations",
+      "certificates": "Certificats",
+      "payments": "Paiements",
+      "profile": "Mon profil"
+    },
+    "greeting": "Bonjour, {name} 👋",
+    "subtitle": "Bienvenue sur votre espace d'apprentissage Faro School.",
+    "stats": {
+      "activeCourses": "Formations actives",
+      "completedLessons": "Leçons terminées",
+      "hoursLearned": "Heures d'apprentissage",
+      "certificates": "Certificats obtenus"
+    },
+    "continueLearning": {
+      "title": "Reprendre mon cours",
+      "module": "Module : {module}",
+      "resume": "Reprendre la leçon",
+      "position": "Reprendre à {time}"
+    },
+    "myCourses": {
+      "title": "Mes formations en cours",
+      "viewAll": "Voir tout ({count})",
+      "emptyTitle": "Vous n'êtes inscrit à aucune formation pour le moment",
+      "emptyDesc": "Découvrez notre catalogue et apprenez des compétences concrètes dès aujourd'hui.",
+      "explore": "Découvrir le catalogue",
+      "progress": "{percent}% terminé",
+      "continue": "Continuer",
+      "start": "Commencer",
+      "completedBadge": "Terminé"
+    },
+    "nextSteps": {
+      "title": "Prochaines leçons à suivre",
+      "allCaughtUp": "Félicitations, vous êtes à jour dans vos cours !"
+    },
+    "recommended": {
+      "badge": "Recommandé pour vous",
+      "title": "Continuer à monter en compétences",
+      "discover": "Découvrir cette formation"
+    },
+    "coursesPage": {
+      "title": "Toutes mes formations",
+      "subtitle": "Retrouvez ici l'ensemble des programmes auxquels vous êtes inscrit et suivez votre progression.",
+      "completed": "Formation terminée",
+      "inProgress": "En cours d'apprentissage"
+    },
+    "certificates": {
+      "title": "Mes Certificats Officiels",
+      "subtitle": "Chaque certificat valide 100% de réussite à une formation et peut être vérifié en ligne ou téléchargé.",
+      "emptyTitle": "Aucun certificat obtenu pour le moment",
+      "emptyDesc": "Complétez l'intégralité des leçons d'un cours pour obtenir automatiquement votre certificat officiel avec code de vérification unique.",
+      "download": "Télécharger le PDF",
+      "verify": "Vérifier l'authenticité",
+      "code": "Code : {code}",
+      "issued": "Délivré le {date}"
+    },
+    "payments": {
+      "title": "Historique des paiements",
+      "subtitle": "Consultez l'historique complet de vos commandes, le statut de validation et téléchargez vos reçus d'achat.",
+      "empty": "Aucune commande trouvée dans votre compte.",
+      "ref": "Référence",
+      "date": "Date",
+      "course": "Formation",
+      "amount": "Montant",
+      "status": "Statut",
+      "method": "Moyen",
+      "receipt": "Reçu",
+      "downloadReceipt": "Télécharger le reçu (PDF)"
+    },
+    "profile": {
+      "title": "Mon profil & Paramètres",
+      "subtitle": "Gérez vos informations personnelles, votre numéro de téléphone et la sécurité de votre compte.",
+      "personalSection": "Informations personnelles",
+      "fullName": "Nom complet",
+      "phone": "Numéro de téléphone en Haïti (MonCash / NatCash)",
+      "email": "Adresse email (identifiant)",
+      "locale": "Langue d'affichage de la plateforme",
+      "savePersonal": "Enregistrer les modifications",
+      "personalSuccess": "Votre profil a été mis à jour avec succès !",
+      "securitySection": "Sécurité & Mot de passe",
+      "newPassword": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le nouveau mot de passe",
+      "savePassword": "Mettre à jour le mot de passe",
+      "passwordSuccess": "Votre mot de passe a été modifié avec succès !"
+    }
+  },
+  "player": {
+    "back": "Retour",
+    "curriculum": "Programme du cours",
+    "progress": "{percent}% terminé",
+    "speed": "Vitesse",
+    "quality": "Qualité",
+    "qualityAuto": "Auto",
+    "fullscreen": "Plein écran",
+    "exitFullscreen": "Quitter plein écran",
+    "markCompleted": "Marquer comme terminée",
+    "completed": "Terminée ✓",
+    "previous": "Précédente",
+    "next": "Suivante",
+    "tabs": {
+      "description": "Description",
+      "resources": "Ressources ({count})",
+      "notes": "Mes notes"
+    },
+    "noDescription": "Aucune description pour cette leçon.",
+    "noResources": "Aucun fichier ou document pour cette leçon.",
+    "downloadResource": "Télécharger",
+    "notesPlaceholder": "Écrivez ici vos notes personnelles pour cette leçon... (sauvegarde automatique)",
+    "notesSaving": "Sauvegarde en cours...",
+    "notesSaved": "Notes enregistrées",
+    "countdown": {
+      "title": "Passer à la leçon suivante dans {seconds}s",
+      "nextNow": "Passer maintenant",
+      "cancel": "Annuler"
+    },
+    "courseCompleted": {
+      "title": "Félicitations ! Vous avez terminé cette formation 🎉",
+      "subtitle": "Votre certificat officiel d'accomplissement est désormais disponible.",
+      "viewCertificate": "Voir mon certificat officiel"
+    },
+    "deviceLimit": {
+      "title": "Limite d'appareils atteinte",
+      "message": "Votre compte est actif sur 2 autres appareils. Vous ne pouvez pas regarder sur plus de 2 appareils en même temps.",
+      "terminateOthers": "Fermer les autres sessions et regarder ici",
+      "terminating": "Fermeture des sessions..."
+    },
+    "errors": {
+      "accessDenied": "Accès refusé. Vous devez être inscrit à ce cours pour visionner cette vidéo.",
+      "loadFailed": "Impossible de charger la vidéo. Veuillez réessayer."
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "title": "Espace Formateur",
+      "dashboard": "Tableau de bord",
+      "courses": "Formations",
+      "students": "Élèves",
+      "payments": "Paiements",
+      "promotions": "Promotions",
+      "messages": "Messages",
+      "settings": "Paramètres",
+      "viewSite": "Voir le site public",
+      "role": "Administrateur",
+      "badgeAdmin": "ADMIN",
+      "logout": "Déconnexion"
+    },
+    "dashboard": {
+      "title": "Tableau de bord",
+      "subtitle": "Aperçu en temps réel des ventes, inscriptions et indicateurs de performance.",
+      "period": {
+        "label": "Période",
+        "this_month": "Ce mois-ci",
+        "last_30_days": "30 derniers jours",
+        "this_year": "Cette année"
+      },
+      "kpis": {
+        "revenue": "Chiffre d'affaires",
+        "revenueSub": "Paiements validés",
+        "students": "Nouveaux élèves",
+        "studentsSub": "Inscriptions confirmées",
+        "awaiting": "Paiements à valider",
+        "awaitingSub": "Virements NatCash en attente",
+        "viewAwaiting": "Gérer les paiements →",
+        "completion": "Taux de complétion",
+        "completionSub": "Certificats émis / inscriptions",
+        "vsPrevious": "vs période précédente",
+        "increase": "+{pct}%",
+        "decrease": "{pct}%",
+        "neutral": "0%"
+      },
+      "chart": {
+        "title": "Évolution du chiffre d'affaires (12 derniers mois)",
+        "subtitle": "Répartition des encaissements entre MonCash et NatCash",
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "total": "Total",
+        "noData": "Aucune transaction sur cette période."
+      },
+      "topCourses": {
+        "title": "Formations les plus suivies",
+        "subtitle": "Classement par nombre d'élèves inscrits",
+        "studentsCount": "{count, plural, =0 {0 élève} =1 {1 élève} other {# élèves}}",
+        "empty": "Aucune inscription enregistrée."
+      },
+      "recentPayments": {
+        "title": "10 Dernières transactions",
+        "subtitle": "Historique récent des tentatives et validations de paiement",
+        "viewAll": "Voir tous les paiements →",
+        "colStudent": "Élève",
+        "colCourse": "Formation",
+        "colMethod": "Moyen",
+        "colAmount": "Montant",
+        "colStatus": "Statut",
+        "colDate": "Date",
+        "empty": "Aucun paiement enregistré pour le moment."
+      },
+      "status": {
+        "validated": "Validé",
+        "awaiting_validation": "À valider",
+        "pending": "En attente",
+        "failed": "Échoué"
+      },
+      "placeholders": {
+        "studentsTitle": "Gestion des élèves",
+        "studentsDesc": "Consultez la liste des étudiants inscrits, leur avancement et leurs coordonnées.",
+        "promotionsTitle": "Codes promotionnels",
+        "promotionsDesc": "Créez et gérez les coupons de réduction pour vos campagnes de vente.",
+        "messagesTitle": "Messages des visiteurs",
+        "messagesDesc": "Retrouvez les messages reçus via le formulaire de contact et l'assistance.",
+        "settingsTitle": "Paramètres de la plateforme",
+        "settingsDesc": "Configurez vos coordonnées de paiement marchand MonCash et NatCash."
+      }
+    },
+    "courses": {
+      "listTitle": "Gestion des formations",
+      "listSubtitle": "Créez, modifiez, organisez et suivez les inscriptions de votre catalogue.",
+      "newCourse": "Nouvelle formation",
+      "searchPlaceholder": "Rechercher par titre ou identifiant...",
+      "filterAll": "Toutes les formations",
+      "filterPublished": "Publiées",
+      "filterDraft": "Brouillons",
+      "colCover": "Aperçu",
+      "colTitle": "Formation",
+      "colStatus": "Statut",
+      "colPrice": "Tarif",
+      "colStudents": "Élèves",
+      "colRevenue": "Recettes",
+      "colActions": "Actions",
+      "empty": "Aucune formation trouvée.",
+      "statusPublished": "Publié",
+      "statusDraft": "Brouillon",
+      "actionEdit": "Modifier",
+      "actionPublish": "Publier",
+      "actionUnpublish": "Dépublier",
+      "actionDuplicate": "Dupliquer",
+      "actionDelete": "Supprimer",
+      "deleteConfirmTitle": "Confirmer la suppression",
+      "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer définitivement cette formation ? Cette action est irréversible.",
+      "deleteConfirmBtn": "Oui, supprimer",
+      "deleteCancelBtn": "Annuler",
+      "form": {
+        "createTitle": "Créer une nouvelle formation",
+        "editTitle": "Modifier la formation",
+        "subtitle": "Renseignez les détails, définissez le tarif et organisez le programme de cours.",
+        "backToList": "← Retour aux formations",
+        "saveDraft": "Enregistrer en brouillon",
+        "publish": "Publier la formation",
+        "saving": "Enregistrement en cours...",
+        "sectionGeneral": "1. Informations générales",
+        "titleFrLabel": "Titre de la formation (Français) *",
+        "titleFrPlaceholder": "Ex: Marketing Digital pour Entreprises en Haïti",
+        "titleHtLabel": "Titre en Kreyòl (Optionnel mais recommandé)",
+        "titleHtPlaceholder": "Ex: Maketing Dijital pou Biznis an Ayiti",
+        "slugLabel": "Identifiant URL (Slug) *",
+        "slugHelp": "Généré automatiquement, modifiable. Accessible sur /formations/[slug]",
+        "descFrLabel": "Description détaillée (Français)",
+        "descHtLabel": "Description détaillée (Kreyòl)",
+        "categoryLabel": "Catégorie *",
+        "levelLabel": "Niveau recommandé *",
+        "sectionPrice": "2. Tarification & Moyens de paiement",
+        "priceLabel": "Prix de vente (HTG) *",
+        "comparePriceLabel": "Prix barré / Comparatif (HTG, optionnel)",
+        "paymentToggles": "Moyens de paiement acceptés pour cette formation :",
+        "moncashLabel": "Paiement MonCash (Digicel)",
+        "natcashLabel": "Paiement NatCash (Natcom)",
+        "sectionCover": "3. Image de couverture (Cover)",
+        "coverHelp": "Format JPG, PNG ou WEBP. Taille max 3 Mo. Ratio 16:9 recommandé.",
+        "coverUploadBtn": "Choisir une image",
+        "coverUploading": "Téléversement...",
+        "coverRemove": "Supprimer l'image",
+        "sectionCurriculum": "4. Programme du cours (Curriculum Builder)",
+        "addModule": "+ Ajouter un module",
+        "moduleTitlePlaceholder": "Titre du module (Français) *",
+        "moduleTitleHtPlaceholder": "Titre du module (Kreyòl)",
+        "deleteModule": "Supprimer le module",
+        "addLesson": "+ Ajouter une leçon",
+        "lessonTitlePlaceholder": "Titre de la leçon (Français) *",
+        "lessonTitleHtPlaceholder": "Titre de la leçon (Kreyòl)",
+        "lessonDescPlaceholder": "Description ou résumé de la leçon...",
+        "freePreview": "Aperçu gratuit (accessible sans inscription)",
+        "videoUploadTitle": "Vidéo de la leçon :",
+        "videoUploadBtn": "Téléverser une vidéo (TUS direct)",
+        "videoUploading": "Envoi de la vidéo : {progress}%",
+        "videoCancel": "Annuler",
+        "videoUploaded": "Vidéo associée (ID: {id})",
+        "resourcesTitle": "Documents & ressources téléchargeables :",
+        "addResource": "+ Ajouter une ressource",
+        "resourceNamePlaceholder": "Nom du document (ex: Guide_PDF.pdf)",
+        "resourceUrlPlaceholder": "URL du fichier / CDN",
+        "deleteLesson": "Supprimer la leçon",
+        "sectionOptions": "5. Options & Garanties",
+        "optionCert": "Délivrer un certificat d'accomplissement officiel à 100% de complétion",
+        "optionAccess": "Accès illimité à vie aux vidéos et mises à jour",
+        "optionGuarantee": "Garantie satisfait ou remboursé sous 7 jours sans conditions",
+        "validationErrorTitle": "Publication impossible",
+        "validationMissingTitle": "Le titre en français est requis (minimum 3 caractères).",
+        "validationMissingPrice": "Le prix de vente doit être supérieur à 0 HTG pour être publié.",
+        "validationMissingCover": "Une image de couverture est obligatoire pour publier la formation.",
+        "validationMissingLessons": "La formation doit contenir au moins un module et au moins une leçon avant d'être publiée.",
+        "validationDeleteEnrolled": "Suppression impossible : des élèves sont déjà inscrits à cette formation. Veuillez plutôt la dépublier (passer en brouillon).",
+        "successSave": "Formation enregistrée avec succès !",
+        "successPublish": "Formation publiée avec succès !",
+        "successUnpublish": "Formation repassée en brouillon.",
+        "successDuplicate": "Formation dupliquée avec succès !",
+        "successDelete": "Formation supprimée avec succès."
+      }
+    },
+    "payments": {
+      "title": "Gestion des paiements",
+      "subtitle": "Suivi des encaissements MonCash et validation des virements manuels NatCash.",
+      "kpiValidated": "Total validé",
+      "kpiValidatedSub": "Recettes encaissées",
+      "kpiAwaiting": "À valider",
+      "kpiAwaitingSub": "Virements NatCash en attente",
+      "kpiMoncash": "Total MonCash",
+      "kpiMoncashSub": "Passerelle automatisée",
+      "kpiNatcash": "Total NatCash",
+      "kpiNatcashSub": "Virements marchands",
+      "tabAll": "Tous les paiements",
+      "tabAwaiting": "À valider",
+      "tabValidated": "Validés",
+      "tabFailed": "Échoués / Annulés",
+      "searchPlaceholder": "Rechercher par élève, téléphone, code SMS NatCash ou référence...",
+      "exportCsv": "Exporter en CSV",
+      "colStudent": "Élève",
+      "colPhone": "Téléphone",
+      "colCourse": "Formation",
+      "colMethod": "Moyen",
+      "colTxnId": "ID / Réf SMS",
+      "colAmount": "Montant",
+      "colDate": "Date",
+      "colStatus": "Statut",
+      "colActions": "Action",
+      "actionValidate": "Valider",
+      "actionReject": "Rejeter",
+      "actionDetails": "Détails",
+      "empty": "Aucun paiement trouvé.",
+      "validateDialog": {
+        "title": "Validation du paiement manuel NatCash",
+        "desc": "Vérifiez que le montant a bien été crédité sur votre compte marchand NatCash avant de valider l'inscription.",
+        "student": "Élève :",
+        "course": "Formation :",
+        "amount": "Montant exact :",
+        "senderPhone": "Numéro expéditeur :",
+        "txnId": "Numéro de transaction SMS :",
+        "internalNoteLabel": "Note interne (facultative) :",
+        "internalNotePlaceholder": "Ex: Reçu SMS Natcom vérifié à 14h30...",
+        "confirmBtn": "Confirmer la validation",
+        "validating": "Validation en cours...",
+        "cancelBtn": "Annuler",
+        "duplicateWarning": "Attention : Ce code de transaction ({txnId}) a déjà été utilisé pour une autre commande ({orderRef}). Vérifiez attentivement pour éviter un faux paiement."
+      },
+      "rejectDialog": {
+        "title": "Rejet du paiement",
+        "desc": "Indiquez la raison du rejet. L'élève sera informé du motif de refus.",
+        "reasonLabel": "Motif du refus (obligatoire) :",
+        "reasonPlaceholder": "Ex: Transaction SMS introuvable sur le compte marchand...",
+        "confirmBtn": "Confirmer le rejet",
+        "rejecting": "Rejet en cours...",
+        "cancelBtn": "Annuler"
+      },
+      "pagination": {
+        "prev": "Précédent",
+        "next": "Suivant",
+        "pageInfo": "Page {current} sur {total} ({count} résultats)"
+      },
+      "notifications": {
+        "validateSuccess": "Paiement validé avec succès ! L'apprenant est désormais inscrit à sa formation.",
+        "rejectSuccess": "Paiement rejeté. Le motif a été consigné.",
+        "duplicateBlocked": "Opération bloquée : ce code de transaction est déjà associé à un paiement validé."
+      }
+    },
+    "students": {
+      "title": "Gestion des Élèves",
+      "subtitle": "Consultez la liste des apprenants, leurs inscriptions, et accordez ou révoquez manuellement l'accès aux formations."
+    },
+    "promotions": {
+      "title": "Codes Promotionnels & Réductions",
+      "subtitle": "Gérez les réductions applicables lors du paiement (en pourcentage ou montant fixe en HTG)."
+    },
+    "messages": {
+      "title": "Boîte de Réception & Support",
+      "subtitle": "Consultez les messages reçus depuis la page contact et répondez directement aux apprenants via WhatsApp ou email."
+    }
+  },
+  "legal": {
+    "common": {
+      "draftNoticeTitle": "NOTE IMPORTANTE : DOCUMENT PROVISOIRE SOUMIS À RÉVISION JURIDIQUE",
+      "draftNoticeDesc": "Ce document constitue un projet préliminaire destiné à encadrer l'utilisation de la plateforme Faro School. Il a été rédigé de bonne foi et doit faire l'objet d'une révision juridique par un avocat ou un conseiller légal qualifié en droit de la République d'Haïti avant son adoption définitive.",
+      "lastUpdated": "Dernière mise à jour : 26 octobre 2025",
+      "contactTitle": "Une question sur nos conditions ou vos données ?",
+      "contactDesc": "Notre équipe est disponible pour vous assister et répondre à toute demande relative à vos droits, votre compte ou un remboursement.",
+      "contactBtn": "Contacter l'assistance",
+      "navTerms": "Conditions d'utilisation (CGU)",
+      "navPrivacy": "Politique de confidentialité",
+      "navRefund": "Politique de remboursement (7 jours)"
+    },
+    "cgu": {
+      "metaTitle": "Conditions Générales d'Utilisation (CGU) | Faro School",
+      "metaDesc": "Consultez les conditions régissant la création de compte, l'accès aux cours, la propriété intellectuelle et les règles d'utilisation de Faro School.",
+      "title": "Conditions Générales d'Utilisation",
+      "subtitle": "Règles, droits et obligations encadrant l'apprentissage sur la plateforme en ligne Faro School en Haïti.",
+      "sections": [
+        {
+          "title": "Objet et Acceptation des Conditions",
+          "paragraphs": [
+            "Faro School est une plateforme haïtienne de formation professionnelle et pratique en ligne, conçue pour permettre aux étudiants, entrepreneurs et professionnels d'acquérir des compétences concrètes adaptées aux réalités du marché haïtien.",
+            "L'accès et l'utilisation de la plateforme sont conditionnés à l'acceptation sans réserve des présentes Conditions Générales d'Utilisation (CGU). En créant un compte sur Faro School, l'utilisateur confirme avoir lu, compris et accepté l'ensemble des présentes dispositions."
+          ]
+        },
+        {
+          "title": "Création de Compte et Sécurité des Identifiants",
+          "paragraphs": [
+            "L'inscription sur Faro School est réservée aux personnes physiques âgées d'au moins 16 ans ou disposant de l'autorisation d'un représentant légal. L'apprenant s'engage à fournir des informations exactes, sincères et complètes (nom complet, adresse email valide et numéro de téléphone haïtien à 8 chiffres).",
+            "Chaque compte est strictement nominatif et personnel. L'apprenant est seul responsable de la confidentialité de son mot de passe et de toute activité réalisée depuis son compte. Toute connexion suspecte ou compromission d'identifiants doit être immédiatement signalée à l'équipe de Faro School."
+          ]
+        },
+        {
+          "title": "Accès aux Formations et Licence d'Utilisation Personnelle",
+          "paragraphs": [
+            "La validation du paiement d'une formation (via MonCash, NatCash ou octroi administratif) confère à l'apprenant un droit d'accès personnel, individuel, non exclusif et non transférable aux vidéos, supports pédagogiques et quiz de ladite formation pour toute la durée d'existence du service (accès à vie).",
+            "Cette licence d'accès est strictement limitée à un usage d'apprentissage personnel et privé. Elle ne confère aucun droit de propriété intellectuelle, de revente, de sous-licence ou d'exploitation commerciale sur les contenus dispensés."
+          ]
+        },
+        {
+          "title": "Interdiction Stricte du Partage de Compte et Sessions Simultanées",
+          "paragraphs": [
+            "Le partage des identifiants de connexion entre plusieurs personnes physiques ou morales, le prêt, la revente ou la cession de compte sont formellement interdits.",
+            "Afin de protéger la plateforme et d'assurer une utilisation équitable, un système de contrôle automatisé limite l'utilisation simultanée à un maximum de deux (2) appareils actifs. En cas de constatation de connexions concurrentes anormales ou répétées depuis des localisations géographiques ou adresses IP incohérentes, Faro School se réserve le droit de restreindre temporairement la lecture vidéo ou de suspendre l'accès au compte sans préavis ni indemnité."
+          ]
+        },
+        {
+          "title": "Propriété Intellectuelle et Protection Anti-Piratage",
+          "paragraphs": [
+            "Tous les éléments constitutifs de la plateforme (vidéos, séquences de cours, textes explicatifs, infographies, fichiers téléchargeables, quiz, logos, marques et code source) sont protégés par les lois haïtiennes et internationales relatives au droit d'auteur et à la propriété intellectuelle.",
+            "Sont rigoureusement interdits sous peine de poursuites civiles et pénales :",
+            "Pour décourager et tracer le piratage vidéo, un marquage dynamique semi-transparent (watermark affichant le nom et le numéro de l'étudiant) se déplace aléatoirement sur le lecteur vidéo pendant toute la lecture."
+          ],
+          "list": [
+            "Le téléchargement des flux vidéo par tout moyen technique ou logiciel tiers ;",
+            "La capture d'écran, l'enregistrement vidéo ou sonore des leçons ;",
+            "La reproduction, redistribution, diffusion publique ou mise en ligne sur les réseaux sociaux (YouTube, WhatsApp, Telegram, TikTok, etc.) ;",
+            "Toute tentative d'extraction, de décompilation ou d'ingénierie inverse du lecteur ou de la plateforme."
+          ]
+        },
+        {
+          "title": "Règlement des Achats et Moyens de Paiement",
+          "paragraphs": [
+            "Les prix des formations sont indiqués en Gourdes haïtiennes (HTG). Les paiements sont effectués au choix de l'apprenant par MonCash (Digicel) via la passerelle automatisée Kobara, ou par virement manuel NatCash (Natcom) validé par notre équipe.",
+            "Tout achat validé donne droit à la politique de garantie satisfait ou remboursé sous 7 jours régie par notre Politique de Remboursement distincte."
+          ]
+        },
+        {
+          "title": "Suspension, Résiliation et Droit Applicable",
+          "paragraphs": [
+            "Faro School se réserve le droit de suspendre ou de supprimer définitivement le compte de tout utilisateur en cas de violation grave des présentes conditions, notamment en cas de tentative de piratage, de fraude de paiement ou d'abus avéré.",
+            "Les présentes conditions sont soumises à la législation en vigueur en République d'Haïti. En cas de litige, les parties s'engagent à privilégier une solution amiable avant toute action judiciaire devant les tribunaux compétents de Port-au-Prince."
+          ]
+        },
+        {
+          "title": "Règles de la Communauté et Modération des Échanges",
+          "paragraphs": [
+            "L'espace communautaire de Faro School est dédié à l'entraide, au partage bienveillant et au progrès académique. Sont formellement prohibés : les insultes, propos diffamatoires, discours de haine, arnaques financières, démarchages pyramidaux, et la publication de coordonnées personnelles directes telles que les numéros de téléphone et invitations WhatsApp.",
+            "La plateforme déploie des systèmes de modération automatique et confère à ses modérateurs et administrateurs le pouvoir de supprimer tout message non conforme, de placer un compte en sourdine temporaire (1 heure, 24 heures ou 7 jours) ou de prononcer un bannissement définitif sans préavis en cas de récidive ou de faute grave."
+          ]
+        },
+        {
+          "title": "Assistant Pédagogique IA et Prestataires Tiers",
+          "paragraphs": [
+            "Faro School met à la disposition des apprenants un assistant pédagogique virtuel basé sur des modèles d'intelligence artificielle tiers (notamment Anthropic Claude), intervenant en soutien lors des périodes d'indisponibilité des formateurs.",
+            "L'utilisateur reconnaît expressément que cet assistant virtuel génère des réponses à visée purement indicative et pédagogique. Malgré tous les filtres de sécurité appliqués, des inexactitudes ou omissions peuvent survenir. L'IA ne remplace pas l'évaluation humaine et n'a aucune habilitation pour accorder des rabais, consentir des réductions ou engager la plateforme financièrement. Un formateur ou un administrateur humain demeure joignable et intervient par escalade automatique en cas de besoin."
+          ]
+        }
+      ]
+    },
+    "confidentialite": {
+      "metaTitle": "Politique de Confidentialité | Faro School",
+      "metaDesc": "Découvrez quelles données personnelles nous collectons, comment nous les protégeons et vos droits de suppression sur Faro School.",
+      "title": "Politique de Confidentialité",
+      "subtitle": "Transparence totale sur la collecte, la sécurité et le traitement de vos informations personnelles sur Faro School.",
+      "sections": [
+        {
+          "title": "Données Personnelles Collectées",
+          "paragraphs": [
+            "Dans le cadre de votre inscription et de votre navigation sur Faro School, nous ne collectons que les informations strictement nécessaires au bon déroulement de votre formation :",
+            "Nous ne collectons jamais vos coordonnées bancaires, cartes de crédit, ni votre code PIN secret MonCash ou NatCash. Les transactions sont sécurisées indépendamment par les opérateurs de paiement agréés."
+          ],
+          "list": [
+            "Informations de profil : Nom complet, adresse email valide, numéro de téléphone haïtien (+509) ;",
+            "Identifiants de sécurité : Mot de passe chiffré de façon irréversible ;",
+            "Données financières et commandes : Montant payé en HTG, référence de commande, identifiant de transaction MonCash ou code SMS NatCash ;",
+            "Données d'apprentissage : Progression dans les leçons, temps de visionnage, date de complétion et certificats délivrés ;",
+            "Données techniques : Adresse IP, type d'appareil, sessions de lecture actives pour prévenir les accès partagés frauduleux."
+          ]
+        },
+        {
+          "title": "Finalités du Traitement des Données",
+          "paragraphs": [
+            "Vos données sont traitées pour des objectifs précis et légitimes :",
+            "Aucune donnée personnelle n'est vendue, louée ou cédée à des tiers à des fins publicitaires ou commerciales."
+          ],
+          "list": [
+            "Fournir l'accès aux vidéos et ressources pédagogiques des cours achetés ;",
+            "Vérifier et authentifier les règlements MonCash et NatCash ;",
+            "Générer et certifier vos attestations et certificats de réussite avec code de vérification public ;",
+            "Protéger votre compte contre les accès non autorisés et lutter contre le piratage ;",
+            "Répondre à vos demandes d'assistance technique ou pédagogique via WhatsApp et formulaire de contact."
+          ]
+        },
+        {
+          "title": "Stockage, Hébergement et Sécurité",
+          "paragraphs": [
+            "Vos informations sont stockées dans une infrastructure de base de données PostgreSQL sécurisée gérée par Supabase, intégrant le chiffrement des données au repos et en transit (protocole SSL/TLS).",
+            "L'accès aux données des apprenants est strictement isolé grâce aux politiques de sécurité par rangée (Row Level Security - RLS) : aucun étudiant ne peut accéder aux informations d'un autre étudiant, et seuls les administrateurs habilités ont un droit de consultation opérationnel."
+          ]
+        },
+        {
+          "title": "Confidentialité de la Messagerie Privée et Accès de Supervision Encadré",
+          "paragraphs": [
+            "Les échanges privés entre les apprenants et les formateurs sont protégés et strictement isolés. Conformément à nos engagements déontologiques, aucun administrateur ne dispose d'un accès libre ou arbitraire à vos messages privés.",
+            "Une consultation exceptionnelle par l'équipe d'administration (procédure 'break-glass') est strictement encadrée : elle n'est autorisée qu'en cas de signalement explicite pour abus ou dans le cadre d'une escalade pédagogique critique non résolue. Tout accès requiert obligatoirement la saisie d'un motif légitime détaillé (minimum 10 caractères) et fait l'objet d'un audit immuable et horodaté consigné dans nos registres de sécurité (identifiant de l'administrateur, motif, date et conversation consultée)."
+          ]
+        },
+        {
+          "title": "Droit d'Accès, de Rectification et de Suppression sur Demande",
+          "paragraphs": [
+            "Conformément aux principes directeurs de protection de la vie privée, vous disposez à tout moment d'un droit d'accès, de mise à jour et d'effacement de l'ensemble de vos données personnelles.",
+            "Vous pouvez modifier vos informations de profil directement depuis votre tableau de bord étudiant (/dashboard/profil).",
+            "Pour demander la suppression intégrale et définitive de votre compte et de toutes les données associées (inscriptions, progression, certificats), il vous suffit d'en faire la demande par email à support@faroschool.com ou via notre formulaire de contact. Votre demande sera traitée sous 72 heures ouvrables."
+          ]
+        },
+        {
+          "title": "Cookies et Technologies de Session",
+          "paragraphs": [
+            "Faro School utilise uniquement des cookies fonctionnels essentiels au fonctionnement de la plateforme : maintien de votre session de connexion, mémorisation de votre langue (Français / Créole haïtien) et détection des sessions de lecture vidéo actives.",
+            "Nous n'utilisons aucun traceur publicitaire intrusif ni régie publicitaire tierce revendant vos habitudes de navigation."
+          ]
+        },
+        {
+          "title": "Contact pour la Vie Privée",
+          "paragraphs": [
+            "Pour toute question relative à cette politique de confidentialité ou pour exercer vos droits sur vos données, vous pouvez nous contacter à l'adresse email : privacy@faroschool.com ou via notre page Contact."
+          ]
+        },
+        {
+          "title": "Conservation des Messages Privés et Traitement par l'Assistant IA",
+          "paragraphs": [
+            "Les messages privés échangés avec les formateurs et les requêtes posées à l'assistant IA sont conservés de manière chiffrée pendant toute la durée active du compte apprenant afin de garantir la continuité pédagogique et la traçabilité des escalades de support.",
+            "Lors de l'utilisation de l'assistant pédagogique IA, aucune donnée d'identification personnelle directe (telle que votre adresse e-mail, numéro de téléphone ou mot de passe) n'est transmise aux prestataires tiers d'IA. Seuls le texte de la question et le contexte de la leçon concernée sont soumis pour analyse."
+          ]
+        }
+      ]
+    },
+    "remboursement": {
+      "metaTitle": "Politique de Remboursement (Garantie 7 Jours) | Faro School",
+      "metaDesc": "Garantie satisfait ou remboursé sous 7 jours sans conditions pour les paiements MonCash et NatCash sur Faro School.",
+      "title": "Politique de Remboursement",
+      "subtitle": "Garantie satisfait ou remboursé sous 7 jours sans discussion pour tout achat de cours sur Faro School.",
+      "sections": [
+        {
+          "title": "La Garantie Satisfait ou Remboursé sous 7 Jours",
+          "paragraphs": [
+            "Chez Faro School, notre priorité absolue est la qualité pratique et l'utilité réelle de nos formations pour votre vie professionnelle en Haïti. Si pour quelque raison que ce soit une formation ne correspond pas à vos attentes, vous bénéficiez d'une garantie totale de remboursement pendant sept (7) jours calendaires à compter de la date de validation de votre paiement.",
+            "Cette garantie s'applique à l'ensemble de nos formations individuelles, sans condition compliquée."
+          ]
+        },
+        {
+          "title": "Paiements Éligibles : MonCash et NatCash",
+          "paragraphs": [
+            "Notre politique de remboursement s'applique intégralement aux deux moyens de paiement locaux acceptés sur la plateforme :",
+            "Le remboursement est toujours effectué en Gourdes haïtiennes (HTG) pour le montant exact payé par l'apprenant lors de l'achat (déduction faite uniquement des éventuels frais de retrait imposés directement par les opérateurs mobiles)."
+          ],
+          "list": [
+            "Paiements MonCash (Digicel) : Le remboursement est renvoyé directement sur le compte MonCash du numéro de téléphone ayant effectué le transfert ;",
+            "Paiements NatCash (Natcom) : Le remboursement est effectué par transfert direct vers le compte NatCash renseigné lors de la demande."
+          ]
+        },
+        {
+          "title": "Procédure Simple de Demande de Remboursement",
+          "paragraphs": [
+            "Pour demander un remboursement, aucune justification contraignante n'est requise. La démarche se fait en trois étapes simples :",
+            "Notre équipe valide la demande sous 24 heures ouvrables et effectue le virement de remboursement sous 24 à 72 heures ouvrables."
+          ],
+          "list": [
+            "1. Contactez notre support via le formulaire de contact du site ou directement par WhatsApp officiel ;",
+            "2. Indiquez votre nom complet, le titre de la formation et la référence de votre commande (ex: ORD-XXXX) ;",
+            "3. Précisez le numéro MonCash ou NatCash sur lequel vous souhaitez recevoir le versement."
+          ]
+        },
+        {
+          "title": "Conditions d'Exclusion et Utilisation Équitable",
+          "paragraphs": [
+            "Afin de protéger le travail des formateurs et de prévenir les abus manifestes, la garantie de remboursement ne s'applique pas dans les cas suivants :",
+            "Dès le remboursement effectué, l'accès à la formation et à ses ressources est automatiquement désactivé sur votre compte."
+          ],
+          "list": [
+            "Demande transmise après l'expiration du délai de sept (7) jours calendaires suivant l'achat ;",
+            "Formation intégralement terminée (progression à 100%) ayant déjà donné lieu à la génération d'un certificat d'accomplissement officiel ;",
+            "Tentative de téléchargement massif ou d'enregistrement frauduleux des vidéos constaté sur le compte avant la demande."
+          ]
+        },
+        {
+          "title": "Assistance et Réclamations",
+          "paragraphs": [
+            "Si vous rencontrez le moindre problème technique ou si votre virement de remboursement tarde à apparaître, notre service client est à votre disposition par WhatsApp au numéro indiqué sur la plateforme ou par email à support@faroschool.com."
+          ]
+        },
+        {
+          "title": "Rôle de l'Assistant Virtuel et Formalisation des Demandes",
+          "paragraphs": [
+            "Toute demande de remboursement dans le cadre de la garantie 7 jours doit impérativement être soumise par l'intermédiaire du formulaire d'assistance ou par communication avec un administrateur humain de Faro School.",
+            "L'assistant virtuel automatisé (IA) ne dispose d'aucune autorité légale ou financière pour promettre, autoriser, refuser ou traiter un remboursement. Seule la validation expresse par l'équipe administrative fait foi."
+          ]
+        }
+      ]
+    }
+  }
+}

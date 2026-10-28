@@ -1,0 +1,1202 @@
+{
+  "common": {
+    "appName": "Faro School",
+    "tagline": "Platfòm fòmasyon videyo sou entènèt pou Ayiti",
+    "language": "Lang",
+    "loading": "Ap chaje...",
+    "empty": "Pa gen anyen disponib",
+    "error": "Gen yon erè ki pase",
+    "retry": "Eseye ankò",
+    "back": "Tounen",
+    "submit": "Valide",
+    "save": "Anrejistre",
+    "cancel": "Anile",
+    "view": "Gade",
+    "continue": "Kontinye",
+    "currency": "HTG"
+  },
+  "nav": {
+    "home": "Akèy",
+    "courses": "Fòmasyon yo",
+    "about": "Konsènan",
+    "contact": "Kontak",
+    "login": "Koneksyon",
+    "register": "Enskri",
+    "dashboard": "Espas mwen",
+    "admin": "Administrasyon",
+    "logout": "Dekonekte"
+  },
+  "footer": {
+    "copyright": "© 2025 Faro School. Tout dwa rezève.",
+    "description": "Fòmasyon pratik ak pwofesyonèl sou entènèt ki fèt pou Ayiti. Peman dirèk ak fasil ak MonCash ak NatCash.",
+    "links": "Navigasyon",
+    "legal": "Legal",
+    "terms": "Kondisyon itilizasyon",
+    "privacy": "Règleman sou vi prive",
+    "refund": "Politik ranbousman",
+    "paymentMethods": "Mwayen peman nou aksepte :"
+  },
+  "landing": {
+    "meta": {
+      "title": "Faro School — Pi Bon Fòmasyon Pratik sou Entènèt pou Ayiti",
+      "description": "Aprann ladrès ki gen plis valè an Ayiti. Peye fasil an goud ak MonCash oswa NatCash. Aksè pou tout lavi ak videyo ki mache byen sou telefòn."
+    },
+    "hero": {
+      "badge": "100% adapte pou Ayiti",
+      "headline": "Devlope konpetans ou ak pi bon fòmasyon pratik an Ayiti",
+      "subtitle": "Aprann nan ritm pa w depi sou telefòn ou oswa sou òdinatè w. Peye fasil epi an sekirite an goud ak MonCash oswa NatCash.",
+      "ctaPrimary": "Eksplore fòmasyon yo",
+      "ctaSecondary": "Gade prezantasyon an",
+      "videoTitle": "Prezantasyon Faro School",
+      "stats": {
+        "students": "Etidyan ki fòme",
+        "courses": "Fòmasyon pratik",
+        "rating": "Nòt mwayèn"
+      }
+    },
+    "categories": {
+      "badge": "Domèn yo",
+      "title": "Eksplore kategori nou yo",
+      "subtitle": "Pwogram byen chita pou pouse karyè w ak biznis ou pi lwen.",
+      "viewAll": "Wè tout katalòg la",
+      "items": {
+        "marketing": {
+          "title": "Maketing ak Lavant",
+          "desc": "Facebook, WhatsApp Business ak estrateji pou mache lokal la"
+        },
+        "business": {
+          "title": "Biznis ak Antreprenarya",
+          "desc": "Lanse, jere epi estriktire yon biznis ki donnen an Ayiti"
+        },
+        "bureautique": {
+          "title": "Birotik ak Done",
+          "desc": "Excel, zouti kowoperasyon ak otomatizasyon travay"
+        },
+        "creation": {
+          "title": "Kreyasyon ak Videyo",
+          "desc": "Fime ak telefòn, monte sou CapCut epi devlope rezo sosyal ou"
+        }
+      }
+    },
+    "popular": {
+      "badge": "Rekòmande",
+      "title": "Fòmasyon ki gen plis siksè",
+      "subtitle": "Konesans etidyan nou yo plis ap chèche jodi a pou fè plis kòb.",
+      "viewAll": "Wè tout fòmasyon yo",
+      "empty": "Poko gen okenn fòmasyon ki pibliye pou kounye a."
+    },
+    "howItWorks": {
+      "badge": "Fasilite",
+      "title": "Kòman li fonksyone?",
+      "subtitle": "Yon chemen senp an 4 etap pou kòmanse aprann depi jodi a menm.",
+      "steps": {
+        "step1": {
+          "number": "01",
+          "title": "Chwazi fòmasyon ou",
+          "desc": "Chwazi kou ki koresponn egzakteman ak sa ou vle reyalize nan pwojè w."
+        },
+        "step2": {
+          "number": "02",
+          "title": "Peye ak MonCash oswa NatCash",
+          "desc": "Peman an goud, san pèdi tan, an sekirite nèt epi san bezwen kat labank."
+        },
+        "step3": {
+          "number": "03",
+          "title": "Aprann sou telefòn oswa PC",
+          "desc": "Videyo klè ki lejè epi ki mache trè byen menm sou koneksyon entènèt ki ralanti."
+        },
+        "step4": {
+          "number": "04",
+          "title": "Resevwa sètifika ou",
+          "desc": "Konfime sa w aprann yo lè w fin fè tout modil yo epi telechaje atestasyon ofisyèl ou."
+        }
+      }
+    },
+    "instructor": {
+      "badge": "Pwofesè devwe",
+      "title": "Fè konesans ak fòmatè w la",
+      "name": "Jean-Marc Joseph",
+      "role": "Konsiltan ak Fòmatè Nimerik an Ayiti",
+      "bio": "Pasyone pa pataj konesans ak gwo kapasite jèn ak pwofesyonèl ayisyen yo genyen. Avèk plis pase 8 lane eksperyans nan akonpaye ti biznis, kreyatè kontni ak travayè endepandan, misyon mwen se ba w ladrès pratik ou ka aplike depi premye jou a.",
+      "statExp": "8+ lane eksperyans",
+      "statStudents": "1 500+ etidyan",
+      "statSatisfaction": "98% satisfaksyon"
+    },
+    "testimonials": {
+      "badge": "Temwayaj",
+      "title": "Sa etidyan nou yo di",
+      "subtitle": "Eksperyans tout bon vre nan men antreprenè ak pwofesyonèl k ap viv an Ayiti.",
+      "fallback1": {
+        "name": "Wideline Pierre",
+        "role": "Mèt yon boutik",
+        "city": "Pòtoprens",
+        "course": "Maketing Dijital",
+        "comment": "Gras ak fòmasyon an, mwen double kòmand mwen yo sou WhatsApp nan 3 semèn sèlman. Mwen te peye ak MonCash nan 1 minit!"
+      },
+      "fallback2": {
+        "name": "Samuel Desrosiers",
+        "role": "Asistan kontab",
+        "city": "Okap",
+        "course": "Excel pou Biznis",
+        "comment": "Kou Excel la te pèmèt mwen jwenn yon pi bon pozisyon nan travay mwen. Videyo yo monte rapid menm sou fòfè Digicel mwen."
+      },
+      "fallback3": {
+        "name": "Fabienne Saint-Louis",
+        "role": "Kreyatris kontni",
+        "city": "Dèlma",
+        "course": "Kreye Kontni Videyo",
+        "comment": "Esplikasyon yo klè, san bri san kont, tou dwat sou sa ki enpòtan an. Se egzakteman kalite fòmasyon pratik sa nou bezwen an Ayiti."
+      }
+    },
+    "faq": {
+      "badge": "Repons",
+      "title": "Kesyon moun poze souvan",
+      "subtitle": "Tout sa ou bezwen konnen anvan ou kòmanse.",
+      "q1": "Kòman pou m peye ak MonCash oswa NatCash?",
+      "a1": "Sou paj kòmand la, annik klike sou 'Peye ak MonCash' oswa 'Peye ak NatCash'. Sistèm nan ap louvri paj sekirize Kobara a kote w ap mete nimewo telefòn ou pou valide tranzaksyon an an goud.",
+      "q2": "Konbyen tan mwen gen aksè ak kou yo?",
+      "a2": "Ou gen aksè pou tout tan (pou lavi). Ou ka gade leson yo lè w vle, nan ritm pa w, epi tounen sou yo chak fwa w bezwen.",
+      "q3": "Èske videyo yo mache byen si entènèt la pa twò rapid?",
+      "a3": "Wi! Tout videyo nou yo mete sou yon enfrastrikti ki rapid anpil ak difizyon adaptatif (HLS). Kalite videyo a ajiste otomatikman selon vitès entènèt ou pou l pa bloke.",
+      "q4": "Kòman m ap fè jwenn sètifika mwen?",
+      "a4": "Kou w fin gade tout leson ki nan yon fòmasyon, yon sètifika ofisyèl ak yon kòd verifikasyon inik ap pare otomatikman nan espas etidyan ou pou w ka telechaje l.",
+      "q5": "Kisa pou m fè si m rankontre yon pwoblèm lè m ap peye?",
+      "a5": "Si yon peman ta gen difikilte, sistèm nou an kenbe kòmand ou a anrejistre. Ou ka ekri ekip sipò nou an sou WhatsApp oswa nan fòmilè kontak la ak nimewo referans ou pou nou rezoud sa touswit."
+    },
+    "cta": {
+      "headline": "Èske w pare pou w ogmante konpetans ou jodi a?",
+      "subtitle": "Vin jwenn kominote etidyan nou an epi kòmanse premye leson w lan kounye a.",
+      "btnCatalog": "Dekouvri tout fòmasyon yo",
+      "btnRegister": "Kreye yon kont gratis"
+    }
+  },
+  "catalog": {
+    "meta": {
+      "title": "Katalòg Fòmasyon yo — Faro School",
+      "description": "Eksplore tout fòmasyon pratik sou entènèt nan maketing, finans, Excel ak kreyasyon kontni an Ayiti. Peman ak MonCash & NatCash."
+    },
+    "title": "Katalòg fòmasyon yo",
+    "subtitle": "Devlope konpetans ki gen plis valè sou mache a ak kou pratik ki fèt espesyalman pou reyalite Ayiti.",
+    "searchPlaceholder": "Chèche yon fòmasyon (egz: Maketing, Excel, Kontablite...)",
+    "filtersTitle": "Filtè yo",
+    "filterButton": "Filtre fòmasyon yo",
+    "categories": "Kategori yo",
+    "levels": "Nivo",
+    "maxPrice": "Pri maksimòm",
+    "allLevels": "Tout nivo yo",
+    "allCategories": "Tout kategori yo",
+    "sort": "Triye selon",
+    "sortPopular": "Plis popilè",
+    "sortNewest": "Pi nouvo",
+    "sortPriceAsc": "Pri pi piti an premye",
+    "sortPriceDesc": "Pri pi gwo an premye",
+    "resultsCount": "{count, plural, =0 {Pa gen okenn fòmasyon jwenn} =1 {1 fòmasyon jwenn} other {# fòmasyon jwenn}}",
+    "clearFilters": "Efase tout filtè yo",
+    "noResults": "Pa gen okenn fòmasyon ki koresponn ak sa w ap chèche a",
+    "noResultsDesc": "Eseye chanje mo rechèch ou yo oswa retire kèk filtè pou w ka wè plis fòmasyon.",
+    "page": "Paj {current} sou {total}",
+    "prevPage": "Presedan",
+    "nextPage": "Swivan"
+  },
+  "courseCard": {
+    "lessonsCount": "{count, plural, =0 {0 leson} =1 {1 leson} other {# leson}}",
+    "durationMin": "{count} min",
+    "viewCourse": "Wè fòmasyon an",
+    "enroll": "Enskri",
+    "freePreview": "Gade gratis"
+  },
+  "payments": {
+    "moncash": "Peye ak MonCash",
+    "natcash": "Peye ak NatCash",
+    "kobara": "Pasrèl Kobara",
+    "poweredBy": "Peman an sekirite ak Kobara.app",
+    "instructionsTitle": "Enstriksyon pou peman",
+    "statusPending": "Ap tann peman",
+    "statusAwaitingValidation": "Ap tann validasyon",
+    "statusValidated": "Peman valide",
+    "statusFailed": "Peman pa pase"
+  },
+  "routes": {
+    "landing": {
+      "title": "Akèy",
+      "todo": "TODO page 01 - Paj akèy"
+    },
+    "catalog": {
+      "title": "Katalòg fòmasyon yo",
+      "todo": "TODO page 02 - Katalòg fòmasyon"
+    },
+    "course": {
+      "title": "Detay fòmasyon an",
+      "todo": "TODO page 03 - Paj fòmasyon"
+    },
+    "login": {
+      "title": "Koneksyon",
+      "todo": "TODO page 04 - Paj koneksyon"
+    },
+    "register": {
+      "title": "Enskripsyon",
+      "todo": "TODO page 04 - Paj enskripsyon"
+    },
+    "checkout": {
+      "title": "Peman an sekirite",
+      "todo": "TODO page 05 - Paj peman"
+    },
+    "confirmation": {
+      "title": "Konfimasyon kòmand",
+      "todo": "TODO page 06 - Paj konfimasyon"
+    },
+    "dashboard": {
+      "title": "Tablo bò etidyan",
+      "todo": "TODO page 07 - Tablo bò etidyan"
+    },
+    "player": {
+      "title": "Espas gade kou",
+      "todo": "TODO page 08 - Espas videyo"
+    },
+    "adminDashboard": {
+      "title": "Administrasyon",
+      "todo": "TODO page 09 - Tablo bò admin"
+    },
+    "adminCourses": {
+      "title": "Jesyon fòmasyon yo",
+      "todo": "TODO page 10 - Lis fòmasyon admin"
+    },
+    "adminCourseNew": {
+      "title": "Nouvo fòmasyon",
+      "todo": "TODO page 10 - Kreye nouvo fòmasyon"
+    },
+    "adminPayments": {
+      "title": "Jesyon peman yo",
+      "todo": "TODO page 11 - Suivi peman admin"
+    },
+    "about": {
+      "title": "Konsènan Faro School",
+      "todo": "TODO page 12 - Paj konsènan"
+    },
+    "contact": {
+      "title": "Kontakte nou",
+      "todo": "TODO page 12 - Paj kontak"
+    }
+  },
+  "courseDetail": {
+    "breadcrumb": "Fòmasyon yo",
+    "level": "Nivo {level}",
+    "ratingStats": "★ {rating} ({count, plural, =0 {okenn avi} =1 {1 avi} other {# avi}})",
+    "enrolledStudents": "{count, plural, =0 {0 etidyan} =1 {1 etidyan} other {# etidyan}}",
+    "curriculumSummary": "{modules} modil • {lessons} leson • {duration} total",
+    "languages": "Lang : Français ak Kreyòl Ayisyen (KR)",
+    "priceCard": {
+      "enrollNow": "Achte fòmasyon an kounye a",
+      "continueLearning": "Kontinye fòmasyon an",
+      "freePreview": "Gade aperçu gratis",
+      "enrolledAlert": "Ou deja enskri nan fòmasyon sa a.",
+      "savePercent": "Ekonomize {percent}%",
+      "benefitsTitle": "Fòmasyon sa a gen ladan l :",
+      "benefit1": "Aksè pou tout tan (pou lavi) sou tout leson yo",
+      "benefit2": "Sètifika ofisyèl ou ka verifye kou w fini",
+      "benefit3": "Videyo ki lejè ki mache byen sou telefòn",
+      "benefit4": "Sipò dirèk ak kominote sou WhatsApp",
+      "moncashNatcash": "Peman an sekirite ak MonCash & NatCash",
+      "poweredBy": "Sekirize pa Kobara.app"
+    },
+    "whatYouLearn": {
+      "title": "Sa w ap aprann nan fòmasyon sa a",
+      "subtitle": "Konpetans pratik ou ka aplike touswit nan travay ou ak nan biznis ou"
+    },
+    "curriculum": {
+      "title": "Pwogram konplè a",
+      "subtitle": "Gade tout modil ak leson ki nan kou a",
+      "freePreview": "Aperçu gratis",
+      "locked": "Fèmen",
+      "play": "Gade aperçu gratis la"
+    },
+    "instructor": {
+      "title": "Fòmatè w la",
+      "badge": "Fòmatè sètifye",
+      "name": "Jean-Marc Joseph",
+      "role": "Konsiltan ak Fòmatè Nimerik an Ayiti",
+      "bio": "Espesyalis nan mond nimerik an Ayiti ak plis pase 8 lane eksperyans. Li deja fòme plis pase 1 500 pwofesyonèl ak antreprenè nan peyi a."
+    },
+    "reviews": {
+      "title": "Sa etidyan yo di",
+      "empty": "Poko gen avis sou kou sa a. Ou kapab premye moun ki pataje sa w panse!",
+      "basedOn": "Nòt mwayèn baze sou temwayaj etidyan verifye"
+    },
+    "faq": {
+      "title": "Kesyon moun poze sou kou sa a",
+      "q1": "Èske m ka peye ak kont MonCash oswa NatCash mwen?",
+      "a1": "Wi! Annik klike sou 'Achte fòmasyon an' epi chwazi MonCash oswa NatCash. Mete nimewo telefòn ou epi peman an ap valide touswit.",
+      "q2": "Kilè m ap gen aksè ak videyo yo lè m fin peye?",
+      "a2": "Aksè a fèt touswit depi peman an konfime. Fòmasyon an ap parèt dirèkteman nan espas etidyan ou.",
+      "q3": "Èske videyo yo ka monte sou telefòn si entènèt la ralanti?",
+      "a3": "Wi, san pwoblèm. Videyo yo adapte otomatikman ak vitès entènèt ou pou yo pa koupe."
+    },
+    "cta": {
+      "title": "Devlope konpetans ou depi jodi a",
+      "subtitle": "Vin jwenn fòmasyon an epi aprann nan ritm pa w, kèlkeswa kote w ye an Ayiti."
+    },
+    "previewModal": {
+      "title": "Aperçu videyo gratis",
+      "loading": "Ap chaje videyo a...",
+      "close": "Fèmen",
+      "unlock": "Debloke tout fòmasyon an"
+    }
+  },
+  "aboutPage": {
+    "meta": {
+      "title": "Konsènan Nou — Faro School",
+      "description": "Dekouvri vizyon Faro School : rann fòmasyon pwofesyonèl ak konesans nimerik aksesib pou tout moun an Ayiti."
+    },
+    "badge": "Vizyon Nou",
+    "title": "Demokratize aprantisaj ladrès ak konpetans pratik an Ayiti",
+    "subtitle": "Faro School se premye platfòm fòmasyon videyo sou entènèt ki fèt 100% pou reyalite, kilti ak ekonomi Ayiti.",
+    "mission": {
+      "badge": "Misyon Nou",
+      "title": "Pote konesans pratik pou tout moun",
+      "text1": "An Ayiti, gen plizyè milye jèn gason ak jèn fanm ki gen anpil talan ak motivasyon, men ki bloke devan 2 gwo baryè : difikilte pou jwenn bon fòmasyon modèn, ak obligasyon pou gen kat labank entènasyonal pou peye sou sit etranje.",
+      "text2": "Faro School fèt pou kase baryè sa yo nèt. Nou pèmèt nenpòt moun aprann dirèkteman sou telefòn li epi peye fasil an goud ak MonCash oswa NatCash."
+    },
+    "values": {
+      "title": "3 Poto Mitan Nou Yo",
+      "subtitle": "Yon metòd ansèyman ki fèt pou pote rezilta rapid nan lavi ou chak jou.",
+      "v1Title": "Aksesib",
+      "v1Desc": "Videyo ki lejè ki mache byen menm lè entènèt mobil lan ralanti. Peman an goud dirèk ak MonCash oswa NatCash san bezwen kat labank.",
+      "v2Title": "Pratik",
+      "v2Desc": "Zewo teyori initil. Chak leson chita sou ka reyèl ak zouti ou ka aplike touswit pou fè plis kòb nan biznis ou ak karyè ou.",
+      "v3Title": "Biling",
+      "v3Desc": "Kou yo disponib an Français ak Kreyòl Ayisyen, nan respè kilti nou pou tout moun ka byen konprann chak detay."
+    },
+    "story": {
+      "badge": "Istwa Nou",
+      "title": "Pwofesè ki dèyè lekòl la",
+      "instructorName": "Jean-Marc Joseph",
+      "instructorRole": "Fondatè ak Fòmatè prensipal",
+      "p1": "Apre plis pase 8 lane sou teren an an Ayiti ap ede ti biznis, machann ak kreyatè kontni, mwen te wè aklè gwo diferans ki genyen ant sa mache a bezwen tout bon vre ak sa yo montre nan lekòl tradisyonèl yo.",
+      "p2": "Mwen kreye Faro School pou m pataje tout konesans pratik ki te ede plizyè santèn antreprenè ayisyen reyisi nan zafè nimerik la."
+    },
+    "numbers": {
+      "n1Val": "1 500+",
+      "n1Label": "Etidyan ki deja fòme",
+      "n2Val": "8+",
+      "n2Label": "Lane eksperyans sou teren",
+      "n3Val": "100%",
+      "n3Label": "Peman MonCash ak NatCash",
+      "n4Val": "98%",
+      "n4Label": "Taux satisfaksyon etidyan yo"
+    },
+    "cta": {
+      "title": "Èske w pare pou monte nan yon lòt nivo?",
+      "subtitle": "Eksplore tout katalòg kou nou yo epi kòmanse aprann depi jodi a menm.",
+      "btn": "Dekouvri tout fòmasyon yo"
+    }
+  },
+  "contactPage": {
+    "meta": {
+      "title": "Kontakte Nou — Faro School",
+      "description": "Ou bezwen èd oswa enfòmasyon sou fòmasyon nou yo? Kontakte ekip Faro School sou WhatsApp, pa imèl oswa nan fòmilè a."
+    },
+    "badge": "Sipò ak Asistans",
+    "title": "Kontakte ekip nou an",
+    "subtitle": "Ou gen yon kesyon sou yon kou oswa sou yon peman MonCash / NatCash? Nou la pou reponn ou touswit.",
+    "cards": {
+      "whatsappTitle": "WhatsApp Dirèk",
+      "whatsappDesc": "Sipò rapid pa mesaj tèks oswa vokal",
+      "whatsappBtn": "Ekri sou WhatsApp",
+      "emailTitle": "Imèl Sipò",
+      "emailDesc": "Repons nan mwens pase 24 èdtan",
+      "addressTitle": "Biwo ak Lokalizasyon",
+      "addressDesc": "Pòtoprens, Ayiti"
+    },
+    "form": {
+      "title": "Voye yon mesaj pou nou",
+      "subtitle": "Ranpli fòmilè sa a epi n ap reponn ou nan pi kout tan posib.",
+      "nameLabel": "Non konplè ou",
+      "namePlaceholder": "Egz: Jean-Baptiste Pierre",
+      "contactLabel": "Nimewo telefòn (MonCash / NatCash) oswa Imèl",
+      "contactPlaceholder": "Egz: +509 36 00 00 00 oswa imel@domèn.com",
+      "messageLabel": "Mesaj ou a",
+      "messagePlaceholder": "Eksplike nou kòman nou ka ede w...",
+      "submit": "Voye mesaj la",
+      "submitting": "Ap voye mesaj la...",
+      "successTitle": "Mesaj la voye avèk siksè!",
+      "successMessage": "Mèsi anpil pou mesaj ou a. Ekip nou an ap kontakte w trè rapid.",
+      "sendAnother": "Voye yon lòt mesaj",
+      "errors": {
+        "nameRequired": "Tanpri mete non konplè ou (omwen 2 lèt).",
+        "contactRequired": "Tanpri mete yon nimewo telefòn oswa yon imèl ki valab.",
+        "messageRequired": "Mesaj ou a dwe gen omwen 10 karaktè.",
+        "rateLimit": "Ou voye twòp mesaj (limit la se 5 mesaj pa èdtan). Tanpri tann yon ti moman anvan ou re-eseye.",
+        "serverError": "Gen yon erè ki pase pandan anrejistreman mesaj la. Tanpri eseye ankò."
+      }
+    }
+  },
+  "auth": {
+    "loginTitle": "Konekte sou espas ou",
+    "loginSubtitle": "Jwenn tout fòmasyon ou yo epi kontinye aprann fasilman.",
+    "registerTitle": "Kreye kont etidyan ou",
+    "registerSubtitle": "Enskri nan 30 segonn pou peye fasil ak MonCash oswa NatCash epi kòmanse aprann.",
+    "forgotPasswordTitle": "Bliye modpas ou?",
+    "forgotPasswordSubtitle": "Mete adrès imèl ou pou w resevwa yon lyen an sekirite pou chanje modpas ou.",
+    "resetPasswordTitle": "Nouvo modpas",
+    "resetPasswordSubtitle": "Mete nouvo modpas ou a (omwen 8 karaktè).",
+    "fullNameLabel": "Non konplè",
+    "fullNamePlaceholder": "Egz: Jean-Marc Joseph",
+    "phoneLabel": "Nimewo telefòn an Ayiti",
+    "phonePlaceholder": "Egz: +509 36 12 34 56 oswa 36123456",
+    "emailLabel": "Adrès imèl",
+    "emailPlaceholder": "non@domèn.com",
+    "passwordLabel": "Modpas",
+    "passwordPlaceholder": "•••••••• (8 karaktè min)",
+    "newPasswordLabel": "Nouvo modpas",
+    "rememberMe": "Sonje mwen sou aparèy sa a",
+    "forgotPasswordLink": "Ou bliye modpas ou?",
+    "loginSubmit": "Konekte",
+    "registerSubmit": "Kreye kont mwen",
+    "resetSubmit": "Voye lyen pou chanje modpas la",
+    "updatePasswordSubmit": "Anrejistre nouvo modpas la",
+    "googleContinue": "Kontinye ak Google",
+    "hasAccount": "Ou gen yon kont deja?",
+    "noAccount": "Ou poko gen yon kont?",
+    "loginLink": "Konekte la a",
+    "registerLink": "Enskri la a",
+    "backToLogin": "Tounen nan koneksyon",
+    "showPassword": "Montre modpas la",
+    "hidePassword": "Kache modpas la",
+    "forgotSuccessTitle": "Lyen an voye sou imèl ou",
+    "forgotSuccessDesc": "Si gen yon kont ki mache ak imèl sa a, ou pral resevwa yon mesaj ak yon lyen pou w chanje modpas ou. Tcheke bwat mesaj ou a.",
+    "resetSuccessTitle": "Modpas ou chanje avèk siksè",
+    "resetSuccessDesc": "Modpas ou a mete ajou. Ou ka konekte kounye a.",
+    "redirecting": "Koneksyon reyisi, n ap transfere w...",
+    "acceptTermsPrefix": "Mwen aksepte",
+    "termsOfService": "Kondisyon itilizasyon yo",
+    "and": "ak",
+    "privacyPolicy": "Règleman sou vi prive a",
+    "errors": {
+      "invalidCredentials": "Enfòmasyon koneksyon yo pa kòrèk. Tanpri verifye imèl ou ak modpas ou.",
+      "invalidName": "Tanpri mete non konplè ou (omwen 2 lèt).",
+      "invalidPhone": "Nimewo telefòn ayisyen an pa bon. Li dwe gen 8 chif apre +509 (egz: +509 36123456).",
+      "invalidEmail": "Tanpri mete yon bon adrès imèl ki valab.",
+      "passwordTooShort": "Modpas la dwe genyen omwen 8 karaktè.",
+      "acceptTermsRequired": "Ou dwe aksepte kondisyon itilizasyon yo ak règleman sou vi prive a pou w ka kreye yon kont.",
+      "rateLimit": "Gen twòp tantativ. Tanpri tann 15 minit anvan ou eseye ankò.",
+      "serverError": "Gen yon erè ki pase pandan koneksyon an. Tanpri eseye ankò."
+    }
+  },
+  "checkout": {
+    "title": "Fini enskripsyon ou",
+    "subtitle": "Aksè touswit ak pou tout tan nan fòmasyon an depi peman an valide.",
+    "summaryTitle": "Rezime kòmand ou an",
+    "course": "Fòmasyon",
+    "price": "Pri nòmal",
+    "compareDiscount": "Ekonomize {percent}%",
+    "discount": "Rabè koupon",
+    "total": "Total pou peye",
+    "coupon": {
+      "label": "Kòd promo oswa koupon",
+      "placeholder": "Eg: FARO20",
+      "apply": "Aplike",
+      "applied": "Koupon an aplike !",
+      "remove": "Retire",
+      "saving": "W ap ekonomize {amount} HTG",
+      "errors": {
+        "invalid": "Kòd koupon an pa bon oswa nou pa jwenn li.",
+        "expired": "Koupon sa a ekspire.",
+        "maxUses": "Koupon sa a rive nan limit kantite fwa li ka itilize.",
+        "general": "Nou pa ka aplike koupon sa a."
+      }
+    },
+    "methods": {
+      "title": "Chwazi fason ou vle peye",
+      "moncash": {
+        "title": "MonCash",
+        "badge": "Otomatik",
+        "description": "Peman dirèk ak validasyon touswit sou entènèt"
+      },
+      "natcash": {
+        "title": "NatCash",
+        "badge": "Otomatik",
+        "description": "Peman dirèk ak validasyon touswit sou entènèt"
+      }
+    },
+    "moncash": {
+      "phoneLabel": "Nimewo telefòn MonCash ou",
+      "phonePlaceholder": "Eg: +509 36 00 00 00 oswa 36000000",
+      "phoneHelp": "Nimewo Digicel Ayiti ki konekte ak kont MonCash ou.",
+      "submit": "Peye {amount} HTG ak MonCash",
+      "submitting": "N ap prepare peman an...",
+      "redirectNotice": "W ap redireksyone sou pasrèl sekirize Kobara pou konfime peman MonCash ou."
+    },
+    "natcash": {
+      "phoneLabel": "Nimewo telefòn NatCash ou",
+      "phonePlaceholder": "Eg: +509 40 00 00 00 oswa 40000000",
+      "phoneHelp": "Nimewo Natcom Ayiti ki asosye ak kont NatCash ou.",
+      "submit": "Peye {amount} HTG ak NatCash",
+      "submitting": "N ap prepare peman an...",
+      "redirectNotice": "W ap redireksyone sou pasrèl sekirize Kobara pou konfime peman NatCash ou."
+    },
+    "trust": {
+      "secure": "Peman 100% an sekirite",
+      "secureDesc": "Done ou yo pwoteje ak sekirite Kobara ak operatè lokal yo.",
+      "guarantee": "Garanti 7 jou",
+      "guaranteeDesc": "Satisfè oswa ranbousman nan 7 jou san diskisyon.",
+      "whatsapp": "Ou bezwen èd ?",
+      "whatsappDesc": "Kontakte sipò nou sou WhatsApp nan"
+    },
+    "errors": {
+      "invalidPhone": "Tanpri mete yon bon nimewo telefòn Ayiti (eg: +509 36123456).",
+      "missingTxnId": "Tanpri mete kòd tranzaksyon ou te resevwa pa SMS la.",
+      "duplicateTxnId": "Nimewo tranzaksyon sa a te itilize deja. Si se yon erè, kontakte sipò a sou WhatsApp.",
+      "alreadyEnrolled": "Ou deja enskri nan kou sa a. N ap mennen w sou tablo bò w...",
+      "serverError": "Gen yon erè ki pase pandan n ap prepare peman an. Tanpri reyeze.",
+      "retry": "Reyeze"
+    }
+  },
+  "confirmation": {
+    "title": "Konfimasyon kòmand",
+    "successTitle": "Felisitasyon ! Enskripsyon ou valide 🎉",
+    "successMessage": "Peman ou an pase avèk siksè. Kounye a ou gen aksè imedyat ak san limit nan tout fòmasyon an.",
+    "awaitingTitle": "Peman an ap verifye ⏳",
+    "awaitingMessage": "Tranzaksyon ou an ap verifye. Validasyon an pran ant 5 ak 15 minit an jeneral. Ou ka kite paj sa a ouvri.",
+    "failedTitle": "Peman an pa reyisi",
+    "failedMessage": "Peman an pa t ka abouti oswa li te anile. Yo pa retire lajan sou kont ou.",
+    "cancelledTitle": "Peman anile",
+    "cancelledMessage": "Ou anile pwosedi peman an.",
+    "orderDetails": "Detay tranzaksyon an",
+    "orderRef": "Referans kòmand",
+    "course": "Fòmasyon",
+    "method": "Fason ou peye",
+    "amount": "Montan peye",
+    "date": "Dat kòmand lan",
+    "status": "Eta peman",
+    "statusPaid": "Peye epi valide",
+    "statusPending": "Ap tann validasyon",
+    "statusFailed": "Echwe",
+    "startCourse": "Kòmanse fòmasyon an",
+    "downloadReceipt": "Telechaje resi a (PDF)",
+    "receiptLoading": "N ap prepare resi a...",
+    "checkingStatus": "N ap verifye eta peman an otomatikman...",
+    "retry": "Eseye peye ankò",
+    "backToCatalog": "Gade lòt fòmasyon",
+    "goToDashboard": "Espas aprantisaj mwen",
+    "supportHelp": "Ou bezwen èd ? Kontakte sipò WhatsApp nou :",
+    "needHelp": "Ou gen yon kesyon oswa yon reta ? Ekri nou dirèkteman sou WhatsApp"
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Akèy",
+      "courses": "Fòmasyon m",
+      "certificates": "Sètifika",
+      "payments": "Peman",
+      "profile": "Pwofil mwen"
+    },
+    "greeting": "Bonjou, {name} 👋",
+    "subtitle": "Byenveni sou espas aprantisaj ou sou Faro School.",
+    "stats": {
+      "activeCourses": "Fòmasyon aktif",
+      "completedLessons": "Leson fini",
+      "hoursLearned": "Lè ou aprann",
+      "certificates": "Sètifika ou genyen"
+    },
+    "continueLearning": {
+      "title": "Kontinye kou mwen an",
+      "module": "Modil : {module}",
+      "resume": "Kontinye leson an",
+      "position": "Kòmanse nan {time}"
+    },
+    "myCourses": {
+      "title": "Fòmasyon mwen yo",
+      "viewAll": "Wè tout ({count})",
+      "emptyTitle": "Ou poko enskri nan okenn fòmasyon pou kounye a",
+      "emptyDesc": "Gade katalòg nou an epi aprann ladrès pratik depi jodi a.",
+      "explore": "Dekouvri katalòg la",
+      "progress": "{percent}% fini",
+      "continue": "Kontinye",
+      "start": "Kòmanse",
+      "completedBadge": "Fini"
+    },
+    "nextSteps": {
+      "title": "Leson ki ap tann ou",
+      "allCaughtUp": "Felisitasyon, ou ajou nan tout kou ou yo !"
+    },
+    "recommended": {
+      "badge": "Rekòmande pou ou",
+      "title": "Kontinye devlope konesans ou",
+      "discover": "Dekouvri fòmasyon sa a"
+    },
+    "coursesPage": {
+      "title": "Tout fòmasyon mwen yo",
+      "subtitle": "Jwenn tout pwogram ou enskri ladan yo epi swiv kijan w ap avanse.",
+      "completed": "Fòmasyon fini",
+      "inProgress": "Ap aprann kounye a"
+    },
+    "certificates": {
+      "title": "Sètifika Ofisyèl Mwen Yo",
+      "subtitle": "Chak sètifika montre ou fini 100% nan yon fòmasyon epi li ka verifye sou entènèt oswa telechaje.",
+      "emptyTitle": "Ou poko gen okenn sètifika pou kounye a",
+      "emptyDesc": "Fini tout leson nan yon kou pou w ka jwenn sètifika ofisyèl ou otomatikman ak yon kòd verifikasyon inik.",
+      "download": "Telechaje PDF",
+      "verify": "Verifye sou entènèt",
+      "code": "Kòd : {code}",
+      "issued": "Emèt nan dat {date}"
+    },
+    "payments": {
+      "title": "Istorik peman mwen yo",
+      "subtitle": "Gade tout kòmand ou te fè, eta validasyon yo epi telechaje resi acha ou yo.",
+      "empty": "Nou pa jwenn okenn kòmand nan kont ou.",
+      "ref": "Referans",
+      "date": "Dat",
+      "course": "Fòmasyon",
+      "amount": "Montan",
+      "status": "Eta",
+      "method": "Fason",
+      "receipt": "Resi",
+      "downloadReceipt": "Telechaje resi a (PDF)"
+    },
+    "profile": {
+      "title": "Pwofil mwen & Anviwònman",
+      "subtitle": "Jere enfòmasyon pèsonèl ou, nimewo telefòn ou ak sekirite kont ou.",
+      "personalSection": "Enfòmasyon pèsonèl",
+      "fullName": "Non konplè",
+      "phone": "Nimewo telefòn Ayiti (MonCash / NatCash)",
+      "email": "Adrès imèl (kont)",
+      "locale": "Lang ou prefere sou sit la",
+      "savePersonal": "Anrejistre chanjman yo",
+      "personalSuccess": "Pwofil ou mete ajou avèk siksè !",
+      "securitySection": "Sekirite & Modpas",
+      "newPassword": "Nouvo modpas",
+      "confirmPassword": "Konfime nouvo modpas la",
+      "savePassword": "Mete modpas la ajou",
+      "passwordSuccess": "Modpas ou chanje avèk siksè !"
+    }
+  },
+  "player": {
+    "back": "Tounen",
+    "curriculum": "Pwogram fòmasyon an",
+    "progress": "{percent}% fini",
+    "speed": "Vitès",
+    "quality": "Kalite",
+    "qualityAuto": "Otomatik",
+    "fullscreen": "Plen ekran",
+    "exitFullscreen": "Kite plen ekran",
+    "markCompleted": "Mete kòm fini",
+    "completed": "Fini ✓",
+    "previous": "Avan",
+    "next": "Apre",
+    "tabs": {
+      "description": "Deskripsyon",
+      "resources": "Resous ({count})",
+      "notes": "Nòt mwen"
+    },
+    "noDescription": "Pa gen deskripsyon pou leson sa a.",
+    "noResources": "Pa gen okenn fichye pou leson sa a.",
+    "downloadResource": "Telechaje",
+    "notesPlaceholder": "Ekri nòt pèsonèl ou pou leson sa a la a... (anrejistre otomatikman)",
+    "notesSaving": "N ap anrejistre...",
+    "notesSaved": "Nòt yo anrejistre",
+    "countdown": {
+      "title": "Pase nan leson apre a nan {seconds}s",
+      "nextNow": "Pase kounye a",
+      "cancel": "Anile"
+    },
+    "courseCompleted": {
+      "title": "Felisitasyon ! Ou fini tout fòmasyon an 🎉",
+      "subtitle": "Sètifika ofisyèl ou a pare pou ou telechaje.",
+      "viewCertificate": "Wè sètifika ofisyèl mwen"
+    },
+    "deviceLimit": {
+      "title": "Limit aparèy rive",
+      "message": "Kont ou ap itilize sou 2 lòt aparèy kounye a. Ou pa ka gade sou plis pase 2 aparèy an menm tan.",
+      "terminateOthers": "Fèmen lòt aparèy yo epi gade la a",
+      "terminating": "N ap fèmen lòt sesyon yo..."
+    },
+    "errors": {
+      "accessDenied": "Ou pa gen aksè. Ou dwe enskri nan kou sa a pou ou ka gade videyo a.",
+      "loadFailed": "Nou pa ka chaje videyo a. Tanpri reyeze."
+    }
+  },
+  "admin": {
+    "sidebar": {
+      "title": "Espas Fòmatè",
+      "dashboard": "Tablo de bò",
+      "courses": "Fòmasyon",
+      "students": "Elèv yo",
+      "payments": "Peman",
+      "promotions": "Pwomosyon",
+      "messages": "Mesaj",
+      "settings": "Paramèt",
+      "viewSite": "Gade sit la",
+      "role": "Administratè",
+      "badgeAdmin": "ADMIN",
+      "logout": "Dekonekte"
+    },
+    "dashboard": {
+      "title": "Tablo de bò",
+      "subtitle": "Kout je an tan reyèl sou lavant, enskripsyon ak tout estatistik enpòtan yo.",
+      "period": {
+        "label": "Peryòd",
+        "this_month": "Mwa sa a",
+        "last_30_days": "30 dènye jou yo",
+        "this_year": "Ane sa a"
+      },
+      "kpis": {
+        "revenue": "Chif dafè",
+        "revenueSub": "Peman ki valide",
+        "students": "Nouvo elèv",
+        "studentsSub": "Enskripsyon konfime",
+        "awaiting": "Peman pou valide",
+        "awaitingSub": "Transfè NatCash ki an atant",
+        "viewAwaiting": "Jere peman yo →",
+        "completion": "Taux konplisyon",
+        "completionSub": "Sètifika bay / elèv ki enskri",
+        "vsPrevious": "vs peryòd anvan an",
+        "increase": "+{pct}%",
+        "decrease": "{pct}%",
+        "neutral": "0%"
+      },
+      "chart": {
+        "title": "Evolisyon chif dafè (12 dènye mwa yo)",
+        "subtitle": "Kijan lajan an antre ant MonCash ak NatCash",
+        "moncash": "MonCash",
+        "natcash": "NatCash",
+        "total": "Total",
+        "noData": "Pa gen tranzaksyon nan peryòd sa a."
+      },
+      "topCourses": {
+        "title": "Fòmasyon ki gen plis elèv",
+        "subtitle": "Klasman selon kantite moun ki enskri",
+        "studentsCount": "{count, plural, =0 {0 elèv} =1 {1 elèv} other {# elèv}}",
+        "empty": "Poko gen okenn enskripsyon."
+      },
+      "recentPayments": {
+        "title": "10 Dènye tranzaksyon yo",
+        "subtitle": "Istorik dènye peman ki fèt sou platfòm lan",
+        "viewAll": "Gade tout peman yo →",
+        "colStudent": "Elèv",
+        "colCourse": "Fòmasyon",
+        "colMethod": "Mwayen",
+        "colAmount": "Montan",
+        "colStatus": "Estati",
+        "colDate": "Dat",
+        "empty": "Poko gen okenn peman anrejistre."
+      },
+      "status": {
+        "validated": "Valide",
+        "awaiting_validation": "Pou valide",
+        "pending": "An atant",
+        "failed": "Echwe"
+      },
+      "placeholders": {
+        "studentsTitle": "Jesyon elèv yo",
+        "studentsDesc": "Gade lis elèv ki enskri yo, avansman yo ak kontak yo.",
+        "promotionsTitle": "Kòd pwomosyonèl",
+        "promotionsDesc": "Kreye epi jere koupon rabè pou kanpay lavant ou yo.",
+        "messagesTitle": "Mesaj vizitè yo",
+        "messagesDesc": "Jwenn tout mesaj moun voye nan fòmilè kontak la.",
+        "settingsTitle": "Paramèt platfòm lan",
+        "settingsDesc": "Konfigire enfòmasyon peman machann MonCash ak NatCash ou yo."
+      }
+    },
+    "courses": {
+      "listTitle": "Jesyon fòmasyon yo",
+      "listSubtitle": "Kreye, modifye, òganize epi swiv enskripsyon nan katalòg ou a.",
+      "newCourse": "Nouvo fòmasyon",
+      "searchPlaceholder": "Chèche pa tit oswa idantifyan...",
+      "filterAll": "Tout fòmasyon yo",
+      "filterPublished": "Pibliye",
+      "filterDraft": "Bwouyon",
+      "colCover": "Imaj",
+      "colTitle": "Fòmasyon",
+      "colStatus": "Estati",
+      "colPrice": "Pri",
+      "colStudents": "Elèv yo",
+      "colRevenue": "Lajan antre",
+      "colActions": "Aksyon",
+      "empty": "Nou pa jwenn okenn fòmasyon.",
+      "statusPublished": "Pibliye",
+      "statusDraft": "Bwouyon",
+      "actionEdit": "Modifye",
+      "actionPublish": "Pibliye",
+      "actionUnpublish": "Retire sou sit la",
+      "actionDuplicate": "Kopye",
+      "actionDelete": "Efase",
+      "deleteConfirmTitle": "Konfimasyon sipresyon",
+      "deleteConfirmMessage": "Èske ou sèten ou vle efase nèt fòmasyon sa a? Ou p ap ka rekipere l.",
+      "deleteConfirmBtn": "Wi, efase l",
+      "deleteCancelBtn": "Anile",
+      "form": {
+        "createTitle": "Kreye yon nouvo fòmasyon",
+        "editTitle": "Modifye fòmasyon an",
+        "subtitle": "Mete tout enfòmasyon yo, fikse pri a epi prepare pwogram leson yo.",
+        "backToList": "← Retounen nan lis fòmasyon yo",
+        "saveDraft": "Anrejistre kòm bwouyon",
+        "publish": "Pibliye fòmasyon an",
+        "saving": "N ap anrejistre...",
+        "sectionGeneral": "1. Enfòmasyon jeneral",
+        "titleFrLabel": "Tit fòmasyon an (Franse) *",
+        "titleFrPlaceholder": "Eg: Marketing Digital pour Entreprises en Haïti",
+        "titleHtLabel": "Tit an Kreyòl (Si ou vle men rekòmande)",
+        "titleHtPlaceholder": "Eg: Maketing Dijital pou Biznis an Ayiti",
+        "slugLabel": "Idantifyan lyen (Slug) *",
+        "slugHelp": "Kreye otomatikman, ou ka chanje l. Disponib sou /formations/[slug]",
+        "descFrLabel": "Eksplikasyon fòmasyon an (Franse)",
+        "descHtLabel": "Eksplikasyon fòmasyon an (Kreyòl)",
+        "categoryLabel": "Kategori *",
+        "levelLabel": "Nivo *",
+        "sectionPrice": "2. Pri & Mwayen peman",
+        "priceLabel": "Pri fòmasyon an (HTG) *",
+        "comparePriceLabel": "Pri bare pou konpare (HTG, si ou vle)",
+        "paymentToggles": "Mwayen peman ki aksepte pou fòmasyon sa a :",
+        "moncashLabel": "Peman MonCash (Digicel)",
+        "natcashLabel": "Peman NatCash (Natcom)",
+        "sectionCover": "3. Imaj fòmasyon an (Cover)",
+        "coverHelp": "Fòma JPG, PNG oswa WEBP. Maks 3 Mo. Fòma 16:9 rekòmande.",
+        "coverUploadBtn": "Chwazi yon imaj",
+        "coverUploading": "N ap chaje l...",
+        "coverRemove": "Retire imaj la",
+        "sectionCurriculum": "4. Pwogram leson yo (Curriculum Builder)",
+        "addModule": "+ Ajoute yon modil",
+        "moduleTitlePlaceholder": "Tit modil la (Franse) *",
+        "moduleTitleHtPlaceholder": "Tit modil la (Kreyòl)",
+        "deleteModule": "Efase modil la",
+        "addLesson": "+ Ajoute yon leson",
+        "lessonTitlePlaceholder": "Tit leson an (Franse) *",
+        "lessonTitleHtPlaceholder": "Tit leson an (Kreyòl)",
+        "lessonDescPlaceholder": "Ti rezime sou sa k nan leson an...",
+        "freePreview": "Leson gratis (tout moun ka gade san peye)",
+        "videoUploadTitle": "Videyo leson an :",
+        "videoUploadBtn": "Chaje videyo (TUS dirèk)",
+        "videoUploading": "Videyo a ap monte : {progress}%",
+        "videoCancel": "Anile",
+        "videoUploaded": "Videyo anrejistre (ID: {id})",
+        "resourcesTitle": "Fichye & dokiman pou telechaje :",
+        "addResource": "+ Ajoute yon fichye",
+        "resourceNamePlaceholder": "Non dokiman an (eg: Gid_PDF.pdf)",
+        "resourceUrlPlaceholder": "Lyen fichye a / CDN",
+        "deleteLesson": "Efase leson an",
+        "sectionOptions": "5. Opsyon & Garanti",
+        "optionCert": "Bay yon sètifika ofisyèl lè elèv la fini tout kou a 100%",
+        "optionAccess": "Aksè pou tout lavi nan videyo ak mizajou yo",
+        "optionGuarantee": "Garanti ranbousman 7 jou san diskisyon",
+        "validationErrorTitle": "Nou pa ka pibliye kou sa a",
+        "validationMissingTitle": "Ou dwe mete yon tit an franse omwen 3 lèt.",
+        "validationMissingPrice": "Pri a dwe plis pase 0 HTG pou ou ka pibliye l.",
+        "validationMissingCover": "Ou dwe mete yon imaj kouvèti anvan ou pibliye kou a.",
+        "validationMissingLessons": "Kou a dwe genyen omwen yon modil ak omwen yon leson anvan ou pibliye l.",
+        "validationDeleteEnrolled": "Ou pa ka efase kou sa a paske gen elèv ki deja enskri ladan l. Tanpri mete l an bwouyon pito.",
+        "successSave": "Fòmasyon an anrejistre avèk siksè !",
+        "successPublish": "Fòmasyon an pibliye sou sit la !",
+        "successUnpublish": "Fòmasyon an tounen an bwouyon.",
+        "successDuplicate": "Fòmasyon an kopye avèk siksè !",
+        "successDelete": "Fòmasyon an efase avèk siksè."
+      }
+    },
+    "payments": {
+      "title": "Jesyon peman yo",
+      "subtitle": "Swiv lajan ki antre pa MonCash epi valide transfè manyèl NatCash yo.",
+      "kpiValidated": "Total valide",
+      "kpiValidatedSub": "Kòb ki antre nèt",
+      "kpiAwaiting": "Pou valide",
+      "kpiAwaitingSub": "Transfè NatCash an atant",
+      "kpiMoncash": "Total MonCash",
+      "kpiMoncashSub": "Peman otomatik",
+      "kpiNatcash": "Total NatCash",
+      "kpiNatcashSub": "Transfè machann",
+      "tabAll": "Tout peman yo",
+      "tabAwaiting": "Pou valide",
+      "tabValidated": "Valide",
+      "tabFailed": "Echwe / Anile",
+      "searchPlaceholder": "Chèche pa non elèv, telefòn, kòd SMS NatCash oswa referans...",
+      "exportCsv": "Telechaje nan CSV",
+      "colStudent": "Elèv",
+      "colPhone": "Telefòn",
+      "colCourse": "Fòmasyon",
+      "colMethod": "Mwayen",
+      "colTxnId": "ID / Rèf SMS",
+      "colAmount": "Montan",
+      "colDate": "Dat",
+      "colStatus": "Estati",
+      "colActions": "Aksyon",
+      "actionValidate": "Valide",
+      "actionReject": "Refize",
+      "actionDetails": "Detay",
+      "empty": "Nou pa jwenn okenn peman.",
+      "validateDialog": {
+        "title": "Validasyon peman manyèl NatCash",
+        "desc": "Verifye si lajan an rive sou kont machann NatCash ou anvan ou valide enskripsyon an.",
+        "student": "Elèv :",
+        "course": "Fòmasyon :",
+        "amount": "Montan egzak :",
+        "senderPhone": "Nimewo moun ki voye l :",
+        "txnId": "Kòd tranzaksyon SMS :",
+        "internalNoteLabel": "Nòt pou biwo a (si ou vle) :",
+        "internalNotePlaceholder": "Eg: Mesaj SMS Natcom verifye a 2:30 PM...",
+        "confirmBtn": "Konfime validasyon an",
+        "validating": "Validasyon an ap fèt...",
+        "cancelBtn": "Anile",
+        "duplicateWarning": "Atansyon : Kòd tranzaksyon sa a ({txnId}) te deja itilize pou yon lòt kòmand ({orderRef}). Verifye byen pou w pa pran fo peman."
+      },
+      "rejectDialog": {
+        "title": "Refize peman sa a",
+        "desc": "Mete rezon ki fè ou refize peman an. Elèv la ap resevwa rezon an.",
+        "reasonLabel": "Rezon refi a (obligatwa) :",
+        "reasonPlaceholder": "Eg: Kòd SMS sa a pa egziste sou kont machann nan...",
+        "confirmBtn": "Konfime refi a",
+        "rejecting": "N ap refize l...",
+        "cancelBtn": "Anile"
+      },
+      "pagination": {
+        "prev": "Anvan",
+        "next": "Apre",
+        "pageInfo": "Paj {current} sou {total} ({count} rezilta)"
+      },
+      "notifications": {
+        "validateSuccess": "Peman an valide avèk siksè ! Elèv la enskri nan kou a kounye a.",
+        "rejectSuccess": "Peman an refize. Rezon an anrejistre.",
+        "duplicateBlocked": "Operasyon bloke : Kòd tranzaksyon sa a te deja valide pou yon lòt moun."
+      }
+    },
+    "students": {
+      "title": "Jesyon Elèv yo",
+      "subtitle": "Lis elèv ki enskri yo, fòmasyon yo swiv, epi opsyon pou bay oswa retire aksè manyèlman."
+    },
+    "promotions": {
+      "title": "Pwomosyon ak Kòd Rabè",
+      "subtitle": "Kreye kòd rabè pou etidyan yo ka itilize nan kesye a (pousantaj oswa montan fiks an HTG)."
+    },
+    "messages": {
+      "title": "Bwat Mesaj Kontak",
+      "subtitle": "Gade tout mesaj elèv ak vizitè yo voye nan paj kontak la, epi reponn yo rapidman pa WhatsApp oswa imel."
+    }
+  },
+  "legal": {
+    "common": {
+      "draftNoticeTitle": "NÒT ENPÒTAN : DOKIMAN SA A SE YON PWOFIL BOUYON POU YON AVOKA REVIZE",
+      "draftNoticeDesc": "Tèks sa a se yon pwojè preliminè ki fèt pou esplike règleman platfòm Faro School an. Li ekri ak bon lafwa epi li dwe pase anba men yon avoka oswa yon espesyalis nan lalwa Ayiti anvan li vin ofisyèl nèt.",
+      "lastUpdated": "Dènye mizajou : 26 oktòb 2025",
+      "contactTitle": "Ou gen yon kesyon sou règleman nou yo oswa sou done ou ?",
+      "contactDesc": "Ekip nou an la pou ede w nan nenpòt demand ki gen rapò ak dwa ou, kont ou oswa yon ranbousman.",
+      "contactBtn": "Kontakte sipò a",
+      "navTerms": "Kondisyon itilizasyon (CGU)",
+      "navPrivacy": "Règleman sou vi prive",
+      "navRefund": "Politik ranbousman (7 jou)"
+    },
+    "cgu": {
+      "metaTitle": "Kondisyon Jeneral pou Itilizasyon (CGU) | Faro School",
+      "metaDesc": "Li tout kondisyon ki gouvène kreyasyon kont, aksè nan kou yo, dwa otè ak règ pou itilize Faro School an Ayiti.",
+      "title": "Kondisyon Jeneral pou Itilizasyon",
+      "subtitle": "Règ, dwa ak devwa pou aprann sou platfòm fòmasyon sou entènèt Faro School an Ayiti.",
+      "sections": [
+        {
+          "title": "Objektif ak Akseptasyon Kondisyon yo",
+          "paragraphs": [
+            "Faro School se yon platfòm ayisyen pou fòmasyon pratik ak pwofesyonèl sou entènèt. Li fèt pou pèmèt etidyan, antreprenè ak pwofesyonèl yo devlope konpetans solid ki adapte ak reyalite mache travay an Ayiti.",
+            "Pou w ka itilize platfòm nan, ou dwe aksepte san rezèv tout Kondisyon Jeneral pou Itilizasyon sa yo (CGU). Lè w kreye yon kont sou Faro School, ou konfime ou li, konprann epi aksepte tout règ ki nan dokiman sa a."
+          ]
+        },
+        {
+          "title": "Kreyasyon Kont ak Sekirite Enfòmasyon ou",
+          "paragraphs": [
+            "Pou w ka enskri sou Faro School, ou dwe genyen omwen 16 lane oswa gen otorizasyon paran w. Elèv la angaje l pou li bay enfòmasyon ki egzak epi ki kòrèk (non konplè, bon adrès imèl ak yon nimewo telefòn ayisyen ki gen 8 chif).",
+            "Chak kont fèt pou yon sèl moun. Se ou menm sèl ki responsab sekirite modpas ou ak tout sa k ap pase sou kont ou. Si w wè yon moun ki konekte sou kont ou san otorizasyon, ou dwe avèti ekip Faro School an touswit."
+          ]
+        },
+        {
+          "title": "Aksè nan Fòmasyon yo ak Dwa Itilizasyon Pèsonèl",
+          "paragraphs": [
+            "Lè peman yon fòmasyon valide (pa MonCash, NatCash oswa si administrasyon an ba w li), ou jwenn yon aksè pèsonèl, endividyèl epi san limit nan tan pou w gade videyo, dokiman ak tès ki nan fòmasyon sa a toutotan sèvis la egziste (aksè pou tout lavi).",
+            "Aksè sa a se pou ou menm sèl aprann nan kad prive pa w. Li pa ba w okenn dwa pou w revann kou yo, prete yo bay lòt moun, oswa fè komès ak kontni formasyon yo."
+          ]
+        },
+        {
+          "title": "Entèdiksyon Fòmèl pou Pataje Kont ak Limit Koneksyon",
+          "paragraphs": [
+            "Li entèdi nèt pou w pataje modpas ou ak lòt moun, prete kont ou, oswa revann aksè a bay lòt etidyan.",
+            "Pou nou ka pwoteje sistèm nan epi asire jistis pou tout moun, sistèm nou an mete yon limit otomatik pou yon sèl kont pa ka konekte sou plis pase de (2) aparèy an menm tan. Si nou remake gen twòp koneksyon k ap fèt an menm tan nan plizyè kote diferan, Faro School gen dwa bloke lekti videyo a tanporèman oswa sispann kont la san avètisman."
+          ]
+        },
+        {
+          "title": "Pwopriyete Entelektyèl ak Pwoteksyon Kont Pirataj",
+          "paragraphs": [
+            "Tout sa ki sou platfòm nan (videyo, leson, tèks, dokiman PDF, imaj, kòd ak logo) se pwopriyete eksklizif Faro School ak pwofesè yo, dapre lwa sou dwa otè an Ayiti ak nan nivo entènasyonal.",
+            "Aksyon sa yo entèdi nèt epi moun ki fè yo ka jwenn pouswit devan lajistis :",
+            "Pou anpeche moun pirate videyo yo, gen yon mak espesyal (watermark) ki montre non ak telefòn elèv la k ap deplase sou ekran videyo a pandan tout tan l ap gade kou a."
+          ],
+          "list": [
+            "Telechaje videyo yo ak nenpòt lojisyèl oswa aplikasyon deyò ;",
+            "Fè kapti ekran (screenshot) oswa anrejistre videyo ak son leson yo ;",
+            "Kopye, pataje oswa pibliye kou yo sou rezo sosyal (YouTube, WhatsApp, Telegram, TikTok, elatriye) ;",
+            "Eseye pirate, kraze oswa ekstrè kòd sous platfòm nan."
+          ]
+        },
+        {
+          "title": "Fason pou Peye ak Mwayen Peman",
+          "paragraphs": [
+            "Tout pri fòmasyon yo afiche an Goud Ayisyen (HTG). Elèv la ka chwazi peye fasilman pa MonCash (Digicel) sou passerelle otomatik la, oswa pa transfè manyèl sou kont machann NatCash (Natcom) kote ekip nou an verifye l.",
+            "Tout acha ki fèt genyen garanti ranbousman 100% nan 7 jou dapre règleman ki nan Politik Ranbousman nou an."
+          ]
+        },
+        {
+          "title": "Bloke Kont, Sispann Aksè ak Lalwa Ayisyen",
+          "paragraphs": [
+            "Faro School rezève tout dwa pou l bloke oswa efase kont nenpòt elèv ki vyole règ sa yo, sitou si moun nan eseye pirate kou yo oswa fè fo peman.",
+            "Kondisyon sa yo respekte tout lwa Repiblik d Ayiti. Si ta gen yon dezakò, nou toujou chèche jwenn yon antant amikal dabò anvan nenpòt demach devan tribinal Pòtoprens."
+          ]
+        },
+        {
+          "title": "Règ Kominote ak Moderasyon Echanj yo",
+          "paragraphs": [
+            "Espas kominote Faro School fèt pou pataj konesans, respè mityèl ak pwogrè akademik. Li entèdi nèt pou : joure, bay manti sou moun, fè diskou rayisab, fè pwopagann lajan fasil oubyen pataje nimewo telefòn ak envitasyon sou WhatsApp.",
+            "Platfòm nan gen zouti otomatik ki detekte move konpòtman epi administratè yo gen dwa efase mesaj, mete yon kont an silans (1 èdtan, 24 èdtan, 7 jou) oubyen bloke yon itilizatè nèt si l pa respekte règleman yo."
+          ]
+        },
+        {
+          "title": "Asistan Pedagojik AI ak Founisè Twazyèm Pati",
+          "paragraphs": [
+            "Faro School mete a dispozisyon elèv yo yon asistan entèlijans atifisyèl (AI) ki itilize teknoloji modèn (tankou Anthropic Claude) pou ede yo lè fòmatè a pa an liy.",
+            "Itilizatè a rekonèt ke asistan sa a bay konsèy pou gide l sèlman. Malgre tout kontwòl sekirite yo, repons AI a ka gen erè pafwa. Asistan AI a pa ranplase fòmatè imen an epi li PA GEN DWA pou l pwomèt rabè, koupe pri, ni deside sou zafè ranbousman. Yon moun reyèl (fòmatè oswa administratè) toujou la pou pran kontwòl lè sa nesesè."
+          ]
+        }
+      ]
+    },
+    "confidentialite": {
+      "metaTitle": "Règleman sou Vi Prive | Faro School",
+      "metaDesc": "Gade ki enfòmasyon pèsonèl nou ranmase, ki jan nou pwoteje yo, ak dwa ou genyen pou mande efase yo sou Faro School.",
+      "title": "Règleman sou Vi Prive",
+      "subtitle": "Transparans total sou fason nou ranmase, pwoteje epi trete enfòmasyon pèsonèl ou sou Faro School.",
+      "sections": [
+        {
+          "title": "Enfòmasyon Pèsonèl Nou Ranmase",
+          "paragraphs": [
+            "Lè w ap enskri epi w ap swiv kou sou Faro School, nou sèlman ranmase enfòmasyon ki vrèman nesesè pou fòmasyon w mache byen :",
+            "Nou pa janm mande ni estoke enfòmasyon kat bankè w, ni kòd sekrè PIN MonCash oswa NatCash ou. Tout tranzaksyon fèt an sekirite dirèkteman sou rezo operatè mobil yo."
+          ],
+          "list": [
+            "Enfòmasyon sou pwofil ou : Non konplè, adrès imèl ki valab, nimewo telefòn ayisyen (+509) ;",
+            "Enfòmasyon pou koneksyon : Modpas kripte ke pèsonn pa ka li ;",
+            "Enfòmasyon sou peman : Montan ou peye an HTG, nimewo kòmand, kòd tranzaksyon MonCash oswa mesaj SMS NatCash ;",
+            "Pwogresyon nan aprantisaj : Ki leson ou gade, konbyen tan ou pase ap aprann, ak sètifika ou resevwa ;",
+            "Enfòmasyon teknik : Adrès IP ak aparèy w ap itilize pou anpeche moun konekte sou kont ou san otorizasyon."
+          ]
+        },
+        {
+          "title": "Pou Kisa Nou Itilize Enfòmasyon Sa Yo",
+          "paragraphs": [
+            "Nou itilize done ou yo sèlman pou rezon klè e legal :",
+            "Nou pa janm vann, lwe oswa bay lòt konpayi enfòmasyon ou yo pou yo fè piblisite."
+          ],
+          "list": [
+            "Ba w aksè nan videyo ak dokiman fòmasyon ou achte yo ;",
+            "Verifye epi valide transfè MonCash ak NatCash yo ;",
+            "Kreye sètifika ofisyèl ou yo ak yon kòd espesyal pou nenpòt moun ka verifye l ;",
+            "Pwoteje kont ou kont moun ki ta vle vòlè l epi goumen kont pirataj ;",
+            "Reponn kesyon ou yo sou WhatsApp oswa pa imèl lè w bezwen èd."
+          ]
+        },
+        {
+          "title": "Kote Nou Konsève Yo ak Sekirite Done yo",
+          "paragraphs": [
+            "Tout enfòmasyon ou yo konsève nan yon baz done PostgreSQL ki trè sekirize sou Supabase, ak teknoloji chifreman modèn (SSL/TLS).",
+            "Sistèm sekirite RLS (Row Level Security) asire ke okenn lòt etidyan pa ka wè enfòmasyon pa w, epi sèlman responsab otorize nan Faro School ki ka wè yo pou ede w."
+          ]
+        },
+        {
+          "title": "Konfidansyalite Mesaj Prive ak Kontwòl Sipèvizyon Trè Sekirize",
+          "paragraphs": [
+            "Tout mesaj prive ant yon elèv ak yon fòmatè pwoteje epi izole nèt. Dapre prensip nou yo, okenn administratè pa gen dwa antre gade mesaj prive w yo san rezon valab.",
+            "Yon administratè ka sèlman gade yon konvèsasyon prive nan yon ka ijan oswa eksepsyonèl ('break-glass') : sèlman si gen yon plent pou move konpòtman oswa yon pwoblèm pedagojik grav k ap tann solisyon. Pou chak aksè konsa, administratè a dwe obligatwaman ekri yon eksplikasyon detaye, epi tout enfòmasyon sa yo (ki moun ki gade, a ki lè, ak pou ki rezon) anrejistre pou tout tan nan rejis sekirite sistèm nan pou evite tout fòm abi."
+          ]
+        },
+        {
+          "title": "Dwa pou Wè, Chanje ak Mande Efase Kont ou",
+          "paragraphs": [
+            "Ou gen tout dwa sou enfòmasyon pèsonèl ou. Ou ka chanje non w ak telefòn ou nenpòt lè nan paj pwofil ou (/dashboard/profil).",
+            "Si w vle efase kont ou ak tout enfòmasyon ki ladan l (enskripsyon, nòt, sètifika), li sifi pou w voye yon ti mesaj sou support@faroschool.com oswa nan paj kontak nou an. N ap trete demand ou an nan mwens pase 72 èdtan."
+          ]
+        },
+        {
+          "title": "Bonbon (Cookies) ak Sesyon Koneksyon",
+          "paragraphs": [
+            "Faro School itilize sèlman ti bonbon (cookies) ki nesesè pou w rete konekte sou sit la, pou l sonje si w prefere Kreyòl oswa Franse, epi pou l konnen konbyen aparèy k ap gade videyo a.",
+            "Nou pa itilize okenn bonbon piblisite ki swiv ou sou lòt sit sou entènèt."
+          ]
+        },
+        {
+          "title": "Kontak pou Kesyon sou Vi Prive",
+          "paragraphs": [
+            "Si w gen nenpòt kesyon sou fason nou pwoteje vi prive w, ou ka ekri nou sou : privacy@faroschool.com oswa nan paj Kontak nou an."
+          ]
+        },
+        {
+          "title": "Dire Konsèvasyon Mesaj Prive ak Tretman AI",
+          "paragraphs": [
+            "Mesaj prive ou voye bay fòmatè yo ansanm ak kesyon ou poze asistan AI a rete anrejistre pandan tout tan kont ou aktif pou pèmèt fòmatè a swiv pwogrè ou kòrèkteman epi rezoud nenpòt difikilte.",
+            "Lè w ap itilize asistan AI a, Faro School pa janm voye imel ou, ni telefòn ou, ni modpas ou bay founisè AI yo. Se sèlman kesyon ou poze sou leson an ki voye nan yon fòma sekirize san idantite w."
+          ]
+        }
+      ]
+    },
+    "remboursement": {
+      "metaTitle": "Politik Ranbousman (Garanti 7 Jou) | Faro School",
+      "metaDesc": "Garanti ranbousman 100% nan 7 jou san diskisyon pou tout peman fèt pa MonCash ak NatCash sou Faro School.",
+      "title": "Politik Ranbousman",
+      "subtitle": "Garanti satisfè oswa ranbouse nan 7 jou san diskisyon pou tout fòmasyon ou peye ak MonCash oswa NatCash sou Faro School.",
+      "sections": [
+        {
+          "title": "Garanti Satisfè oswa Ranbouse nan 7 Jou",
+          "paragraphs": [
+            "Nan Faro School, pi gwo priyorite nou se pou tout fòmasyon nou yo vrèman itil ou nan lavi pwofesyonèl ou an Ayiti. Si pou nenpòt rezon yon fòmasyon pa satisfè w, ou gen sèt (7) jou depi jou peman an valide a pou w mande ranbousman konplè san diskisyon.",
+            "Garanti sa a aplike pou tout fòmasyon sou sit la, san okenn konplikasyon."
+          ]
+        },
+        {
+          "title": "Peman ki Ka Jwenn Ranbousman : MonCash ak NatCash",
+          "paragraphs": [
+            "Politik ranbousman nou an mache pou toude mwayen peman lokal nou genyen yo :",
+            "Ranbousman an toujou fèt an Goud Ayisyen (HTG) pou menm montan egzak ou te peye a (nou sèlman retire frè tranzaksyon operatè telefòn yo pran si sa aplikab)."
+          ],
+          "list": [
+            "Peman pa MonCash (Digicel) : Nou voye lajan an tounen dirèkteman sou menm kont MonCash ki te fè peman an ;",
+            "Peman pa NatCash (Natcom) : Nou fè transfè dirèk la sou kont NatCash ou endike nou an."
+          ]
+        },
+        {
+          "title": "Fason Fasil pou Mande Ranbousman",
+          "paragraphs": [
+            "Ou pa bezwen bay gwo eksplikasyon pou w mande ranbousman. Li fèt nan 3 etap senp :",
+            "Ekip nou an ap verifye demand la nan 24 èdtan, epi lajan an ap rive sou kont ou nan 24 a 72 èdtan travay."
+          ],
+          "list": [
+            "1. Ekri nou nan paj kontak sit la oswa sou WhatsApp ofisyèl nou an ;",
+            "2. Bay non konplè w, tit fòmasyon an ak nimewo referans kòmand la (egz: ORD-XXXX) ;",
+            "3. Mete nimewo MonCash oswa NatCash kote w vle resevwa lajan an."
+          ]
+        },
+        {
+          "title": "Ka kote Ranbousman Pa Aplike",
+          "paragraphs": [
+            "Pou nou ka pwoteje travay pwofesè yo epi anpeche moun fè abi, garanti a pa aplike nan ka sa yo :",
+            "Kou ranbousman an fin fèt, aksè ou nan videyo ak dokiman kou a ap dezaktive otomatikman sou kont ou."
+          ],
+          "list": [
+            "Si demand lan fèt apre delè sèt (7) jou a fin pase ;",
+            "Si w te deja fini tout kou a nèt (100%) epi w deja resevwa sètifika ofisyèl ou ;",
+            "Si sistèm nan te remake w t ap eseye telechaje oswa kopye tout videyo yo anvan w mande ranbousman."
+          ]
+        },
+        {
+          "title": "Èd ak Sipò Kliyan",
+          "paragraphs": [
+            "Si w gen nenpòt difikilte oswa si lajan ranbousman an pran tan pou rive sou telefòn ou, kontakte sipò nou touswit sou WhatsApp oswa pa imèl sou : support@faroschool.com."
+          ]
+        },
+        {
+          "title": "Wòl Asistan AI ak Fason pou Mande Ranbousman",
+          "paragraphs": [
+            "Tout demand ranbousman nan kad garanti 7 jou a dwe fèt sèlman atravè fòmilè sipò ofisyèl la oubyen pa echanj ak yon administratè imen Faro School.",
+            "Asistan vityèl AI a pa gen okenn pouvwa legal ni finansye pou l pwomèt, aksepte, oswa trete yon ranbousman lajan. Se sèl ekip jesyon Faro School ki ka valide sa."
+          ]
+        }
+      ]
+    }
+  }
+}

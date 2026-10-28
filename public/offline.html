@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Faro School - Hors ligne</title>
+  <meta name="theme-color" content="#031047">
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --surface: #FFFFFF;
+      --navy: #031047;
+      --orange: #FF7F0E;
+      --ink: #101828;
+      --muted: #5B6478;
+      --line: #E2E8F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .logo {
+      width: 160px;
+      height: auto;
+    }
+    .icon-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background-color: #FFF5EB;
+      color: var(--orange);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .subtitle {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--orange);
+      margin-top: 0.25rem;
+    }
+    p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.875rem 1.5rem;
+      border-radius: 16px;
+      background: var(--orange);
+      color: #FFFFFF;
+      font-size: 0.875rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 127, 14, 0.35);
+      transition: transform 0.1s ease, background 0.2s ease;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/brand/logo-on-light.png" alt="Faro School" class="logo" />
+    <div class="icon-circle">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23"></line>
+        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+        <path d="M10.71 5.05A16 16 0 0 1 22.56 9"></path>
+        <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+        <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+        <line x1="12" y1="20" x2="12.01" y2="20"></line>
+      </svg>
+    </div>
+    <div>
+      <h1>Vous êtes hors ligne</h1>
+      <div class="subtitle">Ou pa konekte sou entènèt</div>
+    </div>
+    <p>Veuillez vérifier votre connexion Internet ou Wi-Fi pour continuer à utiliser Faro School.</p>
+    <p style="font-size: 0.8rem; font-style: italic;">Tanpri verifye si w gen entènèt oswa Wi-Fi pou w ka kontinye sèvi ak Faro School.</p>
+    <button class="btn" onclick="window.location.reload()">Réessayer / Re-eseye</button>
+  </div>
+</body>
+</html>

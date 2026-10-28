@@ -1,0 +1,99 @@
+:root {
+  /* Faro School Brand Design Tokens */
+  --navy-deep: #031047;
+  --navy: #0B1F4B;
+  --navy-hero: #13306F;
+  --orange: #FF7F0E;
+  --orange-strong: #E56A00;
+  --orange-tint: #FFF5EB;
+  --blue: #1F5BDB;
+  --blue-light: #C5D3F7;
+  --blue-tint: #EFF4FE;
+  --ink: #101828;
+  --muted: #5B6478;
+  --line: #E2E8F0;
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --red: #DC2626;
+  --red-tint: #FEF2F2;
+  --ok: #16A34A;
+  --ok-tint: #F0FDF4;
+  --chat-bubble-own: #DCF8C6;
+  --chat-bg: #F7F9FC;
+  --slate-panel: #F4F6FA;
+
+  /* HSL Values for Tailwind & shadcn compatibility */
+  /* Background #F8FAFC: 210 40% 98% */
+  --background: 210 40% 98%;
+  /* Ink #101828: 221 43% 11% */
+  --foreground: 221 43% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 221 43% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 221 43% 11%;
+
+  /* Primary Orange #FF7F0E: 28 100% 53% */
+  --primary: 28 100% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary Navy #0B1F4B: 220 74% 17% */
+  --secondary: 220 74% 17%;
+  --secondary-foreground: 0 0% 100%;
+
+  /* Muted Text #5B6478: 221 14% 41% */
+  --muted: 220 14% 96%;
+  --muted-foreground: 221 14% 41%;
+
+  /* Accent: Orange Tint */
+  --accent: 30 100% 96%;
+  --accent-foreground: 28 100% 45%;
+
+  /* Destructive Red #DC2626 */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Line #E2E8F0 */
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 28 100% 53%;
+
+  /* Radii */
+  --radius: 0.75rem; /* 12px default */
+  --container-padding: 1rem;
+
+  /* Typography Font Families */
+  --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dark {
+  --background: 226 91% 15%; /* #031047 deep navy */
+  --foreground: 210 40% 98%;
+
+  --card: 220 74% 17%; /* #0B1F4B */
+  --card-foreground: 210 40% 98%;
+
+  --popover: 220 74% 17%;
+  --popover-foreground: 210 40% 98%;
+
+  --primary: 28 100% 53%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 217 33% 25%;
+  --secondary-foreground: 210 40% 98%;
+
+  --muted: 224 50% 20%;
+  --muted-foreground: 215 20% 65%;
+
+  --accent: 224 50% 20%;
+  --accent-foreground: 210 40% 98%;
+
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 224 50% 25%;
+  --input: 224 50% 25%;
+  --ring: 28 100% 53%;
+}
