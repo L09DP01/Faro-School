@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 export * from "./message-types";
 import type { ContactMessageItem } from "./message-types";
 
@@ -91,9 +92,16 @@ export async function getAdminMessagesList(): Promise<ContactMessageItem[]> {
         createdAt: m.created_at,
       }));
     }
+    if (!error && data && data.length === 0) {
+      return [];
+    }
   } catch (err) {
-    console.warn("Using fallback messages store:", err);
+    console.error("[Messages] Error fetching contact messages from database:", err);
   }
 
-  return initializeFallbackMessages();
+  if (isDemoMode()) {
+    return initializeFallbackMessages();
+  }
+
+  return [];
 }

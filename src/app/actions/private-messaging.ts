@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 import { isStaffOnline, recordStaffHeartbeat, setStaffAvailability } from "@/lib/messaging/presence";
 import { callAiAssistant } from "@/lib/messaging/ai-assistant";
 import { sendEscalationEmail } from "@/lib/messaging/email";
@@ -161,7 +162,8 @@ export async function createConversationAction(
           .from("courses")
           .select(`
             id,
-            title,
+            title_fr,
+            title_ht,
             instructor_id,
             instructor:profiles!instructor_id (
               id,
@@ -174,7 +176,7 @@ export async function createConversationAction(
           .single();
 
         if (courseData) {
-          courseTitle = courseData.title;
+          courseTitle = courseData.title_fr || courseData.title_ht || "Formation";
           if (courseData.instructor_id) {
             staffId = courseData.instructor_id;
             staffName = (courseData.instructor as any)?.display_name || (courseData.instructor as any)?.full_name || "Formateur";
@@ -217,7 +219,7 @@ export async function createConversationAction(
     const conversationId = `conv-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const nowIso = new Date().toISOString();
 
-    // Create in Supabase if live
+    // Create in Supabase
     try {
       const supabase = await createClient();
       const { data: convRow, error: convError } = await supabase
@@ -234,11 +236,25 @@ export async function createConversationAction(
         .select("id")
         .single();
 
-      if (convRow && !convError) {
+      if (convError || !convRow) {
+        if (!isDemoMode()) {
+          return {
+            success: false,
+            error: `Échec de création de la conversation : ${convError?.message || "Erreur base de données"}`,
+          };
+        }
+      } else {
         await sendPrivateMessageAction(convRow.id, trimmedBody, null, locale);
         return { success: true, data: { conversationId: convRow.id } };
       }
-    } catch {}
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return {
+          success: false,
+          error: `Échec de création de la conversation : ${err?.message || "Erreur"}`,
+        };
+      }
+    }
 
     // Fallback store
     const store = getMockConversationsStore();
@@ -393,8 +409,10 @@ export async function sendPrivateMessageAction(
           last_message_at,
           courses (
             id,
-            title,
-            description
+            title_fr,
+            title_ht,
+            description_fr,
+            description_ht
           ),
           staff:profiles!staff_id (
             id,
@@ -425,7 +443,7 @@ export async function sendPrivateMessageAction(
           staffName: (row.staff as any)?.display_name || (row.staff as any)?.full_name || "Formateur",
           staffRole: ((row.staff as any)?.role as any) || "instructor",
           courseId: row.course_id,
-          courseTitle: (row.courses as any)?.title || "Support Général",
+          courseTitle: (row.courses as any)?.title_fr || (row.courses as any)?.title_ht || "Support Général",
           subject: row.subject,
           status: row.status,
           createdAt: row.created_at,
@@ -462,10 +480,10 @@ export async function sendPrivateMessageAction(
       clientMessageId: clientMessageId || undefined,
     } as any;
 
-    // Save student message in DB
+    // Save message in DB
     try {
       const supabase = await createClient();
-      await supabase.from("messages").insert({
+      const { error: msgErr } = await supabase.from("messages").insert({
         id: messageId,
         conversation_id: conversationId,
         sender_type: senderType,
@@ -474,7 +492,21 @@ export async function sendPrivateMessageAction(
         created_at: nowIso,
         client_message_id: clientMessageId || null,
       });
-    } catch {}
+
+      if (msgErr && !isDemoMode()) {
+        return {
+          success: false,
+          error: `Échec d'enregistrement du message : ${msgErr.message}`,
+        };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return {
+          success: false,
+          error: `Échec d'enregistrement du message : ${err?.message || "Erreur"}`,
+        };
+      }
+    }
 
     // Save in mock store
     const messagesStore = getMockMessagesStore();
@@ -929,11 +961,11 @@ export async function startInstructorConversationAction(
       // Fetch course title
       const { data: courseData } = await supabase
         .from("courses")
-        .select("title")
+        .select("title_fr, title_ht")
         .eq("id", courseId)
         .single();
       if (courseData) {
-        courseTitle = courseData.title;
+        courseTitle = courseData.title_fr || courseData.title_ht || "Formation";
       }
 
       // Insert conversation

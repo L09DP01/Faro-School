@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 export * from "./promotion-types";
 import type { CouponItem, CouponFormData } from "./promotion-types";
 
@@ -146,9 +147,16 @@ export async function getAdminCouponsList(): Promise<CouponItem[]> {
         createdAt: c.created_at || new Date().toISOString(),
       }));
     }
+    if (!error && data && data.length === 0) {
+      return [];
+    }
   } catch (err) {
-    console.warn("Using fallback coupons store:", err);
+    console.error("[Promotions] Error fetching coupons from database:", err);
   }
 
-  return initializeFallbackStore();
+  if (isDemoMode()) {
+    return initializeFallbackStore();
+  }
+
+  return [];
 }

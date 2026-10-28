@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 export * from "./payment-types";
 import type { AdminPaymentItem, AdminPaymentsKPIs, PaymentStatusFilter } from "./payment-types";
 
-function getMockPaymentsData(): { kpis: AdminPaymentsKPIs; payments: AdminPaymentItem[] } {
+function getDemoPaymentsData(): { kpis: AdminPaymentsKPIs; payments: AdminPaymentItem[] } {
   const kpis: AdminPaymentsKPIs = {
     totalValidated: 38000,
     awaitingCount: 2,
@@ -74,111 +75,6 @@ function getMockPaymentsData(): { kpis: AdminPaymentsKPIs; payments: AdminPaymen
       rejectionReason: null,
       createdAt: new Date(Date.now() - 1 * 86400 * 1000).toISOString(),
     },
-    {
-      id: "p-fail-1",
-      orderId: "ord-fail-1",
-      orderReference: "ORD-FAIL-001",
-      studentId: "10000000-0000-0000-0000-000000000008",
-      studentName: "Samuel Toussaint",
-      studentEmail: "samuel@example.com",
-      studentPhone: "+50943889900",
-      courseId: "c-mkt",
-      courseTitleFr: "Marketing Digital pour Entreprises en Haïti",
-      courseTitleHt: "Maketing Dijital pou Biznis an Ayiti",
-      provider: "moncash",
-      providerTxnId: "TX_ERR_0099",
-      payerPhone: "+50943889900",
-      amountHtg: 3500,
-      status: "failed",
-      validatedAt: null,
-      validatedBy: null,
-      rejectionReason: "Fonds insuffisants",
-      createdAt: new Date(Date.now() - 2 * 86400 * 1000).toISOString(),
-    },
-    {
-      id: "p-val-2",
-      orderId: "ord-nc-2",
-      orderReference: "ORD-NC-002",
-      studentId: "10000000-0000-0000-0000-000000000002",
-      studentName: "Pierre-Louis Jean",
-      studentEmail: "pierrelouis@example.com",
-      studentPhone: "+50937223344",
-      courseId: "c-mkt",
-      courseTitleFr: "Marketing Digital pour Entreprises en Haïti",
-      courseTitleHt: "Maketing Dijital pou Biznis an Ayiti",
-      provider: "natcash",
-      providerTxnId: "TX_NC_2001",
-      payerPhone: "+50937223344",
-      amountHtg: 3500,
-      status: "validated",
-      validatedAt: new Date(Date.now() - 3 * 86400 * 1000).toISOString(),
-      validatedBy: "00000000-0000-0000-0000-000000000001",
-      rejectionReason: null,
-      createdAt: new Date(Date.now() - 3 * 86400 * 1000).toISOString(),
-    },
-    {
-      id: "p-val-1",
-      orderId: "ord-mc-1",
-      orderReference: "ORD-MC-001",
-      studentId: "10000000-0000-0000-0000-000000000001",
-      studentName: "Marie Dieudonné",
-      studentEmail: "marie@example.com",
-      studentPhone: "+50936112233",
-      courseId: "c-mkt",
-      courseTitleFr: "Marketing Digital pour Entreprises en Haïti",
-      courseTitleHt: "Maketing Dijital pou Biznis an Ayiti",
-      provider: "moncash",
-      providerTxnId: "TX_MC_1001",
-      payerPhone: "+50936112233",
-      amountHtg: 3500,
-      status: "validated",
-      validatedAt: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
-      validatedBy: "00000000-0000-0000-0000-000000000001",
-      rejectionReason: null,
-      createdAt: new Date(Date.now() - 5 * 86400 * 1000).toISOString(),
-    },
-    {
-      id: "p-val-5",
-      orderId: "ord-nc-5",
-      orderReference: "ORD-NC-005",
-      studentId: "10000000-0000-0000-0000-000000000006",
-      studentName: "Frantz Voltaire",
-      studentEmail: "frantz@example.com",
-      studentPhone: "+50942667788",
-      courseId: "c-excel",
-      courseTitleFr: "Excel pour Entreprise : de Zéro à Avancé",
-      courseTitleHt: "Excel pou Biznis : Depi nan Kòmansman rive nan Nivo Avanse",
-      provider: "natcash",
-      providerTxnId: "TX_NC_2002",
-      payerPhone: "+50942667788",
-      amountHtg: 4000,
-      status: "validated",
-      validatedAt: new Date(Date.now() - 25 * 86400 * 1000).toISOString(),
-      validatedBy: "00000000-0000-0000-0000-000000000001",
-      rejectionReason: null,
-      createdAt: new Date(Date.now() - 25 * 86400 * 1000).toISOString(),
-    },
-    {
-      id: "p-val-4",
-      orderId: "ord-mc-4",
-      orderReference: "ORD-MC-004",
-      studentId: "10000000-0000-0000-0000-000000000003",
-      studentName: "Esther Moïse",
-      studentEmail: "esther@example.com",
-      studentPhone: "+50940334455",
-      courseId: "c-mkt",
-      courseTitleFr: "Marketing Digital pour Entreprises en Haïti",
-      courseTitleHt: "Maketing Dijital pou Biznis an Ayiti",
-      provider: "moncash",
-      providerTxnId: "TX_MC_1003",
-      payerPhone: "+50940334455",
-      amountHtg: 3500,
-      status: "validated",
-      validatedAt: new Date(Date.now() - 28 * 86400 * 1000).toISOString(),
-      validatedBy: "00000000-0000-0000-0000-000000000001",
-      rejectionReason: null,
-      createdAt: new Date(Date.now() - 28 * 86400 * 1000).toISOString(),
-    },
   ];
 
   return { kpis, payments };
@@ -186,9 +82,10 @@ function getMockPaymentsData(): { kpis: AdminPaymentsKPIs; payments: AdminPaymen
 
 /**
  * Fetches admin payments KPIs.
+ * In production: always queries the database; returns zeros on error or empty.
+ * Never silently returns fake stats in production.
  */
 export async function getAdminPaymentsKPIs(): Promise<AdminPaymentsKPIs> {
-  const mock = getMockPaymentsData().kpis;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("get_admin_payments_kpis");
@@ -201,20 +98,31 @@ export async function getAdminPaymentsKPIs(): Promise<AdminPaymentsKPIs> {
         natcashTotal: Math.round(Number(data.natcash_total || 0)),
       };
     }
-    return mock;
-  } catch {
-    return mock;
+  } catch (err) {
+    console.error("[Payments] Failed to fetch payments KPIs from database:", err);
   }
+
+  if (isDemoMode()) {
+    return getDemoPaymentsData().kpis;
+  }
+
+  return {
+    totalValidated: 0,
+    awaitingCount: 0,
+    moncashTotal: 0,
+    natcashTotal: 0,
+  };
 }
 
 /**
  * Fetches filtered list of payments for admin ledger.
+ * In production: always queries real database; returns empty array when no records exist.
+ * Never silently returns fake transactions in production.
  */
 export async function getAdminPaymentsList(
   status: PaymentStatusFilter = "all",
   search: string = ""
 ): Promise<AdminPaymentItem[]> {
-  const mock = getMockPaymentsData().payments;
   try {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("get_admin_payments_list", {
@@ -245,9 +153,13 @@ export async function getAdminPaymentsList(
         createdAt: p.created_at,
       }));
     }
+  } catch (err) {
+    console.error("[Payments] Failed to fetch payments list from database:", err);
+  }
 
-    // Filter mock data as fallback
-    return mock.filter((p) => {
+  if (isDemoMode()) {
+    const demoPayments = getDemoPaymentsData().payments;
+    return demoPayments.filter((p) => {
       const matchesStatus =
         status === "all" ||
         (status === "awaiting_validation" && p.status === "awaiting_validation") ||
@@ -265,7 +177,7 @@ export async function getAdminPaymentsList(
 
       return matchesStatus && matchesSearch;
     });
-  } catch {
-    return mock;
   }
+
+  return [];
 }

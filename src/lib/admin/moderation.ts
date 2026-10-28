@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 
 export interface CommunityReportItem {
   id: string;
@@ -242,12 +243,21 @@ export async function getModerationReports(status: string = "pending"): Promise<
         createdAt: row.created_at,
       }));
     }
-  } catch {}
+    if (data && data.length === 0) {
+      return [];
+    }
+  } catch (err) {
+    console.error("[Moderation] Error fetching moderation reports:", err);
+  }
 
-  initializeMockModeration();
-  const store = globalThis.__mockCommunityReportsStore!;
-  if (status === "all") return store;
-  return store.filter((r) => r.status === status);
+  if (isDemoMode()) {
+    initializeMockModeration();
+    const store = globalThis.__mockCommunityReportsStore!;
+    if (status === "all") return store;
+    return store.filter((r) => r.status === status);
+  }
+
+  return [];
 }
 
 /**
@@ -298,34 +308,40 @@ export async function getMutedAndBannedUsers(): Promise<{
 
       return { mutedUsers, bannedUsers };
     }
-  } catch {}
+  } catch (err) {
+    console.error("[Moderation] Error fetching muted/banned users:", err);
+  }
 
-  initializeMockModeration();
-  const mutedUsers: MutedUserItem[] = [];
-  globalThis.__mockMutedUsersStore!.forEach((v, k) => {
-    const isExpired = new Date(v.mutedUntil) <= now;
-    mutedUsers.push({
-      id: k,
-      name: v.name,
-      email: v.email,
-      role: v.role,
-      mutedUntil: v.mutedUntil,
-      isExpired,
+  if (isDemoMode()) {
+    initializeMockModeration();
+    const mutedUsers: MutedUserItem[] = [];
+    globalThis.__mockMutedUsersStore!.forEach((v, k) => {
+      const isExpired = new Date(v.mutedUntil) <= now;
+      mutedUsers.push({
+        id: k,
+        name: v.name,
+        email: v.email,
+        role: v.role,
+        mutedUntil: v.mutedUntil,
+        isExpired,
+      });
     });
-  });
 
-  const bannedUsers: BannedUserItem[] = [];
-  globalThis.__mockBannedUsersStore!.forEach((v, k) => {
-    bannedUsers.push({
-      id: k,
-      name: v.name,
-      email: v.email,
-      role: v.role,
-      bannedAt: v.bannedAt,
+    const bannedUsers: BannedUserItem[] = [];
+    globalThis.__mockBannedUsersStore!.forEach((v, k) => {
+      bannedUsers.push({
+        id: k,
+        name: v.name,
+        email: v.email,
+        role: v.role,
+        bannedAt: v.bannedAt,
+      });
     });
-  });
 
-  return { mutedUsers, bannedUsers };
+    return { mutedUsers, bannedUsers };
+  }
+
+  return { mutedUsers: [], bannedUsers: [] };
 }
 
 /**
@@ -358,7 +374,7 @@ export async function saveWordFilterSettings(
 ): Promise<void> {
   try {
     const supabase = await createClient();
-    await supabase.from("platform_settings").upsert(
+    const { error } = await supabase.from("platform_settings").upsert(
       {
         key: "word_filter",
         value: filters,
@@ -367,7 +383,12 @@ export async function saveWordFilterSettings(
       },
       { onConflict: "key" }
     );
-  } catch {}
+    if (error && !isDemoMode()) {
+      throw error;
+    }
+  } catch (err) {
+    if (!isDemoMode()) throw err;
+  }
 
   initializeMockModeration();
   globalThis.__mockWordFilterStore = filters;
@@ -404,7 +425,7 @@ export async function saveCommunityRulesSettings(
 ): Promise<void> {
   try {
     const supabase = await createClient();
-    await supabase.from("platform_settings").upsert(
+    const { error } = await supabase.from("platform_settings").upsert(
       {
         key: "community_rules",
         value: rules,
@@ -413,7 +434,12 @@ export async function saveCommunityRulesSettings(
       },
       { onConflict: "key" }
     );
-  } catch {}
+    if (error && !isDemoMode()) {
+      throw error;
+    }
+  } catch (err) {
+    if (!isDemoMode()) throw err;
+  }
 
   initializeMockModeration();
   globalThis.__mockCommunityRulesStore = rules;

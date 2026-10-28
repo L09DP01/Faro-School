@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 import type {
   CommunityMessage,
   CommunityGroupInfo,
@@ -17,101 +18,14 @@ declare global {
 
 function initializeMockCommunity(): CommunityMessage[] {
   if (!globalThis.__mockCommunityMessagesStore) {
-    const today = new Date();
-    const isoDate = (minutesAgo: number) =>
-      new Date(today.getTime() - minutesAgo * 60 * 1000).toISOString();
-
-    globalThis.__mockCommunityMessagesStore = [
-      {
-        id: "msg-001",
-        authorId: "mock-admin-id",
-        authorName: "Jean Pierre",
-        authorRole: "admin",
-        authorAvatarUrl: null,
-        body: "Bonjour à tous ! 👋 Bienvenue dans la communauté Faro School. N'hésitez pas à poser vos questions, partager vos réalisations et aider les autres. 🚀",
-        pinned: true,
-        pinnedAt: isoDate(70),
-        deletedAt: null,
-        createdAt: isoDate(70),
-        reactions: [
-          { emoji: "👍", count: 24, userReacted: false },
-          { emoji: "❤️", count: 8, userReacted: false },
-          { emoji: "👏", count: 5, userReacted: false },
-        ],
-      },
-      {
-        id: "msg-002",
-        authorId: "10000000-0000-0000-0000-000000000001",
-        authorName: "Marie-Claude L.",
-        authorRole: "student",
-        authorAvatarUrl: null,
-        body: "Salut la communauté ! Quelqu'un a un bon outil gratuit pour créer des visuels pro ?",
-        pinned: false,
-        deletedAt: null,
-        createdAt: isoDate(45),
-        reactions: [],
-      },
-      {
-        id: "msg-003",
-        authorId: "mock-student-id",
-        authorName: "Jean Baptiste",
-        authorRole: "student",
-        authorAvatarUrl: null,
-        body: "@Marie-Claude L. Tu peux essayer Canva. Il est simple et très efficace pour les visuels, même la version gratuite.",
-        replyToId: "msg-002",
-        replyPreview: {
-          id: "msg-002",
-          authorName: "Marie-Claude L.",
-          body: "Salut la communauté ! Quelqu'un a un bon outil gratuit pour créer des visuels pro ?",
-        },
-        pinned: false,
-        deletedAt: null,
-        createdAt: isoDate(35),
-        reactions: [{ emoji: "👍", count: 6, userReacted: true }],
-      },
-      {
-        id: "msg-004",
-        authorId: "mock-instructor-id",
-        authorName: "Faro School (Formateur)",
-        authorRole: "instructor",
-        authorAvatarUrl: null,
-        body: "Bonsoir ! Pour ceux qui suivent le module Marketing Digital, la nouvelle leçon sur la création de contenu est maintenant disponible. 📹",
-        pinned: false,
-        deletedAt: null,
-        createdAt: isoDate(20),
-        reactions: [
-          { emoji: "🔥", count: 18, userReacted: false },
-          { emoji: "👍", count: 31, userReacted: false },
-        ],
-      },
-      {
-        id: "msg-005",
-        authorId: "10000000-0000-0000-0000-000000000002",
-        authorName: "David L.",
-        authorRole: "student",
-        authorAvatarUrl: null,
-        body: "Merci formateur ! Je vais la regarder ce soir. 🙏",
-        pinned: false,
-        deletedAt: null,
-        createdAt: isoDate(10),
-        reactions: [],
-      },
-    ];
+    globalThis.__mockCommunityMessagesStore = getDemoCommunityMessages();
   }
-
   if (!globalThis.__mockCommunityReadsStore) {
     globalThis.__mockCommunityReadsStore = new Map<string, string>();
   }
-
   if (!globalThis.__mockCommunityRulesAcceptedStore) {
     globalThis.__mockCommunityRulesAcceptedStore = new Set<string>();
-    // Pre-accept for mock profiles and test student
-    globalThis.__mockCommunityRulesAcceptedStore.add("mock-admin-id");
-    globalThis.__mockCommunityRulesAcceptedStore.add("mock-instructor-id");
-    globalThis.__mockCommunityRulesAcceptedStore.add("mock-student-id");
-    globalThis.__mockCommunityRulesAcceptedStore.add("student-1");
   }
-
   return globalThis.__mockCommunityMessagesStore;
 }
 
@@ -129,8 +43,102 @@ export function getMockCommunityRulesAcceptedStore(): Set<string> {
   return globalThis.__mockCommunityRulesAcceptedStore!;
 }
 
+export async function getPinnedMessage(): Promise<CommunityMessage | null> {
+  try {
+    const supabase = await createClient();
+    const { data: row, error } = await supabase
+      .from("community_messages")
+      .select(`
+        id,
+        author_id,
+        body,
+        attachment_url,
+        reply_to_id,
+        pinned,
+        pinned_at,
+        deleted_at,
+        created_at,
+        profiles (
+          id,
+          full_name,
+          display_name,
+          role,
+          avatar_url
+        )
+      `)
+      .eq("pinned", true)
+      .is("deleted_at", null)
+      .order("pinned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!error && row) {
+      return {
+        id: row.id,
+        authorId: row.author_id,
+        authorName: (row.profiles as any)?.display_name || (row.profiles as any)?.full_name || "Membre",
+        authorRole: (row.profiles as any)?.role || "admin",
+        authorAvatarUrl: (row.profiles as any)?.avatar_url || null,
+        body: row.body,
+        attachmentUrl: row.attachment_url,
+        replyToId: row.reply_to_id,
+        pinned: true,
+        pinnedAt: row.pinned_at,
+        deletedAt: null,
+        createdAt: row.created_at,
+        reactions: [],
+      };
+    }
+  } catch {}
+
+  if (isDemoMode()) {
+    const store = initializeMockCommunity();
+    return store.find((m) => m.pinned && !m.deletedAt) || null;
+  }
+  return null;
+}
+
+function getDemoCommunityMessages(): CommunityMessage[] {
+  const today = new Date();
+  const isoDate = (minutesAgo: number) =>
+    new Date(today.getTime() - minutesAgo * 60 * 1000).toISOString();
+
+  return [
+    {
+      id: "msg-001",
+      authorId: "mock-admin-id",
+      authorName: "Jean Pierre",
+      authorRole: "admin",
+      authorAvatarUrl: null,
+      body: "Bonjour à tous ! 👋 Bienvenue dans la communauté Faro School. N'hésitez pas à poser vos questions, partager vos réalisations et aider les autres. 🚀",
+      pinned: true,
+      pinnedAt: isoDate(70),
+      deletedAt: null,
+      createdAt: isoDate(70),
+      reactions: [
+        { emoji: "👍", count: 24, userReacted: false },
+        { emoji: "❤️", count: 8, userReacted: false },
+        { emoji: "👏", count: 5, userReacted: false },
+      ],
+    },
+    {
+      id: "msg-002",
+      authorId: "10000000-0000-0000-0000-000000000001",
+      authorName: "Marie-Claude L.",
+      authorRole: "student",
+      authorAvatarUrl: null,
+      body: "Salut la communauté ! Quelqu'un a un bon outil gratuit pour créer des visuels pro ?",
+      pinned: false,
+      deletedAt: null,
+      createdAt: isoDate(45),
+      reactions: [],
+    },
+  ];
+}
+
 /**
  * Loads messages paginated (50 at a time) for infinite scroll upwards.
+ * In production: always reads from real database; returns empty when no messages exist.
  */
 export async function getCommunityMessages(
   userId: string,
@@ -172,77 +180,45 @@ export async function getCommunityMessages(
       query = query.lt("created_at", beforeCreatedAt);
     }
 
-    const { data, error } = await query;
+    const { data: rows, error } = await query;
 
-    if (!error && data && data.length > 0) {
-      const hasMore = data.length > limit;
-      const items = hasMore ? data.slice(0, limit) : data;
+    if (!error && rows) {
+      const hasMore = rows.length > limit;
+      const sliced = hasMore ? rows.slice(0, limit) : rows;
 
-      // Map reply previews if needed
-      const replyIds = items.map((i: any) => i.reply_to_id).filter(Boolean);
-      const replyMap = new Map<string, { authorName: string; body: string }>();
+      // Group reactions per message
+      const messages: CommunityMessage[] = sliced.map((row: any) => {
+        const reactionsRaw: Array<{ emoji: string; user_id: string }> =
+          row.community_reactions || [];
 
-      if (replyIds.length > 0) {
-        const { data: replyMessages } = await supabase
-          .from("community_messages")
-          .select("id, body, profiles(full_name, display_name)")
-          .in("id", replyIds);
-
-        if (replyMessages) {
-          for (const rm of replyMessages as any[]) {
-            const authorName = rm.profiles?.display_name || rm.profiles?.full_name || "Membre";
-            replyMap.set(rm.id, { authorName, body: rm.body });
-          }
-        }
-      }
-
-      const mapped: CommunityMessage[] = items.map((row: any) => {
-        // Group reactions
         const reactionMap = new Map<string, { count: number; userReacted: boolean }>();
-        if (row.community_reactions && Array.isArray(row.community_reactions)) {
-          for (const rx of row.community_reactions) {
-            const existing = reactionMap.get(rx.emoji) || { count: 0, userReacted: false };
-            existing.count++;
-            if (rx.user_id === userId) {
-              existing.userReacted = true;
-            }
-            reactionMap.set(rx.emoji, existing);
+        for (const r of reactionsRaw) {
+          const current = reactionMap.get(r.emoji) || { count: 0, userReacted: false };
+          current.count += 1;
+          if (r.user_id === userId) {
+            current.userReacted = true;
           }
+          reactionMap.set(r.emoji, current);
         }
 
-        const reactions: CommunityReactionSummary[] = Array.from(reactionMap.entries()).map(
-          ([emoji, data]) => ({
-            emoji,
-            count: data.count,
-            userReacted: data.userReacted,
-          })
-        );
+        const reactions: CommunityReactionSummary[] = Array.from(
+          reactionMap.entries()
+        ).map(([emoji, val]) => ({
+          emoji,
+          count: val.count,
+          userReacted: val.userReacted,
+        }));
 
-        const displayName =
-          row.profiles?.display_name ||
-          row.profiles?.full_name ||
-          (row.profiles?.role === "admin"
-            ? "Admin"
-            : row.profiles?.role === "instructor"
-            ? "Formateur Limyè"
-            : "Membre");
-
+        const author = row.profiles;
         return {
           id: row.id,
           authorId: row.author_id,
-          authorName: displayName,
-          authorRole: (row.profiles?.role as any) || "student",
-          authorAvatarUrl: row.profiles?.avatar_url || null,
+          authorName: author?.display_name || author?.full_name || "Membre",
+          authorRole: author?.role || "student",
+          authorAvatarUrl: author?.avatar_url || null,
           body: row.body,
           attachmentUrl: row.attachment_url || null,
           replyToId: row.reply_to_id || null,
-          replyPreview: row.reply_to_id
-            ? {
-                id: row.reply_to_id,
-                authorName: replyMap.get(row.reply_to_id)?.authorName || "Membre",
-                body: replyMap.get(row.reply_to_id)?.body || "",
-              }
-            : null,
           pinned: Boolean(row.pinned),
           pinnedAt: row.pinned_at || null,
           deletedAt: row.deleted_at || null,
@@ -251,96 +227,120 @@ export async function getCommunityMessages(
         };
       });
 
-      return {
-        messages: mapped.reverse(), // ascending order for chat stream
-        hasMore,
-      };
+      // Reverse so chronological order (oldest to newest) is rendered bottom-up
+      messages.reverse();
+      return { messages, hasMore };
     }
   } catch (err) {
-    console.warn("Using fallback community messages store:", err);
+    console.error("[Community] Error fetching messages:", err);
   }
 
-  // Fallback in-memory store
-  const store = initializeMockCommunity();
-  const nonDeleted = store.filter((m) => !m.deletedAt);
-  let filtered = nonDeleted;
-  if (beforeCreatedAt) {
-    filtered = filtered.filter((m) => new Date(m.createdAt) < new Date(beforeCreatedAt));
+  if (isDemoMode()) {
+    const demoMsgs = getDemoCommunityMessages();
+    return { messages: demoMsgs, hasMore: false };
   }
 
-  const hasMore = filtered.length > limit;
-  const items = hasMore ? filtered.slice(0, limit) : filtered;
-
-  return {
-    messages: [...items],
-    hasMore,
-  };
+  return { messages: [], hasMore: false };
 }
 
 /**
- * Returns the currently pinned message, if any.
+ * Returns overall group metadata (real member count, real presence or 0, unread count).
+ * No artificial floor of 142 online or +2500 fake members.
  */
-export async function getPinnedMessage(): Promise<CommunityMessage | null> {
+export async function getCommunityGroupInfo(userId: string): Promise<CommunityGroupInfo> {
+  let totalMembers = 0;
+  let onlineCount = 0;
+  let lastMsgSnippet = "Bienvenue dans la communauté";
+  let lastMsgTime = "";
+  let pinnedMessage: CommunityMessage | null = null;
+
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+
+    // 1. Exact count of registered members
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true });
+    if (count !== null && count !== undefined) {
+      totalMembers = count;
+    }
+
+    // 2. Count members active within last 15 minutes (real presence)
+    const activeCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { count: activeCount } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .gte("last_seen_at", activeCutoff);
+    if (activeCount !== null && activeCount !== undefined) {
+      onlineCount = activeCount;
+    }
+
+    // 3. Fetch latest non-deleted message for snippet
+    const { data: latestMsg } = await supabase
+      .from("community_messages")
+      .select("body, created_at, profiles(display_name, full_name)")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestMsg) {
+      const author = (latestMsg.profiles as any)?.display_name || (latestMsg.profiles as any)?.full_name || "Membre";
+      lastMsgSnippet = `${author}: ${latestMsg.body}`;
+      lastMsgTime = new Date(latestMsg.created_at).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
+    // 4. Fetch pinned message
+    const { data: pinnedRow } = await supabase
       .from("community_messages")
       .select(`
         id,
         author_id,
         body,
-        created_at,
+        attachment_url,
+        reply_to_id,
         pinned,
+        pinned_at,
+        deleted_at,
+        created_at,
         profiles (
+          id,
           full_name,
           display_name,
-          role
+          role,
+          avatar_url
         )
       `)
       .eq("pinned", true)
       .is("deleted_at", null)
       .order("pinned_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (data) {
-      return {
-        id: data.id,
-        authorId: data.author_id,
-        authorName: (data.profiles as any)?.display_name || (data.profiles as any)?.full_name || "Admin",
-        authorRole: ((data.profiles as any)?.role as any) || "admin",
-        body: data.body,
+    if (pinnedRow) {
+      pinnedMessage = {
+        id: pinnedRow.id,
+        authorId: pinnedRow.author_id,
+        authorName: (pinnedRow.profiles as any)?.display_name || (pinnedRow.profiles as any)?.full_name || "Membre",
+        authorRole: (pinnedRow.profiles as any)?.role || "admin",
+        authorAvatarUrl: (pinnedRow.profiles as any)?.avatar_url || null,
+        body: pinnedRow.body,
+        attachmentUrl: pinnedRow.attachment_url,
+        replyToId: pinnedRow.reply_to_id,
         pinned: true,
-        createdAt: data.created_at,
+        pinnedAt: pinnedRow.pinned_at,
+        deletedAt: null,
+        createdAt: pinnedRow.created_at,
         reactions: [],
       };
     }
-  } catch {}
+  } catch (err) {
+    console.error("[Community] Error fetching group info:", err);
+  }
 
-  const store = initializeMockCommunity();
-  return store.find((m) => m.pinned && !m.deletedAt) || null;
-}
-
-/**
- * Returns overall group metadata (total members count, online presence, unread count).
- */
-export async function getCommunityGroupInfo(userId: string): Promise<CommunityGroupInfo> {
-  let totalMembers = 2548;
-  const onlineCount = 142;
-
-  try {
-    const supabase = await createClient();
-    const { count } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true });
-    if (count && count > 0) {
-      totalMembers = count + 2500; // includes active community alumni
-    }
-  } catch {}
-
-  const store = initializeMockCommunity();
-  const lastMsg = store[store.length - 1];
-  const pinned = store.find((m) => m.pinned && !m.deletedAt);
   const unreadCount = await getUnreadCommunityCount(userId);
 
   return {
@@ -349,10 +349,10 @@ export async function getCommunityGroupInfo(userId: string): Promise<CommunityGr
     description: "Discussions de la communauté Faro School",
     totalMembersCount: totalMembers,
     onlineCount,
-    lastMessageSnippet: lastMsg ? `${lastMsg.authorName}: ${lastMsg.body}` : "Bienvenue...",
-    lastMessageTime: lastMsg ? "10:24" : "10:00",
+    lastMessageSnippet: lastMsgSnippet,
+    lastMessageTime: lastMsgTime,
     unreadCount,
-    pinnedMessage: pinned || null,
+    pinnedMessage,
   };
 }
 
@@ -372,12 +372,12 @@ export async function hasAcceptedCommunityRules(userId: string): Promise<boolean
     }
   } catch {}
 
-  const acceptedSet = getMockCommunityRulesAcceptedStore();
-  return acceptedSet.has(userId);
+  return false;
 }
 
 /**
- * Computes unread message count for a given user.
+ * Computes real unread message count for a given user.
+ * Returns 0 when no new messages exist (never returns a fake badge of 12 in production).
  */
 export async function getUnreadCommunityCount(userId: string): Promise<number> {
   try {
@@ -386,7 +386,7 @@ export async function getUnreadCommunityCount(userId: string): Promise<number> {
       .from("community_reads")
       .select("last_read_at")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (readData?.last_read_at) {
       const { count } = await supabase
@@ -396,15 +396,19 @@ export async function getUnreadCommunityCount(userId: string): Promise<number> {
         .is("deleted_at", null);
       return count || 0;
     }
-  } catch {}
 
-  const readsStore = getMockCommunityReadsStore();
-  const lastRead = readsStore.get(userId);
-  if (!lastRead) {
-    return 12; // default unread preview matching mockup badge
+    // If user has never read the community, count recent messages
+    const { count: allCount } = await supabase
+      .from("community_messages")
+      .select("id", { count: "exact", head: true })
+      .is("deleted_at", null);
+
+    return allCount || 0;
+  } catch (err) {
+    console.error("[Community] Error calculating unread count:", err);
   }
-  const store = initializeMockCommunity();
-  return store.filter((m) => !m.deletedAt && new Date(m.createdAt) > new Date(lastRead)).length;
+
+  return 0;
 }
 
 /**
@@ -426,13 +430,16 @@ export async function getCommunityMembers(): Promise<CommunityMember[]> {
         avatarUrl: p.avatar_url || null,
       }));
     }
-  } catch {}
+  } catch (err) {
+    console.error("[Community] Error fetching community members:", err);
+  }
 
-  return [
-    { id: "mock-admin-id", displayName: "Jean Pierre", role: "admin" },
-    { id: "mock-instructor-id", displayName: "Faro School (Formateur)", role: "instructor" },
-    { id: "10000000-0000-0000-0000-000000000001", displayName: "Marie-Claude L.", role: "student" },
-    { id: "10000000-0000-0000-0000-000000000002", displayName: "David L.", role: "student" },
-    { id: "mock-student-id", displayName: "Jean Baptiste", role: "student" },
-  ];
+  if (isDemoMode()) {
+    return [
+      { id: "mock-admin-id", displayName: "Jean Pierre", role: "admin" },
+      { id: "mock-instructor-id", displayName: "Faro School (Formateur)", role: "instructor" },
+    ];
+  }
+
+  return [];
 }

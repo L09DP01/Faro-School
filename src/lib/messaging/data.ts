@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 import type {
   Conversation,
   PrivateMessage,
@@ -43,25 +44,7 @@ function initializeMockMessaging(): {
       lastMessagePreview: "Merci pour votre question ! Je regarde vos captures.",
     };
 
-    const conv2: Conversation = {
-      id: "conv-002",
-      studentId: "student-mock-id",
-      studentName: "Étudiant Test",
-      staffId: "admin-mock-id",
-      staffName: "Support Faro School",
-      staffRole: "admin",
-      courseId: null,
-      courseTitle: "Support Général",
-      subject: "Facturation et reçu fiscal",
-      status: "staff_replied",
-      createdAt: iso(1440),
-      lastMessageAt: iso(60),
-      unreadCount: 0,
-      lastMessagePreview: "Votre reçu a été envoyé par e-mail.",
-    };
-
-    globalThis.__mockConversationsStore = [conv1, conv2];
-
+    globalThis.__mockConversationsStore = [conv1];
     const messagesMap = new Map<string, PrivateMessage[]>();
     messagesMap.set("conv-001", [
       {
@@ -73,51 +56,6 @@ function initializeMockMessaging(): {
         senderRole: "student",
         body: "Bonjour formateur, je bloque sur la configuration du webhook MonCash dans le module 4.",
         createdAt: iso(30),
-      },
-      {
-        id: "msg-p-2",
-        conversationId: "conv-001",
-        senderType: "ai",
-        senderName: "Assistant IA de Jean-Marc Baptiste",
-        body: "Bonjour ! En attendant que Jean-Marc Baptiste soit en ligne, vérifiez que l'URL de votre webhook est bien accessible publiquement et accepte les requêtes POST avec signature HMAC.",
-        meta: {
-          confidence: 0.92,
-          model: "claude-3-haiku-20240307",
-        },
-        createdAt: iso(28),
-      },
-      {
-        id: "msg-p-3",
-        conversationId: "conv-001",
-        senderType: "staff",
-        senderId: "instructor-mock-id",
-        senderName: "Jean-Marc Baptiste",
-        senderRole: "instructor",
-        body: "Merci pour votre question ! Je viens de me connecter et je regarde vos captures d'écran dès maintenant.",
-        createdAt: iso(5),
-      },
-    ]);
-
-    messagesMap.set("conv-002", [
-      {
-        id: "msg-p-4",
-        conversationId: "conv-002",
-        senderType: "student",
-        senderId: "student-mock-id",
-        senderName: "Étudiant Test",
-        senderRole: "student",
-        body: "Bonjour, est-il possible d'obtenir une facture proforma pour mon entreprise ?",
-        createdAt: iso(120),
-      },
-      {
-        id: "msg-p-5",
-        conversationId: "conv-002",
-        senderType: "staff",
-        senderId: "admin-mock-id",
-        senderName: "Support Faro School",
-        senderRole: "admin",
-        body: "Votre reçu et votre facture proforma ont été envoyés par e-mail.",
-        createdAt: iso(60),
       },
     ]);
 
@@ -145,12 +83,13 @@ export function getMockEscalationsStore(): EscalationRecord[] {
 }
 
 /**
- * Returns all conversations for a student.
+ * Returns all conversations for a student from real database.
+ * Never displays fake conversations in production.
  */
 export async function getStudentConversations(studentId: string): Promise<Conversation[]> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("conversations")
       .select(`
         id,
@@ -162,7 +101,9 @@ export async function getStudentConversations(studentId: string): Promise<Conver
         created_at,
         last_message_at,
         courses (
-          title
+          id,
+          title_fr,
+          title_ht
         ),
         staff:profiles!staff_id (
           display_name,
@@ -174,10 +115,15 @@ export async function getStudentConversations(studentId: string): Promise<Conver
       .eq("student_id", studentId)
       .order("last_message_at", { ascending: false });
 
-    if (data && data.length > 0) {
+    if (!error && data && data.length > 0) {
       const convs: Conversation[] = await Promise.all(
         data.map(async (row: any) => {
           const staffOnline = await isStaffOnline(row.staff_id);
+          const cTitle =
+            row.courses?.title_fr ||
+            row.courses?.title_ht ||
+            (row.course_id ? "Formation" : "Support Général");
+
           return {
             id: row.id,
             studentId: row.student_id,
@@ -187,7 +133,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
             staffRole: row.staff?.role || "instructor",
             staffAvatarUrl: row.staff?.avatar_url || null,
             courseId: row.course_id,
-            courseTitle: row.courses?.title || (row.course_id ? "Formation" : "Support Général"),
+            courseTitle: cTitle,
             subject: row.subject,
             status: row.status,
             createdAt: row.created_at,
@@ -198,21 +144,36 @@ export async function getStudentConversations(studentId: string): Promise<Conver
       );
       return convs;
     }
-  } catch {}
 
-  // Fallback
-  const store = getMockConversationsStore();
-  const studentConvs = store.filter((c) => c.studentId === studentId || c.studentId === "student-mock-id");
-  for (const c of studentConvs) {
-    c.isStaffOnline = await isStaffOnline(c.staffId);
+    if (!error && data && data.length === 0) {
+      return [];
+    }
+  } catch (err) {
+    console.error("[Messaging] Error fetching student conversations:", err);
   }
-  return studentConvs;
+
+  // Fallback ONLY in demo mode
+  if (isDemoMode()) {
+    const store = getMockConversationsStore();
+    const studentConvs = store.filter(
+      (c) => c.studentId === studentId || c.studentId === "student-mock-id"
+    );
+    for (const c of studentConvs) {
+      c.isStaffOnline = await isStaffOnline(c.staffId);
+    }
+    return studentConvs;
+  }
+
+  return [];
 }
 
 /**
  * Returns all conversations assigned to a staff member (or all for admin audit).
  */
-export async function getStaffConversations(staffId: string, isAdmin: boolean = false): Promise<Conversation[]> {
+export async function getStaffConversations(
+  staffId: string,
+  isAdmin: boolean = false
+): Promise<Conversation[]> {
   try {
     const supabase = await createClient();
     let query = supabase
@@ -227,7 +188,9 @@ export async function getStaffConversations(staffId: string, isAdmin: boolean = 
         created_at,
         last_message_at,
         courses (
-          title
+          id,
+          title_fr,
+          title_ht
         ),
         student:profiles!student_id (
           display_name,
@@ -241,8 +204,8 @@ export async function getStaffConversations(staffId: string, isAdmin: boolean = 
       query = query.eq("staff_id", staffId);
     }
 
-    const { data } = await query;
-    if (data && data.length > 0) {
+    const { data, error } = await query;
+    if (!error && data && data.length > 0) {
       return data.map((row: any) => ({
         id: row.id,
         studentId: row.student_id,
@@ -252,21 +215,33 @@ export async function getStaffConversations(staffId: string, isAdmin: boolean = 
         staffName: "Moi",
         staffRole: "instructor",
         courseId: row.course_id,
-        courseTitle: row.courses?.title || "Support",
+        courseTitle:
+          row.courses?.title_fr ||
+          row.courses?.title_ht ||
+          (row.course_id ? "Formation" : "Support Général"),
         subject: row.subject,
         status: row.status,
         createdAt: row.created_at,
         lastMessageAt: row.last_message_at,
       }));
     }
-  } catch {}
 
-  // Fallback
-  const store = getMockConversationsStore();
-  if (isAdmin) {
-    return store;
+    if (!error && data && data.length === 0) {
+      return [];
+    }
+  } catch (err) {
+    console.error("[Messaging] Error fetching staff conversations:", err);
   }
-  return store.filter((c) => c.staffId === staffId || c.staffId === "instructor-mock-id");
+
+  if (isDemoMode()) {
+    const store = getMockConversationsStore();
+    if (isAdmin) {
+      return store;
+    }
+    return store.filter((c) => c.staffId === staffId || c.staffId === "instructor-mock-id");
+  }
+
+  return [];
 }
 
 /**
@@ -279,7 +254,7 @@ export async function getConversationById(
 ): Promise<Conversation | null> {
   try {
     const supabase = await createClient();
-    const { data: row } = await supabase
+    const { data: row, error } = await supabase
       .from("conversations")
       .select(`
         id,
@@ -291,7 +266,9 @@ export async function getConversationById(
         created_at,
         last_message_at,
         courses (
-          title
+          id,
+          title_fr,
+          title_ht
         ),
         student:profiles!student_id (
           display_name,
@@ -308,7 +285,7 @@ export async function getConversationById(
       .eq("id", conversationId)
       .single();
 
-    if (row) {
+    if (!error && row) {
       const rowData: any = row;
       // Permission check
       if (
@@ -319,7 +296,7 @@ export async function getConversationById(
         return null;
       }
 
-      // Privacy audit log: If an admin accesses a private conversation between a student and another staff member
+      // Privacy audit log: If an admin accesses a private conversation between student and staff
       if (
         currentUserRole === "admin" &&
         rowData.student_id !== currentUserId &&
@@ -340,6 +317,11 @@ export async function getConversationById(
       }
 
       const staffOnline = await isStaffOnline(rowData.staff_id);
+      const cTitle =
+        rowData.courses?.title_fr ||
+        rowData.courses?.title_ht ||
+        (rowData.course_id ? "Formation" : "Support Général");
+
       return {
         id: rowData.id,
         studentId: rowData.student_id,
@@ -350,7 +332,7 @@ export async function getConversationById(
         staffRole: rowData.staff?.role || "instructor",
         staffAvatarUrl: rowData.staff?.avatar_url || null,
         courseId: rowData.course_id,
-        courseTitle: rowData.courses?.title || (rowData.course_id ? "Formation" : "Support Général"),
+        courseTitle: cTitle,
         subject: rowData.subject,
         status: rowData.status,
         createdAt: rowData.created_at,
@@ -358,15 +340,19 @@ export async function getConversationById(
         isStaffOnline: staffOnline,
       };
     }
-  } catch {}
-
-  // Fallback
-  const store = getMockConversationsStore();
-  const conv = store.find((c) => c.id === conversationId);
-  if (conv) {
-    conv.isStaffOnline = await isStaffOnline(conv.staffId);
-    return conv;
+  } catch (err) {
+    console.error("[Messaging] Error fetching conversation by ID:", err);
   }
+
+  if (isDemoMode()) {
+    const store = getMockConversationsStore();
+    const conv = store.find((c) => c.id === conversationId);
+    if (conv) {
+      conv.isStaffOnline = await isStaffOnline(conv.staffId);
+      return conv;
+    }
+  }
+
   return null;
 }
 
@@ -376,7 +362,7 @@ export async function getConversationById(
 export async function getConversationMessages(conversationId: string): Promise<PrivateMessage[]> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("messages")
       .select(`
         id,
@@ -397,7 +383,7 @@ export async function getConversationMessages(conversationId: string): Promise<P
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 
-    if (data && data.length > 0) {
+    if (!error && data && data.length > 0) {
       return data.map((row: any) => ({
         id: row.id,
         conversationId: row.conversation_id,
@@ -412,11 +398,20 @@ export async function getConversationMessages(conversationId: string): Promise<P
         readAt: row.read_at,
       }));
     }
-  } catch {}
 
-  // Fallback
-  const messagesMap = getMockMessagesStore();
-  return messagesMap.get(conversationId) || [];
+    if (!error && data && data.length === 0) {
+      return [];
+    }
+  } catch (err) {
+    console.error("[Messaging] Error fetching messages:", err);
+  }
+
+  if (isDemoMode()) {
+    const messagesMap = getMockMessagesStore();
+    return messagesMap.get(conversationId) || [];
+  }
+
+  return [];
 }
 
 /**
@@ -426,13 +421,14 @@ export async function getConversationMessages(conversationId: string): Promise<P
 export async function getStudentEnrolledCourses(studentId: string): Promise<EnrolledCourseOption[]> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("enrollments")
       .select(`
         course_id,
         courses (
           id,
-          title,
+          title_fr,
+          title_ht,
           instructor_id,
           instructor:profiles!instructor_id (
             id,
@@ -443,7 +439,7 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
       `)
       .eq("user_id", studentId);
 
-    if (data && data.length > 0) {
+    if (!error && data && data.length > 0) {
       return data
         .filter((row: any) => row.courses)
         .map((row: any) => {
@@ -451,29 +447,32 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
           const inst = c.instructor;
           return {
             id: c.id,
-            title: c.title,
+            title: c.title_fr || c.title_ht || "Formation",
             instructorId: c.instructor_id,
             instructorName: inst?.display_name || inst?.full_name || "Formateur Faro School",
           };
         });
     }
-  } catch {}
 
-  // Fallback
-  return [
-    {
-      id: "course-mock-1",
-      title: "Lancer un business e-commerce rentable en Haïti",
-      instructorId: "instructor-mock-id",
-      instructorName: "Jean-Marc Baptiste",
-    },
-    {
-      id: "course-mock-2",
-      title: "Marketing Digital & Stratégie TikTok / Facebook",
-      instructorId: "instructor-mock-id",
-      instructorName: "Jean-Marc Baptiste",
-    },
-  ];
+    if (!error && data && data.length === 0) {
+      return [];
+    }
+  } catch (err) {
+    console.error("[Messaging] Error fetching student enrolled courses:", err);
+  }
+
+  if (isDemoMode()) {
+    return [
+      {
+        id: "course-mock-1",
+        title: "Lancer un business e-commerce rentable en Haïti",
+        instructorId: "instructor-mock-id",
+        instructorName: "Jean-Marc Baptiste",
+      },
+    ];
+  }
+
+  return [];
 }
 
 /**
@@ -482,14 +481,18 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
 export async function getUnreadPrivateMessagesCount(userId: string): Promise<number> {
   try {
     const supabase = await createClient();
-    const { count } = await supabase
+    const { count, error } = await supabase
       .from("messages")
       .select("id, conversation_id, conversations!inner(student_id, staff_id)", { count: "exact", head: true })
       .is("read_at", null)
       .neq("sender_id", userId);
 
-    return count || 0;
-  } catch {}
+    if (!error) {
+      return count || 0;
+    }
+  } catch (err) {
+    console.error("[Messaging] Error counting unread messages:", err);
+  }
 
-  return 1; // default preview badge
+  return 0;
 }

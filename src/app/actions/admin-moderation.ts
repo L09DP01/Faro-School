@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { can } from "@/lib/permissions";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 import {
   logAdminAction,
   saveWordFilterSettings,
@@ -38,30 +39,42 @@ export async function deleteReportedMessageAction(
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: msgErr } = await supabase
         .from("community_messages")
         .update({ deleted_at: nowIso })
         .eq("id", messageId);
+      if (msgErr && !isDemoMode()) {
+        return { success: false, error: msgErr.message };
+      }
 
-      await supabase
+      const { error: repErr } = await supabase
         .from("community_reports")
         .update({ status: "resolved" })
         .eq("id", reportId);
-    } catch {}
-
-    // In-memory fallback
-    const communityStore = getMockCommunityStore();
-    const msg = communityStore.find((m) => m.id === messageId);
-    if (msg) {
-      msg.deletedAt = nowIso;
+      if (repErr && !isDemoMode()) {
+        return { success: false, error: repErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur de base de données." };
+      }
     }
 
-    const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
-    if (reportsStore) {
-      const rep = reportsStore.find((r) => r.id === reportId);
-      if (rep) {
-        rep.status = "resolved";
-        rep.messageDeleted = true;
+    if (isDemoMode()) {
+      // In-memory fallback
+      const communityStore = getMockCommunityStore();
+      const msg = communityStore.find((m: any) => m.id === messageId);
+      if (msg) {
+        msg.deletedAt = nowIso;
+      }
+
+      const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
+      if (reportsStore) {
+        const rep = reportsStore.find((r) => r.id === reportId);
+        if (rep) {
+          rep.status = "resolved";
+          rep.messageDeleted = true;
+        }
       }
     }
 
@@ -100,34 +113,45 @@ export async function muteReportAuthorAction(
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ muted_until: mutedUntil })
         .eq("id", authorId);
+      if (profileErr && !isDemoMode()) {
+        return { success: false, error: profileErr.message };
+      }
 
-      await supabase
+      const { error: repErr } = await supabase
         .from("community_reports")
         .update({ status: "resolved" })
         .eq("id", reportId);
-    } catch {}
-
-    // In-memory fallback
-    const mutedStore = (globalThis as any).__mockMutedUsersStore as Map<string, any> | undefined;
-    if (mutedStore) {
-      mutedStore.set(authorId, {
-        name: "Utilisateur",
-        email: "user@example.com",
-        role: "student",
-        mutedUntil,
-      });
+      if (repErr && !isDemoMode()) {
+        return { success: false, error: repErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur de base de données." };
+      }
     }
 
-    const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
-    if (reportsStore) {
-      const rep = reportsStore.find((r) => r.id === reportId);
-      if (rep) {
-        rep.status = "resolved";
-        rep.authorMutedUntil = mutedUntil;
+    if (isDemoMode()) {
+      const mutedStore = (globalThis as any).__mockMutedUsersStore as Map<string, any> | undefined;
+      if (mutedStore) {
+        mutedStore.set(authorId, {
+          name: "Utilisateur",
+          email: "user@example.com",
+          role: "student",
+          mutedUntil,
+        });
+      }
+
+      const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
+      if (reportsStore) {
+        const rep = reportsStore.find((r) => r.id === reportId);
+        if (rep) {
+          rep.status = "resolved";
+          rep.authorMutedUntil = mutedUntil;
+        }
       }
     }
 
@@ -161,34 +185,45 @@ export async function banReportAuthorAction(
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ banned_at: bannedAt })
         .eq("id", authorId);
+      if (profileErr && !isDemoMode()) {
+        return { success: false, error: profileErr.message };
+      }
 
-      await supabase
+      const { error: repErr } = await supabase
         .from("community_reports")
         .update({ status: "resolved" })
         .eq("id", reportId);
-    } catch {}
-
-    // In-memory fallback
-    const bannedStore = (globalThis as any).__mockBannedUsersStore as Map<string, any> | undefined;
-    if (bannedStore) {
-      bannedStore.set(authorId, {
-        name: "Utilisateur",
-        email: "banned@example.com",
-        role: "student",
-        bannedAt,
-      });
+      if (repErr && !isDemoMode()) {
+        return { success: false, error: repErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur de base de données." };
+      }
     }
 
-    const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
-    if (reportsStore) {
-      const rep = reportsStore.find((r) => r.id === reportId);
-      if (rep) {
-        rep.status = "resolved";
-        rep.authorBannedAt = bannedAt;
+    if (isDemoMode()) {
+      const bannedStore = (globalThis as any).__mockBannedUsersStore as Map<string, any> | undefined;
+      if (bannedStore) {
+        bannedStore.set(authorId, {
+          name: "Utilisateur",
+          email: "banned@example.com",
+          role: "student",
+          bannedAt,
+        });
+      }
+
+      const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
+      if (reportsStore) {
+        const rep = reportsStore.find((r) => r.id === reportId);
+        if (rep) {
+          rep.status = "resolved";
+          rep.authorBannedAt = bannedAt;
+        }
       }
     }
 
@@ -219,17 +254,26 @@ export async function dismissReportAction(
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: repErr } = await supabase
         .from("community_reports")
         .update({ status: "dismissed" })
         .eq("id", reportId);
-    } catch {}
+      if (repErr && !isDemoMode()) {
+        return { success: false, error: repErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur lors du rejet du signalement." };
+      }
+    }
 
-    const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
-    if (reportsStore) {
-      const rep = reportsStore.find((r) => r.id === reportId);
-      if (rep) {
-        rep.status = "dismissed";
+    if (isDemoMode()) {
+      const reportsStore = (globalThis as any).__mockCommunityReportsStore as any[] | undefined;
+      if (reportsStore) {
+        const rep = reportsStore.find((r) => r.id === reportId);
+        if (rep) {
+          rep.status = "dismissed";
+        }
       }
     }
 
@@ -254,15 +298,24 @@ export async function unmuteUserAction(userId: string): Promise<AdminActionResul
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ muted_until: null })
         .eq("id", userId);
-    } catch {}
+      if (profileErr && !isDemoMode()) {
+        return { success: false, error: profileErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur lors de la levée de mise en sourdine." };
+      }
+    }
 
-    const mutedStore = (globalThis as any).__mockMutedUsersStore as Map<string, any> | undefined;
-    if (mutedStore) {
-      mutedStore.delete(userId);
+    if (isDemoMode()) {
+      const mutedStore = (globalThis as any).__mockMutedUsersStore as Map<string, any> | undefined;
+      if (mutedStore) {
+        mutedStore.delete(userId);
+      }
     }
 
     logAdminAction(user.id, "moderation_unmute_user", userId, "Levée de la mise en sourdine");
@@ -286,15 +339,24 @@ export async function unbanUserAction(userId: string): Promise<AdminActionResult
 
     try {
       const supabase = await createClient();
-      await supabase
+      const { error: profileErr } = await supabase
         .from("profiles")
         .update({ banned_at: null })
         .eq("id", userId);
-    } catch {}
+      if (profileErr && !isDemoMode()) {
+        return { success: false, error: profileErr.message };
+      }
+    } catch (err: any) {
+      if (!isDemoMode()) {
+        return { success: false, error: err?.message || "Erreur lors du débannissement." };
+      }
+    }
 
-    const bannedStore = (globalThis as any).__mockBannedUsersStore as Map<string, any> | undefined;
-    if (bannedStore) {
-      bannedStore.delete(userId);
+    if (isDemoMode()) {
+      const bannedStore = (globalThis as any).__mockBannedUsersStore as Map<string, any> | undefined;
+      if (bannedStore) {
+        bannedStore.delete(userId);
+      }
     }
 
     logAdminAction(user.id, "moderation_unban_user", userId, "Rétablissement du compte débanni");

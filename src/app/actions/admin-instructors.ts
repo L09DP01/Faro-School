@@ -1,10 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { can } from "@/lib/permissions";
-import { getFallbackInstructorsStore } from "@/lib/admin/instructors";
 import { revalidatePath } from "next/cache";
 
 async function assertAdmin() {
@@ -24,7 +22,10 @@ export interface CreateInstructorInput {
 }
 
 /**
- * Creates a new instructor, adds instructor profile record, and logs action to audit logs.
+ * Creates a real user in Supabase Auth via auth.admin.createUser(),
+ * uses the returned UUID for profiles.id, assigns instructor role via set_user_role RPC,
+ * and records the action into admin_audit_logs.
+ * Never falls back to simulated data.
  */
 export async function createInstructorAction(
   input: CreateInstructorInput
@@ -48,90 +49,84 @@ export async function createInstructorAction(
       return { success: false, error: "Le titre ou domaine d'expertise est requis." };
     }
 
-    const supabase = await createClient();
     const adminDb = createAdminClient();
-
     let createdId = "";
 
-    try {
-      // 1. Check if profile already exists with this email
-      const { data: existingProfile } = await supabase
-        .from("profiles")
-        .select("id, role")
-        .eq("email", email)
-        .single();
+    // 1. Check if user already exists in profiles
+    const { data: existingProfile } = await adminDb
+      .from("profiles")
+      .select("id, role")
+      .eq("email", email)
+      .maybeSingle();
 
-      if (existingProfile) {
-        createdId = existingProfile.id;
-        // Elevate role to instructor
-        await adminDb
-          .from("profiles")
-          .update({ role: "instructor", full_name: name })
-          .eq("id", createdId);
-      } else {
-        // Create new user profile
-        const { data: newProfile, error: profileErr } = await adminDb
-          .from("profiles")
-          .insert({
-            full_name: name,
-            email: email,
-            role: "instructor",
-            locale: "fr",
-          })
-          .select("id")
-          .single();
-
-        if (profileErr || !newProfile) {
-          throw new Error(profileErr?.message || "Impossible de créer le profil formateur.");
-        }
-        createdId = newProfile.id;
-      }
-
-      // 2. Insert into instructors table
-      const { error: instErr } = await adminDb
-        .from("instructors")
-        .upsert({
-          profile_id: createdId,
-          title,
-          bio,
-          escalation_email: escalationEmail,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (instErr) {
-        throw new Error(instErr.message);
-      }
-
-      // 3. Insert audit log
-      await adminDb.from("admin_audit_logs").insert({
-        admin_id: admin.id,
-        action: "instructor_created",
-        note: `Création du formateur ${name} (${email})`,
-        metadata: {
-          instructor_id: createdId,
-          email,
-          title,
-          escalation_email: escalationEmail,
+    if (existingProfile) {
+      createdId = existingProfile.id;
+    } else {
+      // Create real user in Supabase Auth
+      const { data: authData, error: authErr } = await adminDb.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: {
+          full_name: name,
         },
       });
-    } catch (dbErr) {
-      console.warn("DB write failed, updating mock store fallback:", dbErr);
-      const store = getFallbackInstructorsStore();
-      createdId = `inst-mock-${Date.now()}`;
-      store.unshift({
-        id: createdId,
-        email,
-        fullName: name,
+
+      if (authErr || !authData?.user) {
+        return {
+          success: false,
+          error: `Échec de création du compte d'authentification : ${authErr?.message || "Erreur inconnue"}`,
+        };
+      }
+      createdId = authData.user.id;
+    }
+
+    // 2. Assign instructor role via transactional set_user_role RPC
+    const { error: roleErr } = await adminDb.rpc("set_user_role", {
+      target_user_id: createdId,
+      new_role: "instructor",
+    });
+
+    if (roleErr) {
+      return {
+        success: false,
+        error: `Échec d'attribution du rôle de formateur : ${roleErr.message}`,
+      };
+    }
+
+    // 3. Upsert instructor details into instructors table
+    const { error: instErr } = await adminDb
+      .from("instructors")
+      .upsert({
+        profile_id: createdId,
         title,
         bio,
-        escalationEmail,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        coursesCount: 0,
-        courses: [],
-        lastSeenAt: null,
+        escalation_email: escalationEmail,
+        is_active: true,
+        updated_at: new Date().toISOString(),
       });
+
+    if (instErr) {
+      return {
+        success: false,
+        error: `Échec d'enregistrement du profil formateur : ${instErr.message}`,
+      };
+    }
+
+    // 4. Record audit log entry
+    const { error: auditErr } = await adminDb.from("admin_audit_logs").insert({
+      admin_id: admin.id,
+      action: "instructor_created",
+      note: `Création du formateur ${name} (${email})`,
+      metadata: {
+        instructor_id: createdId,
+        email,
+        title,
+        escalation_email: escalationEmail,
+      },
+    });
+
+    if (auditErr) {
+      console.error("[Instructors] Audit log insertion error:", auditErr);
     }
 
     revalidatePath("/admin/formateurs");
@@ -154,31 +149,27 @@ export async function toggleInstructorActiveAction(
     const admin = await assertAdmin();
     const adminDb = createAdminClient();
 
-    try {
-      const { error } = await adminDb
-        .from("instructors")
-        .update({
-          is_active: targetActive,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("profile_id", instructorId);
+    const { error: updateErr } = await adminDb
+      .from("instructors")
+      .update({
+        is_active: targetActive,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("profile_id", instructorId);
 
-      if (error) throw error;
-
-      await adminDb.from("admin_audit_logs").insert({
-        admin_id: admin.id,
-        action: targetActive ? "instructor_reactivated" : "instructor_suspended",
-        note: `Statut formateur ${instructorId} modifié: ${targetActive ? "Actif" : "Suspendu"}`,
-        metadata: { instructor_id: instructorId, is_active: targetActive },
-      });
-    } catch (err) {
-      console.warn("Updating fallback instructors store:", err);
-      const store = getFallbackInstructorsStore();
-      const inst = store.find((i) => i.id === instructorId);
-      if (inst) {
-        inst.isActive = targetActive;
-      }
+    if (updateErr) {
+      return {
+        success: false,
+        error: `Échec de mise à jour du statut formateur : ${updateErr.message}`,
+      };
     }
+
+    await adminDb.from("admin_audit_logs").insert({
+      admin_id: admin.id,
+      action: targetActive ? "instructor_reactivated" : "instructor_suspended",
+      note: `Statut formateur ${instructorId} modifié: ${targetActive ? "Actif" : "Suspendu"}`,
+      metadata: { instructor_id: instructorId, is_active: targetActive },
+    });
 
     revalidatePath("/admin/formateurs");
     return { success: true };
@@ -199,39 +190,24 @@ export async function reassignCourseInstructorAction(
     const admin = await assertAdmin();
     const adminDb = createAdminClient();
 
-    try {
-      const { error } = await adminDb
-        .from("courses")
-        .update({ instructor_id: newInstructorId })
-        .eq("id", courseId);
+    const { error: updateErr } = await adminDb
+      .from("courses")
+      .update({ instructor_id: newInstructorId })
+      .eq("id", courseId);
 
-      if (error) throw error;
-
-      await adminDb.from("admin_audit_logs").insert({
-        admin_id: admin.id,
-        action: "course_instructor_reassigned",
-        note: note?.trim() || `Cours ${courseId} réassigné au formateur ${newInstructorId}`,
-        metadata: { course_id: courseId, new_instructor_id: newInstructorId },
-      });
-    } catch (err) {
-      console.warn("Updating fallback course assignment:", err);
-      const store = getFallbackInstructorsStore();
-      // Remove course from old instructor in mock store
-      for (const inst of store) {
-        inst.courses = inst.courses.filter((c) => c.id !== courseId);
-        inst.coursesCount = inst.courses.length;
-      }
-      // Add to new instructor
-      const target = store.find((i) => i.id === newInstructorId);
-      if (target) {
-        target.courses.push({
-          id: courseId,
-          titleFr: "Formation Réassignée",
-          slug: "formation-reassignee",
-        });
-        target.coursesCount = target.courses.length;
-      }
+    if (updateErr) {
+      return {
+        success: false,
+        error: `Échec de réassignation du formateur : ${updateErr.message}`,
+      };
     }
+
+    await adminDb.from("admin_audit_logs").insert({
+      admin_id: admin.id,
+      action: "course_instructor_reassigned",
+      note: note?.trim() || `Cours ${courseId} réassigné au formateur ${newInstructorId}`,
+      metadata: { course_id: courseId, new_instructor_id: newInstructorId },
+    });
 
     revalidatePath("/admin/formateurs");
     revalidatePath("/admin/formations");
@@ -251,16 +227,26 @@ export async function sendInstructorInvitationAction(
     const admin = await assertAdmin();
     const adminDb = createAdminClient();
 
-    // Audit log
+    // Check that target exists
+    const { data: profile } = await adminDb
+      .from("profiles")
+      .select("email")
+      .eq("id", instructorId)
+      .maybeSingle();
+
+    if (!profile) {
+      return { success: false, error: "Formateur introuvable." };
+    }
+
     await adminDb.from("admin_audit_logs").insert({
       admin_id: admin.id,
       action: "instructor_invitation_sent",
       note: `Lien d'invitation généré pour le formateur ${instructorId}`,
-      metadata: { instructor_id: instructorId },
+      metadata: { instructor_id: instructorId, email: profile.email },
     });
 
     const resetToken = Buffer.from(`${instructorId}-${Date.now()}`).toString("base64");
-    const invitationUrl = `/fr/reinitialisation-mot-de-passe?token=${resetToken}&mode=invite`;
+    const invitationUrl = `/fr/reinitialiser-mot-de-passe?token=${resetToken}&mode=invite`;
 
     return {
       success: true,

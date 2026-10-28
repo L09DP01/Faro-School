@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 export * from "./student-types";
 import type { StudentItem, AdminCourseOption } from "./student-types";
 
@@ -246,14 +247,17 @@ export async function getAllAvailableCourses(instructorId?: string): Promise<Adm
       }));
     }
   } catch (err) {
-    console.warn("Using fallback courses for admin selector:", err);
+    console.error("[Students] Error fetching courses for admin selector:", err);
   }
 
-  if (instructorId) {
-    return defaultCourses.slice(0, 2);
+  if (isDemoMode()) {
+    if (instructorId) {
+      return defaultCourses.slice(0, 2);
+    }
+    return defaultCourses;
   }
 
-  return defaultCourses;
+  return [];
 }
 
 export async function getAdminStudentsList(instructorId?: string): Promise<StudentItem[]> {
@@ -369,23 +373,30 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
 
       return list;
     }
+    if (!error && profiles && profiles.length === 0) {
+      return [];
+    }
   } catch (err) {
-    console.warn("Using fallback students store:", err);
+    console.error("[Students] Error fetching students list from database:", err);
   }
 
-  const mock = initializeMockStudents();
-  if (instructorId) {
-    // Privacy rule: Scrub email, phone, and payments for instructors in mock fallback
-    return mock
-      .filter((s) =>
-        s.enrollments.some((e) => e.courseId === "c-marketing")
-      )
-      .map((s) => ({
-        ...s,
-        email: "",
-        phone: "",
-        payments: [],
-      }));
+  if (isDemoMode()) {
+    const mock = initializeMockStudents();
+    if (instructorId) {
+      // Privacy rule: Scrub email, phone, and payments for instructors in mock fallback
+      return mock
+        .filter((s) =>
+          s.enrollments.some((e) => e.courseId === "c-marketing")
+        )
+        .map((s) => ({
+          ...s,
+          email: "",
+          phone: "",
+          payments: [],
+        }));
+    }
+    return mock;
   }
-  return mock;
+
+  return [];
 }

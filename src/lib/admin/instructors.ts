@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/config";
 
 export interface InstructorCourseItem {
   id: string;
@@ -20,73 +21,48 @@ export interface InstructorItem {
   lastSeenAt?: string | null;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __mockInstructorsStore: InstructorItem[] | undefined;
-}
-
-function initializeMockInstructors(): InstructorItem[] {
-  if (!globalThis.__mockInstructorsStore) {
-    globalThis.__mockInstructorsStore = [
-      {
-        id: "mock-admin-id",
-        email: "admin@faroschool.com",
-        fullName: "Professeur Faro",
-        title: "Directeur Pédagogique & Fondateur",
-        bio: "Expert en gestion de projet et technologies appliquées, accompagnant les étudiants haïtiens.",
-        escalationEmail: "direction@faroschool.com",
-        isActive: true,
-        createdAt: new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString(),
-        coursesCount: 3,
-        courses: [
-          { id: "c-excel", titleFr: "Excel Pratique pour Entreprises", slug: "excel-pour-entreprise" },
-          { id: "c-comptabilite", titleFr: "Comptabilité et Gestion Financière", slug: "comptabilite-pratique" },
-          { id: "c-entrepreneuriat", titleFr: "Lancer et Gérer son Entreprise en Haïti", slug: "entrepreneuriat-haiti" },
-        ],
-        lastSeenAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      },
-      {
-        id: "mock-instructor-id",
-        email: "instructor@faroschool.com",
-        fullName: "Jean-Baptiste Formateur",
-        title: "Spécialiste Marketing & Médias Numériques",
-        bio: "Formateur certifié en stratégies d'acquisition digitale et création de contenu multimédia.",
-        escalationEmail: "jb.escalade@faroschool.com",
-        isActive: true,
-        createdAt: new Date(Date.now() - 45 * 24 * 3600 * 1000).toISOString(),
-        coursesCount: 2,
-        courses: [
-          { id: "c-marketing", titleFr: "Marketing Digital & Vente en Ligne", slug: "marketing-digital" },
-          { id: "c-video", titleFr: "Création de Contenu Vidéo sur Smartphone", slug: "creer-du-contenu-video" },
-        ],
-        lastSeenAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      },
-      {
-        id: "inst-003",
-        email: "nadine.pierre@faroschool.com",
-        fullName: "Nadine Pierre-Louis",
-        title: "Professeure d'Anglais des Affaires",
-        bio: "Enseignante bilingue chevronnée spécialisée dans la communication professionnelle internationale.",
-        escalationEmail: "nadine.contact@faroschool.com",
-        isActive: false, // suspendue pour démonstration
-        createdAt: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
-        coursesCount: 1,
-        courses: [
-          { id: "c-anglais", titleFr: "Anglais des Affaires pour Professionnels", slug: "anglais-des-affaires" },
-        ],
-        lastSeenAt: new Date(Date.now() - 10 * 24 * 3600 * 1000).toISOString(),
-      },
-    ];
-  }
-  return globalThis.__mockInstructorsStore;
-}
-
-export function getFallbackInstructorsStore(): InstructorItem[] {
-  return initializeMockInstructors();
+function getDemoInstructors(): InstructorItem[] {
+  return [
+    {
+      id: "mock-admin-id",
+      email: "admin@faroschool.com",
+      fullName: "Professeur Faro",
+      title: "Directeur Pédagogique & Fondateur",
+      bio: "Expert en gestion de projet et technologies appliquées, accompagnant les étudiants haïtiens.",
+      escalationEmail: "direction@faroschool.com",
+      isActive: true,
+      createdAt: new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString(),
+      coursesCount: 3,
+      courses: [
+        { id: "c-excel", titleFr: "Excel Pratique pour Entreprises", slug: "excel-pour-entreprise" },
+        { id: "c-comptabilite", titleFr: "Comptabilité et Gestion Financière", slug: "comptabilite-pratique" },
+        { id: "c-entrepreneuriat", titleFr: "Lancer et Gérer son Entreprise en Haïti", slug: "entrepreneuriat-haiti" },
+      ],
+      lastSeenAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+    },
+    {
+      id: "mock-instructor-id",
+      email: "instructor@faroschool.com",
+      fullName: "Jean-Baptiste Formateur",
+      title: "Spécialiste Marketing & Médias Numériques",
+      bio: "Formateur certifié en stratégies d'acquisition digitale et création de contenu multimédia.",
+      escalationEmail: "jb.escalade@faroschool.com",
+      isActive: true,
+      createdAt: new Date(Date.now() - 45 * 24 * 3600 * 1000).toISOString(),
+      coursesCount: 2,
+      courses: [
+        { id: "c-marketing", titleFr: "Marketing Digital & Vente en Ligne", slug: "marketing-digital" },
+        { id: "c-video", titleFr: "Création de Contenu Vidéo sur Smartphone", slug: "creer-du-contenu-video" },
+      ],
+      lastSeenAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+    },
+  ];
 }
 
 /**
  * Fetches the list of instructors for admin management.
+ * In production: strictly queries real database; returns empty list if no instructors exist.
+ * Never silently displays fake instructors in production.
  */
 export async function getAdminInstructorsList(): Promise<InstructorItem[]> {
   try {
@@ -145,9 +121,17 @@ export async function getAdminInstructorsList(): Promise<InstructorItem[]> {
         };
       });
     }
+
+    if (!error && instructors && instructors.length === 0) {
+      return [];
+    }
   } catch (err) {
-    console.warn("Using fallback instructors store:", err);
+    console.error("[Instructors] Error fetching instructors from database:", err);
   }
 
-  return initializeMockInstructors();
+  if (isDemoMode()) {
+    return getDemoInstructors();
+  }
+
+  return [];
 }

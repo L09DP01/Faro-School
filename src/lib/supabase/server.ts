@@ -17,6 +17,9 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key",
     {
+      global: {
+        fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();

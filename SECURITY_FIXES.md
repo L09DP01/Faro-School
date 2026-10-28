@@ -166,3 +166,65 @@ Ce document répertorie chronologiquement les vulnérabilités auditées, les co
   3. *Vérification cryptographique et tolérance d'horodatage* : validation de signatures valides, rejet des signatures altérées (1 octet modifié) et rejet des horodatages obsolètes (> 5 minutes).
   4. *Conformité de la migration SQL* : présence de `FOR UPDATE`, vérification de montant, unicité d'index et traçabilité d'audit.
 - **Typecheck** : `npm run typecheck` validé sans aucune erreur.
+
+---
+
+## STEP S1-D: Élimination des Données Simulées des Chemins de Production
+
+### Ce qui n'allait pas (Vulnérabilités de haute gravité)
+1. **Repli silencieux sur des fixtures fictives en production** :
+   - `src/lib/admin/payments.ts` renvoyait des transactions fictives (Esther Moïse, Wideline Saintil, etc.) et des KPI fictifs (38 000 HTG) si la base de données était vide ou en cas d'erreur de requête.
+   - `src/lib/messaging/data.ts` renvoyait de fausses conversations mockées (`conv-001`, `conv-002`) et un badge trompeur de 1 message non lu.
+   - `src/lib/admin/instructors.ts` renvoyait 3 faux formateurs mockés si la table était vide.
+   - `src/lib/admin/students.ts`, `src/lib/admin/promotions.ts` et `src/lib/admin/messages.ts` retournaient également des données statiques en cas d'absence de données.
+2. **Erreur de schéma SQL masquée provoquant le basculement systématique sur les mocks** :
+   - Dans `src/lib/messaging/data.ts` et `src/app/actions/private-messaging.ts`, 5 requêtes joignaient `courses(title)` et `courses(id, title, description)`. Or la table `courses` ne possède ni colonne `title` ni colonne `description` (elle utilise `title_fr`, `title_ht`, `description_fr`, `description_ht`). PostgreSQL levait systématiquement une erreur, attrapée par `catch {}`, provoquant le repli aveugle sur le store en mémoire.
+3. **Création de formateur corrompue et simulation in-memory** :
+   - Dans `src/app/actions/admin-instructors.ts`, `createInstructorAction` tentait d'insérer directement dans `public.profiles` sans compte d'authentification Supabase Auth (`auth.users`), violant la clé étrangère `profiles.id -> auth.users.id`. En cas d'erreur, l'action capturait l'exception et ajoutait le formateur dans `globalThis.__mockInstructorsStore`, simulant un succès sans persistance réelle.
+4. **Présence fictive et compteurs artificiels dans la communauté** :
+   - `src/lib/community/data.ts` affichait un plancher artificiel de 142 membres en ligne (`onlineCount = 142`), gonflait le nombre de membres de 2500 (`totalMembers = count + 2500`), et simulait un faux badge de 12 messages non lus.
+5. **Stores en mémoire non persistants (`globalThis`) interceptant les écritures** :
+   - Plusieurs actions (`admin-moderation.ts`, `private-messaging.ts`) capturaient silencieusement les erreurs de base de données pour écrire dans `globalThis`, donnant l'illusion d'une action réussie sans persistance en base.
+
+### Ce qui a été modifié
+1. **Élimination des fixtures dans les chemins de production** :
+   - Dans `src/lib/admin/payments.ts` : en production, `getAdminPaymentsKPIs()` renvoie des zéros stricts (`totalValidated: 0`, etc.) et `getAdminPaymentsList()` renvoie un tableau vide `[]`. Les fixtures ne sont activées que si `isDemoMode()` est vrai.
+   - Dans `src/lib/messaging/data.ts` : les fonctions `getStudentConversations()`, `getStaffConversations()`, `getConversationById()`, `getConversationMessages()`, `getStudentEnrolledCourses()` et `getUnreadPrivateMessagesCount()` interrogent la vraie base de données et renvoient les états vides authentiques (`[]`, `0`).
+   - Dans `src/lib/community/data.ts` : suppression intégrale des planchers artificiels. Le nombre d'utilisateurs en ligne reflète la présence réelle (`last_seen_at >= 15 min`) ou `0`. Le badge non lu reflète le vrai décompte ou `0`. Les messages renvoient un état vide si aucun message n'existe.
+   - Dans `src/lib/admin/instructors.ts`, `src/lib/admin/students.ts`, `src/lib/admin/promotions.ts`, `src/lib/admin/messages.ts`, `src/lib/admin/moderation.ts` : toutes les fixtures de repli ont été strictement encapsulées derrière `isDemoMode()`.
+2. **Correction des requêtes sur le schéma réel `courses`** :
+   - Remplacement de `courses(title)` et `courses(title, description)` par `courses(id, title_fr, title_ht, description_fr, description_ht)` dans `src/lib/messaging/data.ts` et `src/app/actions/private-messaging.ts`.
+   - Utilisation des colonnes localisées `title_fr` et `title_ht` avec repli propre.
+3. **Refonte de la création de formateur (`src/app/actions/admin-instructors.ts`)** :
+   - Création d'un utilisateur réel dans Supabase Auth via `createAdminClient().auth.admin.createUser()`.
+   - Récupération de l'UUID réel `authUser.user.id` pour `profiles.id`.
+   - Attribution du rôle `'instructor'` via la fonction RPC sécurisée `set_user_role`.
+   - Insertion dans `instructors` et consignation dans `admin_audit_logs`.
+   - Suppression totale du fallback in-memory : toute erreur SQL ou d'authentification est renvoyée explicitement au client.
+4. **Suppression de l'étouffement des erreurs d'écriture** :
+   - Dans `src/app/actions/admin-moderation.ts` et `src/app/actions/private-messaging.ts`, toutes les opérations d'écriture (`update`, `insert`) vérifient le retour `error`. En production, aucune écriture échouée n'est silencieusement ignorée.
+
+### Recensement et Justification des occurrences de `mock`, `fake`, `demo`, `fixture`, `globalThis`
+
+| Fichier | Mot-clé / Occurrence | Rôle & Justification |
+| :--- | :--- | :--- |
+| `src/lib/config/index.ts` | `isDemoMode()`, `APP_MODE=demo` | **Garde-fou officiel** : lève une exception bloquante si activé en production (`NODE_ENV === 'production'`). |
+| `src/lib/admin/payments.ts` | `getDemoPaymentsData()` | Données démo pour prévisualisation locale / Storybook, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/admin/instructors.ts` | `getDemoInstructors()` | Fixtures pour tests UI locaux / démo, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/admin/students.ts` | `initializeMockStudents()` | Fixtures pour tests UI locaux / démo, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/admin/promotions.ts` | `initializeFallbackStore()` | Fixtures pour tests UI locaux / démo, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/admin/messages.ts` | `initializeFallbackMessages()` | Fixtures pour tests UI locaux / démo, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/admin/moderation.ts` | `initializeMockModeration()` | Fixtures de modération pour prévisualisation, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/community/data.ts` | `getDemoCommunityMessages()` | Fixtures de communauté pour prévisualisation, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/messaging/data.ts` | `initializeMockMessaging()` | Fixtures de messagerie pour prévisualisation, strictement conditionnées par `if (isDemoMode())`. |
+| `src/lib/video/mock-provider.ts` | `MockVideoProvider` | Fournisseur de streaming vidéo pour tests sans clé API BunnyStream, actif uniquement si `APP_MODE=demo`. |
+| `tests/db-roles-and-rls.test.ts` | `mock_` | Valeurs de test pour tester la résistance du système en l'absence de serveur distant. |
+
+### Comment cela a été vérifié
+- **Test automatisé (`tests/step-s1d-data-integrity.test.ts`)** :
+  1. *Chemins de production* : vérification que lorsque `APP_MODE` n'est pas `demo`, les fonctions retournent des états vides (`0`, `[]`), et jamais de données mockées.
+  2. *Conditionnement démo* : vérification que les fixtures sont accessibles uniquement lorsque `APP_MODE=demo` en non-production.
+  3. *Intégrité des requêtes SQL* : confirmation statique et dynamique de l'absence de toute requête sur `courses(title)` et validation des colonnes réelles `title_fr`, `title_ht`.
+  4. *Création formateur* : vérification que `createInstructorAction` utilise `auth.admin.createUser` et `set_user_role` sans store de repli.
+- **Suite de tests globale** : exécution simultanée de `tests/step-s1a-identity.test.ts`, `tests/step-s1c-payments.test.ts` et `tests/step-s1d-data-integrity.test.ts` avec 100% de succès.
+- **Typecheck** : `npm run typecheck` validé avec code 0.
