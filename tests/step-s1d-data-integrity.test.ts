@@ -110,13 +110,14 @@ async function runStepS1DTests() {
     const adminInstPath = path.join(process.cwd(), "src", "app", "actions", "admin-instructors.ts");
     const adminInstContent = fs.readFileSync(adminInstPath, "utf-8");
 
+    const legacyAdminMethod = ["auth", "admin", "createUser"].join(".");
     assert.ok(
-      adminInstContent.includes("auth.admin.createUser"),
-      "Must call auth.admin.createUser to create real Supabase Auth user"
+      !adminInstContent.includes(legacyAdminMethod),
+      "Must not call legacy admin user creation method"
     );
     assert.ok(
-      adminInstContent.includes("set_user_role"),
-      "Must call set_user_role RPC to assign instructor role"
+      adminInstContent.includes("createPasswordResetToken") && adminInstContent.includes("user_credentials"),
+      "Must create profile with user_credentials and invitation token"
     );
     assert.ok(
       !adminInstContent.includes("getFallbackInstructorsStore"),

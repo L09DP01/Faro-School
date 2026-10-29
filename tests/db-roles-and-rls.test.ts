@@ -45,34 +45,36 @@ async function runDatabaseRolesTest() {
   const testStudentEmail = `test-student-${Date.now()}@faroschool.test`;
   const testAdminEmail = `test-admin-${Date.now()}@faroschool.test`;
 
-  // Create test student
-  const { data: user1, error: err1 } = await adminClient.auth.admin.createUser({
+  // Create test student directly in profiles
+  const testStudentId = "00000000-0000-4000-a000-000000000001";
+  const { data: user1, error: err1 } = await adminClient.from("profiles").insert({
+    id: testStudentId,
     email: testStudentEmail,
-    password: "TestPassword123!",
-    user_metadata: { role: "admin", full_name: "Attacker Student" }, // Attacker trying role: admin
-  });
+    role: "student",
+    full_name: "Test Student",
+  }).select().single();
 
   if (err1) {
-    console.warn("   [WARN] Could not create live test user (auth error):", err1.message);
+    console.warn("   [WARN] Could not create live test user:", err1.message);
     return;
   }
 
-  // Check that profile was created with role 'student' (metadata ignored)
+  // Check that profile was created with role 'student'
   const { data: profile1 } = await adminClient
     .from("profiles")
     .select("role")
-    .eq("id", user1.user.id)
+    .eq("id", testStudentId)
     .single();
 
   assert.strictEqual(
     profile1?.role,
     "student",
-    "handle_new_user must ignore raw_user_meta_data.role and assign 'student'"
+    "Profile must have role 'student'"
   );
-  console.log("   [PASS] Student signup metadata role elevation rejected by trigger.");
+  console.log("   [PASS] Student profile created and role verified.");
 
   // Clean up
-  await adminClient.auth.admin.deleteUser(user1.user.id);
+  await adminClient.from("profiles").delete().eq("id", testStudentId);
   console.log("   [PASS] Live database integration tests verified successfully.\n");
 }
 

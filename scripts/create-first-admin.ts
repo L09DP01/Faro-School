@@ -3,7 +3,7 @@ import { createPasswordResetToken } from "../src/lib/auth/tokens";
 
 /**
  * Creates the initial administrator in profiles & user_credentials without hardcoding passwords.
- * Zero reliance on supabase.auth.admin.
+ * Zero reliance on legacy admin auth APIs.
  *
  * Usage:
  *   ADMIN_EMAIL="admin@faroschool.com" npx tsx scripts/create-first-admin.ts

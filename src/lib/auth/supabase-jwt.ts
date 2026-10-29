@@ -1,3 +1,4 @@
+import "server-only";
 import { SignJWT } from "jose";
 
 export interface SupabaseTokenClaims {

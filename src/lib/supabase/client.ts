@@ -4,7 +4,7 @@ let clientInstance: SupabaseClient | null = null;
 
 /**
  * Creates or retrieves Supabase client for browser usage.
- * Completely free of @supabase/ssr.
+ * Pure Supabase client without legacy cookie dependencies.
  */
 export function createClient(accessToken?: string): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co";

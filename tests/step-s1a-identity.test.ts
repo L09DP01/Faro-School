@@ -21,7 +21,7 @@ async function runStepS1ATests() {
 
   // Mock global cookie store to simulate attacker passing faro_session cookie
   const originalCookies = globalThis.cookieStore;
-  // getCurrentUser should only consult supabase.auth.getUser() and ignore any cookies
+  // getCurrentUser should only consult verified session and ignore any cookies
   const user = await getCurrentUser();
   assert.strictEqual(user, null, "Forged faro_session cookie must return null (zero trust in cookie identity)");
   console.log("   [PASS] Forged cookie grants nothing.\n");

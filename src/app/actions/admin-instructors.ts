@@ -24,8 +24,8 @@ export interface CreateInstructorInput {
 }
 
 /**
- * Creates a real user in Supabase Auth via auth.admin.createUser(),
- * uses the returned UUID for profiles.id, assigns instructor role via set_user_role RPC,
+ * Creates a real user via user_credentials and creates an invitation token,
+ * uses the generated UUID for profiles.id, assigns instructor role,
  * and records the action into admin_audit_logs.
  * Never falls back to simulated data.
  */
