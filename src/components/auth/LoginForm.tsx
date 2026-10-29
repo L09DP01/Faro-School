@@ -5,8 +5,11 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { loginSchema } from "@/lib/validators/auth";
 import { AuthSegmentedControl } from "./AuthSegmentedControl";
+import { VerificationCodeForm } from "./VerificationCodeForm";
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
+import { signIn } from "next-auth/react";
+import { sanitizeRedirectUrl } from "@/lib/validators/auth";
 
 interface LoginFormProps {
   nextParam?: string;
@@ -25,6 +28,7 @@ export function LoginForm({ nextParam }: LoginFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const enableGoogleAuth =
     process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH === "true";
@@ -49,39 +53,56 @@ export function LoginForm({ nextParam }: LoginFormProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          rememberMe,
-          next: nextParam,
-        }),
+      const signInRes = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.error === "rateLimit") {
+      if (signInRes?.error) {
+        if (
+          signInRes.error === "EMAIL_NOT_VERIFIED" ||
+          signInRes.error.includes("EMAIL_NOT_VERIFIED")
+        ) {
+          setUnverifiedEmail(email);
+          return;
+        } else if (
+          signInRes.error === "ACCOUNT_LOCKED" ||
+          signInRes.error.includes("ACCOUNT_LOCKED")
+        ) {
           setGlobalError(t("errors.rateLimit"));
-        } else if (data.error === "invalidCredentials") {
-          setGlobalError(t("errors.invalidCredentials"));
         } else {
-          setGlobalError(t("errors.serverError"));
+          setGlobalError(t("errors.invalidCredentials"));
         }
         return;
       }
 
-      // Successful login -> redirect to destination
-      const destination = data.redirectUrl || `/${locale}/dashboard`;
-      window.location.href = destination;
+      if (signInRes?.ok) {
+        // Successful login -> redirect to destination
+        const destination = sanitizeRedirectUrl(nextParam, `/${locale}/dashboard`);
+        window.location.href = destination;
+      }
     } catch {
       setGlobalError(t("errors.serverError"));
     } finally {
       setLoading(false);
     }
   };
+
+  if (unverifiedEmail) {
+    return (
+      <div className="w-full space-y-6">
+        <PwaInstallBanner locale={locale} />
+        <AuthSegmentedControl activeTab="login" nextParam={nextParam} />
+        <VerificationCodeForm
+          email={unverifiedEmail}
+          nextParam={nextParam}
+          password={password}
+          onCancel={() => setUnverifiedEmail(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">

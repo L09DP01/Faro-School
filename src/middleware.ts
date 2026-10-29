@@ -1,7 +1,7 @@
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { getToken } from "next-auth/jwt";
 
 const intlMiddleware = createMiddleware(routing);
 
@@ -65,27 +65,6 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Create SSR Supabase client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key",
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
   const segments = pathname.split("/").filter(Boolean);
   const locale = routing.locales.includes(segments[0] as any)
     ? segments[0]
@@ -96,24 +75,22 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = pathWithoutLocale.startsWith("/admin");
 
   if (isDashboardRoute || isAdminRoute) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Auth.js Edge-safe session verification via encrypted JWT cookie.
+    // Zero database queries in Edge middleware.
+    const secret = process.env.AUTH_SECRET || "dev-auth-secret-min-32-chars-long-placeholder";
+    const token = await getToken({
+      req: request,
+      secret,
+    });
 
-    if (!user) {
+    if (!token || !token.id) {
       const loginUrl = new URL(`/${locale}/connexion`, request.url);
-      loginUrl.searchParams.set("redirectTo", pathname);
+      loginUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(loginUrl);
     }
 
     if (isAdminRoute) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      const userRole = profile?.role;
+      const userRole = (token.role as string) || "student";
       if (userRole !== "admin" && userRole !== "instructor") {
         return NextResponse.redirect(
           new URL(`/${locale}/dashboard`, request.url)
@@ -140,7 +117,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Prevent indexing on staging/preview environments and on private routes
-  const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+  const isProduction =
+    process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
   if (!isProduction || isDashboardRoute || isAdminRoute) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }

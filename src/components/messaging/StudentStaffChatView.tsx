@@ -17,7 +17,7 @@ import {
   RotateCcw,
   Loader2,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { initAuthenticatedRealtimeClient } from "@/lib/supabase/client";
 import {
   sendPrivateMessageAction,
   markConversationReadAction,
@@ -74,67 +74,79 @@ export function StudentStaffChatView({
   // Realtime subscription for incoming messages
   useEffect(() => {
     if (!activeConversation) return;
+    const convId = activeConversation.id;
+    const convStaffName = activeConversation.staffName;
+    const convStudentName = activeConversation.studentName;
 
     let channel: any = null;
-    try {
-      const supabase = createClient();
-      channel = supabase
-        .channel(`private-conv-${activeConversation.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "messages",
-            filter: `conversation_id=eq.${activeConversation.id}`,
-          },
-          (payload: any) => {
-            const newRow = payload.new;
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === newRow.id)) return prev;
+    let isCancelled = false;
 
-              // Filter out optimistic match
-              const filtered = prev.filter(
-                (m) =>
-                  !(
-                    m.isOptimistic &&
-                    m.senderId === newRow.sender_id &&
-                    m.body === newRow.body
-                  )
-              );
+    async function setupRealtime() {
+      try {
+        const supabase = await initAuthenticatedRealtimeClient();
+        if (isCancelled) return;
 
-              const mappedMsg: PrivateMessage = {
-                id: newRow.id,
-                conversationId: newRow.conversation_id,
-                senderType: newRow.sender_type,
-                senderId: newRow.sender_id,
-                senderName:
-                  newRow.sender_type === "ai"
-                    ? `Assistant IA de ${activeConversation.staffName}`
-                    : newRow.sender_id === currentUserId
-                    ? currentUserName
-                    : isStaffView
-                    ? activeConversation.studentName
-                    : activeConversation.staffName,
-                senderRole: newRow.sender_type === "student" ? "student" : "instructor",
-                body: newRow.body,
-                meta: newRow.meta || {},
-                createdAt: newRow.created_at,
-                readAt: newRow.read_at,
-              };
+        channel = supabase
+          .channel(`private-conv-${convId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "INSERT",
+              schema: "public",
+              table: "messages",
+              filter: `conversation_id=eq.${convId}`,
+            },
+            (payload: any) => {
+              const newRow = payload.new;
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newRow.id)) return prev;
 
-              return [...filtered, mappedMsg];
-            });
+                // Filter out optimistic match
+                const filtered = prev.filter(
+                  (m) =>
+                    !(
+                      m.isOptimistic &&
+                      m.senderId === newRow.sender_id &&
+                      m.body === newRow.body
+                    )
+                );
 
-            setTimeout(() => {
-              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, 50);
-          }
-        )
-        .subscribe();
-    } catch {}
+                const mappedMsg: PrivateMessage = {
+                  id: newRow.id,
+                  conversationId: newRow.conversation_id,
+                  senderType: newRow.sender_type,
+                  senderId: newRow.sender_id,
+                  senderName:
+                    newRow.sender_type === "ai"
+                      ? `Assistant IA de ${convStaffName}`
+                      : newRow.sender_id === currentUserId
+                      ? currentUserName
+                      : isStaffView
+                      ? convStudentName
+                      : convStaffName,
+                  senderRole: newRow.sender_type === "student" ? "student" : "instructor",
+                  body: newRow.body,
+                  meta: newRow.meta || {},
+                  createdAt: newRow.created_at,
+                  readAt: newRow.read_at,
+                };
+
+                return [...filtered, mappedMsg];
+              });
+
+              setTimeout(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+              }, 50);
+            }
+          )
+          .subscribe();
+      } catch {}
+    }
+
+    setupRealtime();
 
     return () => {
+      isCancelled = true;
       if (channel) {
         channel.unsubscribe();
       }

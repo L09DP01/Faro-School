@@ -5,7 +5,7 @@
 ## 2. Stack
 - **Framework**: Next.js 15 (App Router) + TypeScript (strict mode) + pnpm
 - **Styling**: Tailwind CSS + shadcn/ui design tokens (via `src/styles/tokens.css`)
-- **Database & Auth**: Supabase PostgreSQL + Supabase Auth (Email & Password) + Row Level Security (RLS) on all tables
+- **Database & Auth**: Supabase PostgreSQL + Auth.js v5 (NextAuth, edge-safe JWT sessions, Web Crypto PBKDF2-SHA256, Resend verification emails) + Row Level Security (RLS) on all tables via short-lived signed Supabase tokens
 - **Course Video Protection**: Bunny Stream (token-authenticated signed HLS playback, MediaCage DRM, direct browser uploads)
 - **Asset Storage & CDN**: Bunny Storage + Bunny CDN (for public course covers and token-signed downloadable student resources; Supabase Storage is NOT used)
 - **Internationalization (i18n)**: `next-intl` (URL prefixes `/fr` and `/ht`)

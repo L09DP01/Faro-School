@@ -25,3 +25,6 @@ export function createAdminClient() {
     }
   );
 }
+
+export const getAdminSupabase = createAdminClient;
+

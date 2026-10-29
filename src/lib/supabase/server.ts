@@ -1,39 +1,41 @@
-import { createServerClient, type CookieOptionsWithName } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { auth } from "@/auth";
+import { signSupabaseToken } from "@/lib/auth/supabase-jwt";
 
+/**
+ * Creates a server-side Supabase client for data and RLS.
+ * If a valid Auth.js session exists, mints a short-lived user JWT
+ * so PostgreSQL RLS policies (auth.uid() = sub) are enforced transparently.
+ */
 export async function createClient() {
-  let cookieStore: any;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
+
+  let jwtToken: string | undefined;
+
   try {
-    cookieStore = await cookies();
+    const session = await auth();
+    if (session?.user?.id && session.user.email) {
+      jwtToken = await signSupabaseToken({
+        id: session.user.id,
+        role: (session.user as any).role || "student",
+        email: session.user.email,
+        tokenVersion: (session.user as any).tokenVersion ?? 0,
+      });
+    }
   } catch {
-    cookieStore = {
-      getAll: () => [],
-      set: () => {},
-      get: () => undefined,
-    };
+    // Unauthenticated or error fetching session: anonymous client
   }
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "mock-anon-key",
-    {
-      global: {
-        fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
-      },
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignored when invoked from Server Components
-          }
-        },
-      },
-    }
-  );
+  return createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {},
+      fetch: (...args: Parameters<typeof fetch>) => globalThis.fetch(...args),
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
 }

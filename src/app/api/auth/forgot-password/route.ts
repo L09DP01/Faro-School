@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { forgotPasswordSchema } from "@/lib/validators/auth";
-import { checkRateLimit } from "@/lib/security/rate-limit";
-import { createClient } from "@/lib/supabase/server";
+import { normalizeEmail, checkEmailDispatchLimit, recordEmailDispatched } from "@/lib/auth/rate-limit";
+import { createPasswordResetToken } from "@/lib/auth/tokens";
+import { sendPasswordResetEmail } from "@/lib/email/resend";
+import { getAdminSupabase } from "@/lib/supabase/admin";
 
 export const runtime = "edge";
 
@@ -12,40 +14,48 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "127.0.0.1";
 
-    const rateLimit = checkRateLimit(`forgot:${ip}`, 5, 3600 * 1000);
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "rateLimit" },
-        { status: 429 }
-      );
-    }
-
     const body = await req.json();
     const result = forgotPasswordSchema.safeParse(body);
 
     if (!result.success) {
+      return NextResponse.json({ error: "invalidEmail" }, { status: 400 });
+    }
+
+    const normEmail = normalizeEmail(result.data.email);
+    const origin = req.nextUrl.origin || "http://localhost:3000";
+    const locale = body.locale === "ht" ? "ht" : "fr";
+
+    // Rate limit check: max 5 emails per hour per email & IP, 60s cooldown
+    const limit = await checkEmailDispatchLimit(normEmail, ip, "reset_email");
+    if (!limit.allowed) {
       return NextResponse.json(
-        { error: "invalidEmail" },
-        { status: 400 }
+        { error: limit.reason || "Trop de demandes. Veuillez patienter." },
+        { status: 429 }
       );
     }
 
-    const { email } = result.data;
-    const origin = req.nextUrl.origin || "http://localhost:3000";
-    const supabase = await createClient();
+    const supabase = getAdminSupabase();
 
-    // Call Supabase password reset
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/reinitialiser-mot-de-passe`,
-    });
+    // Check if user exists in profiles
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .eq("email", normEmail)
+      .maybeSingle();
 
-    // ALWAYS return success to prevent email enumeration
+    if (profile) {
+      // Generate secure reset token (valid 1 hour)
+      const token = await createPasswordResetToken(profile.id, 1);
+      const resetUrl = `${origin}/${locale}/reinitialiser-mot-de-passe?token=${token}`;
+
+      await sendPasswordResetEmail(normEmail, resetUrl, locale);
+      await recordEmailDispatched(normEmail, ip, "reset_email");
+    }
+
+    // ALWAYS return success to prevent email enumeration attacks
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error("Forgot password route error:", err);
-    return NextResponse.json(
-      { error: "serverError" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "serverError" }, { status: 500 });
   }
 }

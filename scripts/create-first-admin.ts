@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import { createPasswordResetToken } from "../src/lib/auth/tokens";
 
 /**
- * Creates the initial administrator from ADMIN_EMAIL without hardcoding or printing passwords.
+ * Creates the initial administrator in profiles & user_credentials without hardcoding passwords.
+ * Zero reliance on supabase.auth.admin.
  *
  * Usage:
  *   ADMIN_EMAIL="admin@faroschool.com" npx tsx scripts/create-first-admin.ts
@@ -12,7 +14,7 @@ async function main() {
   console.log("FARO SCHOOL - INITIAL ADMIN CREATION SCRIPT");
   console.log("==================================================");
 
-  const email = process.env.ADMIN_EMAIL || process.argv[2];
+  const email = (process.env.ADMIN_EMAIL || process.argv[2] || "").trim().toLowerCase();
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -31,87 +33,84 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  console.log(`Checking if user already exists for email: ${email}...`);
+  console.log(`Checking if user profile already exists for email: ${email}...`);
 
   let targetUserId: string | null = null;
 
-  // 1. Check existing users
-  const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();
-  if (listError) {
-    console.error("Failed to list users from Supabase Auth:", listError.message);
-    process.exit(1);
-  }
+  // 1. Check existing profiles
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("id, role")
+    .eq("email", email)
+    .maybeSingle();
 
-  const existingUser = usersData.users.find(
-    (u) => u.email?.toLowerCase() === email.toLowerCase()
-  );
+  if (existingProfile) {
+    console.log(`Profile already exists with ID: ${existingProfile.id}.`);
+    targetUserId = existingProfile.id;
 
-  if (existingUser) {
-    console.log(`User already exists with ID: ${existingUser.id}.`);
-    targetUserId = existingUser.id;
-  } else {
-    console.log("Creating new user with confirmed email...");
-    const { data: createData, error: createError } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { full_name: "Administrateur Faro" },
-    });
-
-    if (createError || !createData.user) {
-      console.error("Failed to create admin user:", createError?.message);
-      process.exit(1);
-    }
-
-    targetUserId = createData.user.id;
-    console.log(`Created user successfully with ID: ${targetUserId}`);
-  }
-
-  // 2. Set user role to 'admin' using secure RPC
-  console.log("Assigning 'admin' role in database profiles table...");
-  const { error: roleError } = await supabase.rpc("set_user_role", {
-    target_user_id: targetUserId,
-    new_role: "admin",
-  });
-
-  if (roleError) {
-    // Fallback direct update with service role key if RPC trigger restricts self-assignment
-    console.log("RPC notice, applying direct update via service role client...");
-    const { error: profileError } = await supabase
+    // Ensure role is admin and email is verified
+    await supabase
       .from("profiles")
-      .update({ role: "admin" })
+      .update({
+        role: "admin",
+        email_verified_at: new Date().toISOString(),
+      })
       .eq("id", targetUserId);
+  } else {
+    console.log("Creating new admin profile...");
+    const { data: newProfile, error: createError } = await supabase
+      .from("profiles")
+      .insert({
+        email,
+        full_name: "Administrateur Faro",
+        role: "admin",
+        locale: "fr",
+        email_verified_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
-    if (profileError) {
-      console.error("Failed to set admin role on profile:", profileError.message);
+    if (createError || !newProfile) {
+      console.error("Failed to create admin profile:", createError?.message);
       process.exit(1);
     }
+
+    targetUserId = newProfile.id;
+    console.log(`Created admin profile successfully with ID: ${targetUserId}`);
+
+    // Create user_credentials row
+    await supabase.from("user_credentials").upsert({
+      user_id: targetUserId,
+      password_hash: "PENDING_SETUP",
+      token_version: 0,
+      failed_count: 0,
+      locked_until: null,
+    });
   }
 
-  // 3. Generate secure password reset / invitation link
-  console.log("Generating secure password setup link...");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://faroschool.com";
-  const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: {
-      redirectTo: `${appUrl}/reinitialiser-mot-de-passe`,
-    },
-  });
-
-  if (linkError || !linkData.properties?.action_link) {
-    console.error("Failed to generate setup link:", linkError?.message);
-    process.exit(1);
+  if (!targetUserId) {
+    throw new Error("Failed to resolve or create admin user ID.");
   }
 
-  console.log("\n==================================================");
-  console.log("ADMIN ACCOUNT PROVISIONED SUCCESSFULLY!");
+  // 2. Generate secure 48h password setup token
+  console.log("Generating secure password setup token...");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const resetToken = await createPasswordResetToken(targetUserId, 48);
+  const setupUrl = `${appUrl}/fr/reinitialiser-mot-de-passe?token=${resetToken}`;
+
   console.log("==================================================");
-  console.log(`User ID:     ${targetUserId}`);
-  console.log(`Role:        admin`);
-  console.log(`Email:       ${email}`);
-  console.log(`Setup Link:  ${linkData.properties.action_link}`);
-  console.log("Send this one-time link securely to the administrator to set their password.");
-  console.log("No passwords were created or stored in any repository file.\n");
+  console.log("ADMIN ACCOUNT CONFIGURED SUCCESSFULLY");
+  console.log("==================================================");
+  console.log(`Email:   ${email}`);
+  console.log(`User ID: ${targetUserId}`);
+  console.log(`Role:    admin`);
+  console.log("");
+  console.log("Initial password setup link (valid for 48 hours):");
+  console.log(setupUrl);
+  console.log("==================================================");
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error("Fatal error creating admin:", err);
+  process.exit(1);
+});

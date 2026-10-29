@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -12,11 +12,7 @@ export async function POST(
     const { id: paymentId } = await params;
 
     // 1. Verify requesting user is admin
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: "Non autorisé. Authentification administrateur requise." },
@@ -24,13 +20,7 @@ export async function POST(
       );
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (profile?.role !== "admin") {
+    if (user.role !== "admin") {
       return NextResponse.json(
         { error: "Accès refusé. Rôle administrateur requis." },
         { status: 403 }

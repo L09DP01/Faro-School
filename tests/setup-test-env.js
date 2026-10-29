@@ -7,6 +7,13 @@ Module.prototype.require = function (id) {
   return originalRequire.apply(this, arguments);
 };
 
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  process.env.SUPABASE_SERVICE_ROLE_KEY = "mock-service-role-key-test-offline";
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://mock-supabase.supabase.co";
+}
+
 // Fast offline fallback for Supabase fetch in tests when live DB is not configured
 const originalFetch = globalThis.fetch;
 if (originalFetch) {

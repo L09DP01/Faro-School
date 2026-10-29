@@ -7,10 +7,10 @@ import { Logo } from "./brand/Logo";
 import { useTranslations } from "next-intl";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { usePwa } from "@/lib/pwa/use-pwa";
 import { navigationConfig } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { usePwa } from "@/lib/pwa/use-pwa";
+import { signOut } from "next-auth/react";
 import { ArrowLeft } from "lucide-react";
 
 export function SiteHeader() {
@@ -25,29 +25,21 @@ export function SiteHeader() {
   const closeMenu = () => setMobileMenuOpen(false);
 
   useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(Boolean(session));
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(Boolean(session));
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    fetch("/api/auth/session")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((session) => {
+        setIsAuthenticated(Boolean(session?.user));
+      })
+      .catch(() => {
+        setIsAuthenticated(false);
+      });
   }, []);
 
   const handleSignOut = async () => {
     closeMenu();
     try {
       await fetch("/api/auth/signout", { method: "POST" });
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      await signOut({ redirect: false });
       setIsAuthenticated(false);
       router.push("/connexion");
       router.refresh();

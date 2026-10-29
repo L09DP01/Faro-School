@@ -19,6 +19,15 @@ export const serverEnvSchema = z.object({
 
   // Supabase
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_JWT_SECRET: z.string().optional(),
+
+  // Auth.js v5
+  AUTH_SECRET: z.string().optional(),
+  AUTH_URL: z.string().optional(),
+
+  // Email Dispatch (Resend)
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
 
   // Kobara Payment Gateway
   KOBARA_MODE: z.string().optional(), // 'live' required in production
@@ -86,6 +95,20 @@ export function validateEnvironment(customEnv?: Record<string, string | undefine
   // Production Fail-Closed Validations (enforced at runtime and in test validations)
   if (isProduction && !isBuildPhase) {
     const missing: string[] = [];
+
+    // 0. Auth.js & Token Signing Security
+    if (!serverEnv.AUTH_SECRET || serverEnv.AUTH_SECRET.length < 32) {
+      missing.push("AUTH_SECRET (must be at least 32 characters)");
+    }
+    if (!serverEnv.SUPABASE_JWT_SECRET || serverEnv.SUPABASE_JWT_SECRET.length < 32) {
+      missing.push("SUPABASE_JWT_SECRET (must be at least 32 characters for RLS token minting)");
+    }
+    if (!serverEnv.RESEND_API_KEY) {
+      missing.push("RESEND_API_KEY (for verification, password reset, and invitation emails)");
+    }
+    if (!serverEnv.EMAIL_FROM) {
+      missing.push("EMAIL_FROM (e.g. Faro School <noreply@faroschool.com>)");
+    }
 
     // 1. Strict ban on mock/demo flags in production
     if (serverEnv.APP_MODE === "demo" || serverEnv.APP_MODE === "mock") {

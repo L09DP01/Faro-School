@@ -79,7 +79,7 @@ function formatDateSeparator(dateStr: string, locale: string = "fr"): string {
     month: "long",
   }).format(d);
 }
-import { createClient } from "@/lib/supabase/client";
+import { initAuthenticatedRealtimeClient } from "@/lib/supabase/client";
 import {
   postMessageAction,
   toggleReactionAction,
@@ -194,15 +194,20 @@ export function CommunityChatView({
   // Supabase Realtime Subscription & Presence
   useEffect(() => {
     let channel: any = null;
-    try {
-      const supabase = createClient();
-      channel = supabase.channel("community-global-room", {
-        config: {
-          presence: {
-            key: currentUser.id,
+    let isCancelled = false;
+
+    async function setupRealtime() {
+      try {
+        const supabase = await initAuthenticatedRealtimeClient();
+        if (isCancelled) return;
+
+        channel = supabase.channel("community-global-room", {
+          config: {
+            presence: {
+              key: currentUser.id,
+            },
           },
-        },
-      });
+        });
 
       channel
         .on(
@@ -332,15 +337,18 @@ export function CommunityChatView({
             }
           }
         });
-    } catch {
-      if (typeof window !== "undefined" && !window.navigator.onLine) {
-        if (!disconnectTimerRef.current) {
-          disconnectTimerRef.current = setTimeout(() => {
-            setShowConnectionLostBanner(true);
-          }, 3000);
+      } catch {
+        if (typeof window !== "undefined" && !window.navigator.onLine) {
+          if (!disconnectTimerRef.current) {
+            disconnectTimerRef.current = setTimeout(() => {
+              setShowConnectionLostBanner(true);
+            }, 3000);
+          }
         }
       }
     }
+
+    setupRealtime();
 
     const handleOffline = () => {
       if (!disconnectTimerRef.current) {
@@ -363,6 +371,7 @@ export function CommunityChatView({
     }
 
     return () => {
+      isCancelled = true;
       if (disconnectTimerRef.current) {
         clearTimeout(disconnectTimerRef.current);
       }

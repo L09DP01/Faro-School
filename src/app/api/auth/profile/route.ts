@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { validateAndFormatHaitianPhone } from "@/lib/validators/auth";
+import { getAdminSupabase } from "@/lib/supabase/admin";
+import { validateAndFormatHaitianPhone, passwordStrengthSchema } from "@/lib/validators/auth";
+import { isCommonPassword } from "@/lib/auth/rate-limit";
+import { hashPassword } from "@/lib/auth/password";
 
 export const runtime = "edge";
 
@@ -10,7 +13,7 @@ const updateProfileSchema = z.object({
   fullName: z.string().min(2, "Le nom doit comporter au moins 2 caractères").optional(),
   phone: z.string().optional(),
   locale: z.enum(["fr", "ht"]).optional(),
-  newPassword: z.string().min(8, "Le mot de passe doit comporter au moins 8 caractères").optional().or(z.literal("")),
+  newPassword: z.string().optional().or(z.literal("")),
 });
 
 export async function POST(request: NextRequest) {
@@ -67,14 +70,48 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Update password if requested
-    if (newPassword && newPassword.trim().length >= 8) {
-      const { error: authError } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
-
-      if (authError) {
+    if (newPassword && newPassword.trim().length > 0) {
+      const pwCheck = passwordStrengthSchema.safeParse(newPassword);
+      if (!pwCheck.success) {
         return NextResponse.json(
-          { error: "Erreur lors de la modification du mot de passe", details: authError.message },
+          {
+            error:
+              "Le nouveau mot de passe doit comporter au moins 10 caractères avec une majuscule, une minuscule et un chiffre.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (isCommonPassword(newPassword)) {
+        return NextResponse.json(
+          { error: "Ce mot de passe est trop facile à deviner. Choisissez un mot de passe plus robuste." },
+          { status: 400 }
+        );
+      }
+
+      const adminSupabase = getAdminSupabase();
+      const passwordHash = await hashPassword(newPassword);
+
+      // Fetch current token_version
+      const { data: creds } = await adminSupabase
+        .from("user_credentials")
+        .select("token_version")
+        .eq("user_id", user.id)
+        .single();
+
+      const nextTokenVersion = (creds?.token_version ?? 0) + 1;
+
+      const { error: credsError } = await adminSupabase
+        .from("user_credentials")
+        .update({
+          password_hash: passwordHash,
+          token_version: nextTokenVersion,
+        })
+        .eq("user_id", user.id);
+
+      if (credsError) {
+        return NextResponse.json(
+          { error: "Erreur lors de la modification du mot de passe", details: credsError.message },
           { status: 500 }
         );
       }

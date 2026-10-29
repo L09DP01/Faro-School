@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { updatePasswordSchema } from "@/lib/validators/auth";
-import { createClient } from "@/lib/supabase/client";
 import {
   AlertCircle,
   CheckCircle2,
@@ -20,6 +19,7 @@ export function ResetPasswordForm() {
   const t = useTranslations("auth");
 
   const [status, setStatus] = useState<"checking" | "ready" | "expired" | "success">("checking");
+  const [token, setToken] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,77 +27,28 @@ export function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    const supabase = createClient();
-
-    // Check URL parameters for errors or codes
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      const hash = window.location.hash;
-      const hasError =
-        url.searchParams.get("error") ||
-        hash.includes("error=") ||
-        hash.includes("error_code=");
+      const urlToken = url.searchParams.get("token");
 
-      if (hasError) {
+      if (!urlToken || urlToken.trim().length === 0) {
         setStatus("expired");
         return;
       }
 
-      const code = url.searchParams.get("code");
-      if (code) {
-        supabase.auth
-          .exchangeCodeForSession(code)
-          .then(({ data, error }) => {
-            if (!mounted) return;
-            if (error || !data.session) {
-              setStatus("expired");
-            } else {
-              setStatus("ready");
-            }
-          })
-          .catch(() => {
-            if (mounted) setStatus("expired");
-          });
-        return;
-      }
+      setToken(urlToken.trim());
+      setStatus("ready");
     }
-
-    // Subscribe to auth state changes for PASSWORD_RECOVERY event
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setStatus("ready");
-      }
-    });
-
-    // Check existing session
-    supabase.auth.getSession().then(({ data: { session }, error: sessionError }) => {
-      if (!mounted) return;
-      if (session && !sessionError) {
-        setStatus("ready");
-      } else {
-        // Allow a small grace period for hash parsing, otherwise mark expired
-        const timer = setTimeout(() => {
-          if (mounted && status === "checking") {
-            setStatus("expired");
-          }
-        }, 1200);
-        return () => clearTimeout(timer);
-      }
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!token) {
+      setStatus("expired");
+      return;
+    }
 
     const result = updatePasswordSchema.safeParse({ password, confirmPassword });
     if (!result.success) {
@@ -115,20 +66,18 @@ export function ResetPasswordForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, password }),
       });
 
-      if (updateError) {
-        if (
-          updateError.message.toLowerCase().includes("session") ||
-          updateError.message.toLowerCase().includes("expired")
-        ) {
-          setError(t("errors.recoverySessionExpired"));
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || t("errors.serverError"));
+        if (data.error && data.error.includes("expiré")) {
           setStatus("expired");
-        } else {
-          setError(updateError.message || t("errors.serverError"));
         }
         return;
       }
@@ -155,30 +104,23 @@ export function ResetPasswordForm() {
   if (status === "expired") {
     return (
       <div className="w-full space-y-6 text-center">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-orange/10 text-orange shadow-subtle mx-auto">
-          <AlertTriangle className="w-8 h-8 stroke-[2.5]" />
+        <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+          <AlertTriangle className="w-6 h-6" />
         </div>
         <div className="space-y-1">
-          <h2 className="font-heading font-black text-2xl sm:text-[30px] tracking-tight text-ink">
-            {t("expiredLinkTitle")}
+          <h2 className="font-heading font-black text-2xl text-ink">
+            {t("recoveryExpiredTitle")}
           </h2>
-          <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto leading-relaxed">
-            {t("expiredLinkDesc")}
+          <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto">
+            {t("recoveryExpiredSubtitle")}
           </p>
         </div>
-        <div className="pt-2 flex flex-col gap-3">
+        <div className="pt-2">
           <Link
             href="/mot-de-passe-oublie"
-            className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-blue hover:bg-blue/90 text-white font-heading font-semibold text-sm shadow-subtle transition-all"
+            className="inline-flex items-center justify-center w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all"
           >
-            <span>{t("requestNewLink")}</span>
-          </Link>
-          <Link
-            href="/connexion"
-            className="inline-flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-transparent hover:bg-navy-deep/5 text-muted-faro hover:text-ink font-heading text-xs font-semibold transition-all"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{t("backToLogin")}</span>
+            {t("requestNewResetLink")}
           </Link>
         </div>
       </div>
@@ -188,24 +130,23 @@ export function ResetPasswordForm() {
   if (status === "success") {
     return (
       <div className="w-full space-y-6 text-center">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-ok-tint text-ok shadow-subtle mx-auto">
-          <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
+        <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-6 h-6" />
         </div>
         <div className="space-y-1">
-          <h2 className="font-heading font-black text-2xl sm:text-[30px] tracking-tight text-ink">
-            {t("resetSuccessTitle")}
+          <h2 className="font-heading font-black text-2xl text-ink">
+            {t("passwordUpdatedTitle")}
           </h2>
-          <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto leading-relaxed">
-            {t("resetSuccessDesc")}
+          <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto">
+            {t("passwordUpdatedSubtitle")}
           </p>
         </div>
         <div className="pt-2">
           <Link
             href="/connexion"
-            className="inline-flex items-center justify-center gap-2 w-full h-12 rounded-xl bg-blue hover:bg-blue/90 text-white font-heading font-semibold text-sm shadow-subtle transition-all"
+            className="inline-flex items-center justify-center w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all shadow-sm"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>{t("loginSubmit")}</span>
+            {t("loginTitle")}
           </Link>
         </div>
       </div>
@@ -214,108 +155,83 @@ export function ResetPasswordForm() {
 
   return (
     <div className="w-full space-y-6">
-      {/* Back to Login link */}
-      <div>
-        <Link
-          href="/connexion"
-          className="inline-flex items-center gap-1.5 font-heading text-xs font-semibold text-blue hover:underline"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{t("backToLogin")}</span>
-        </Link>
-      </div>
-
-      {/* Title */}
       <div className="space-y-1">
-        <h2 className="font-heading font-black text-2xl sm:text-[34px] tracking-tight text-ink leading-tight">
+        <h2 className="font-heading font-black text-2xl sm:text-[30px] tracking-tight text-ink leading-tight">
           {t("resetPasswordTitle")}
         </h2>
-        <p className="font-sans text-xs sm:text-sm text-muted-faro leading-relaxed">
+        <p className="font-sans text-xs sm:text-sm text-muted-faro">
           {t("resetPasswordSubtitle")}
         </p>
       </div>
 
-      {/* Error Banner */}
       {error && (
-        <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm">
-          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-600" />
+        <div
+          role="alert"
+          className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-xs sm:text-sm flex items-start gap-2.5"
+        >
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* New Password */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="new-password"
-            className="block font-heading text-xs font-semibold text-ink"
-          >
-            {t("newPasswordLabel")}
+        <div>
+          <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
+            {t("newPassword")}
           </label>
           <div className="relative">
             <input
-              id="new-password"
               type={showPassword ? "text" : "password"}
-              required
-              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder={t("passwordPlaceholder")}
-              className="w-full h-12 px-3.5 pr-10 rounded-xl border border-divider bg-white font-sans text-sm text-ink placeholder:text-muted-faro/60 focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent transition-all"
+              placeholder="••••••••••••"
+              className="w-full py-2.5 px-3.5 pr-10 rounded-xl border border-border-faro bg-background text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent-faro"
+              autoFocus
+              required
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-faro hover:text-ink transition-colors"
-              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-faro hover:text-ink"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        {/* Confirm Password */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="confirm-password"
-            className="block font-heading text-xs font-semibold text-ink"
-          >
-            {t("confirmPasswordLabel")}
+        <div>
+          <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
+            {t("confirmPassword")}
           </label>
-          <div className="relative">
-            <input
-              id="confirm-password"
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={8}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder={t("confirmPasswordPlaceholder")}
-              className="w-full h-12 px-3.5 pr-10 rounded-xl border border-divider bg-white font-sans text-sm text-ink placeholder:text-muted-faro/60 focus:outline-none focus:ring-2 focus:ring-blue focus:border-transparent transition-all"
-            />
-          </div>
+          <input
+            type={showPassword ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="••••••••••••"
+            className="w-full py-2.5 px-3.5 rounded-xl border border-border-faro bg-background text-ink text-sm focus:outline-none focus:ring-2 focus:ring-accent-faro"
+            required
+          />
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-12 rounded-xl bg-blue hover:bg-blue/90 disabled:opacity-50 text-white font-heading font-semibold text-sm shadow-subtle transition-all flex items-center justify-center gap-2 mt-2"
+          className="w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{t("updatePasswordSubmit")}...</span>
-            </>
-          ) : (
-            <>
-              <KeyRound className="w-4 h-4" />
-              <span>{t("updatePasswordSubmit")}</span>
-            </>
-          )}
+          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          <span>{t("updatePasswordButton")}</span>
         </button>
       </form>
+
+      <div className="text-center pt-2">
+        <Link
+          href="/connexion"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-faro hover:text-ink"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>{t("backToLogin")}</span>
+        </Link>
+      </div>
     </div>
   );
 }

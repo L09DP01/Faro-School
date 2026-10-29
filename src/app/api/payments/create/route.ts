@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/auth/get-user";
 import { getPaymentProvider, type PaymentMethod } from "@/lib/payments";
 import { maskSensitiveData } from "@/lib/payments/mask";
 import { validateAndFormatHaitianPhone } from "@/lib/validators/auth";
@@ -46,17 +47,14 @@ export async function POST(request: NextRequest) {
       result.data;
 
     // 1. Authenticate user
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: "Authentification requise pour effectuer un achat" },
         { status: 401 }
       );
     }
+    const supabase = await createClient();
 
     // 2. Fetch course price from database (CRITICAL: never trust client amount)
     const { data: course, error: courseError } = await supabase

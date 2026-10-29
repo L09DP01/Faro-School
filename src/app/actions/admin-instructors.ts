@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { can } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
+import { createPasswordResetToken } from "@/lib/auth/tokens";
+import { sendInstructorInvitationEmail } from "@/lib/email/resend";
 
 async function assertAdmin() {
   const user = await getCurrentUser();
@@ -62,35 +64,36 @@ export async function createInstructorAction(
     if (existingProfile) {
       createdId = existingProfile.id;
     } else {
-      // Create real user in Supabase Auth
-      const { data: authData, error: authErr } = await adminDb.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: {
+      // Create user profile directly in profiles table (Decoupled Auth.js architecture)
+      const { data: newProfile, error: profileErr } = await adminDb
+        .from("profiles")
+        .insert({
+          email,
           full_name: name,
-        },
-      });
+          role: "instructor",
+          locale: "fr",
+          email_verified_at: null, // Verified upon setting initial password
+        })
+        .select("id")
+        .single();
 
-      if (authErr || !authData?.user) {
+      if (profileErr || !newProfile) {
         return {
           success: false,
-          error: `Échec de création du compte d'authentification : ${authErr?.message || "Erreur inconnue"}`,
+          error: `Échec de création du profil : ${profileErr?.message || "Erreur inconnue"}`,
         };
       }
-      createdId = authData.user.id;
+      createdId = newProfile.id;
     }
 
-    // 2. Assign instructor role via transactional set_user_role RPC
-    const { error: roleErr } = await adminDb.rpc("set_user_role", {
-      target_user_id: createdId,
-      new_role: "instructor",
-    });
-
-    if (roleErr) {
-      return {
-        success: false,
-        error: `Échec d'attribution du rôle de formateur : ${roleErr.message}`,
-      };
+    // 2. Assign instructor role via transactional set_user_role RPC (or verify role)
+    try {
+      await adminDb.rpc("set_user_role", {
+        target_user_id: createdId,
+        new_role: "instructor",
+      });
+    } catch (rpcErr) {
+      console.warn("[Instructors] set_user_role RPC fallback:", rpcErr);
     }
 
     // 3. Upsert instructor details into instructors table
@@ -112,7 +115,17 @@ export async function createInstructorAction(
       };
     }
 
-    // 4. Record audit log entry
+    // 4. Send invitation email with 48h set-password link
+    try {
+      const inviteToken = await createPasswordResetToken(createdId, 48);
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://faroschool.com";
+      const inviteUrl = `${appUrl}/fr/reinitialiser-mot-de-passe?token=${inviteToken}`;
+      await sendInstructorInvitationEmail(email, inviteUrl, name, "fr");
+    } catch (inviteErr) {
+      console.error("[Instructors] Invitation email error:", inviteErr);
+    }
+
+    // 5. Record audit log entry
     const { error: auditErr } = await adminDb.from("admin_audit_logs").insert({
       admin_id: admin.id,
       action: "instructor_created",

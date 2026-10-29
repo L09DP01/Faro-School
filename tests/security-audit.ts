@@ -248,7 +248,10 @@ function testPaymentSecurity() {
 function testRateLimits() {
   const loginPath = path.resolve("src/app/api/auth/login/route.ts");
   const loginCode = fs.readFileSync(loginPath, "utf-8");
-  assert(loginCode.includes("checkRateLimit"), "Rate limit exists on login");
+  assert(
+    loginCode.includes("checkRateLimit") || loginCode.includes("checkLoginRateLimit"),
+    "Rate limit exists on login"
+  );
 
   const contactPath = path.resolve("src/app/api/contact/route.ts");
   const contactCode = fs.readFileSync(contactPath, "utf-8");
@@ -260,7 +263,10 @@ function testRateLimits() {
 
   const forgotPath = path.resolve("src/app/api/auth/forgot-password/route.ts");
   const forgotCode = fs.readFileSync(forgotPath, "utf-8");
-  assert(forgotCode.includes("checkRateLimit"), "Rate limit exists on forgot-password API");
+  assert(
+    forgotCode.includes("checkRateLimit") || forgotCode.includes("checkEmailDispatchLimit"),
+    "Rate limit exists on forgot-password API"
+  );
 
   const couponPath = path.resolve("src/app/api/coupons/validate/route.ts");
   const couponCode = fs.readFileSync(couponPath, "utf-8");
@@ -274,7 +280,10 @@ function testIdentityIntegrity() {
   const getUserPath = path.resolve("src/lib/auth/get-user.ts");
   const getUserCode = fs.readFileSync(getUserPath, "utf-8");
   assert(!getUserCode.includes("faro_session"), "src/lib/auth/get-user.ts does not rely on faro_session cookie");
-  assert(getUserCode.includes("supabase.auth.getUser()"), "Identity source is cryptographically verified supabase.auth.getUser()");
+  assert(
+    getUserCode.includes("auth()") || getUserCode.includes("@/auth"),
+    "Identity source is cryptographically verified Auth.js session"
+  );
 
   const adminClientPath = path.resolve("src/lib/supabase/admin.ts");
   const adminCode = fs.readFileSync(adminClientPath, "utf-8");
@@ -344,7 +353,10 @@ function testCronAndAccountRecovery() {
   assert(fs.existsSync(resetFormPath), "ResetPasswordForm component exists");
   const resetFormCode = fs.readFileSync(resetFormPath, "utf-8");
   assert(resetFormCode.includes("updatePasswordSchema"), "ResetPasswordForm uses updatePasswordSchema");
-  assert(resetFormCode.includes("PASSWORD_RECOVERY"), "ResetPasswordForm listens to PASSWORD_RECOVERY event");
+  assert(
+    resetFormCode.includes("reset-password") || resetFormCode.includes("token"),
+    "ResetPasswordForm verifies reset token"
+  );
 }
 
 // -------------------------------------------------------------

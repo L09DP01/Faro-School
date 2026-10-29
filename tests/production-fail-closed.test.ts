@@ -95,7 +95,11 @@ const envWithoutAi = validateEnvironment({
   BUNNY_STREAM_API_KEY: "bunny_api",
   BUNNY_STREAM_LIBRARY_ID: "12345",
   BUNNY_STREAM_TOKEN_AUTH_KEY: "bunny_token",
-  // No ANTHROPIC_API_KEY
+  AUTH_SECRET: "mock-auth-secret-min-32-chars-long-for-testing",
+  SUPABASE_JWT_SECRET: "mock-supabase-jwt-secret-min-32-chars-for-test",
+  RESEND_API_KEY: "re_mock_api_key",
+  EMAIL_FROM: "Faro School <contact@faroschool.com>",
+  // No ANTHROPIC_API_KEY or GEMINI_API_KEY
 });
 
 assert.strictEqual(envWithoutAi.isAiAvailable, false, "AI must be marked unavailable without crashing");

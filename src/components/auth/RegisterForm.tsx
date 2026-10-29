@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import { signupSchema } from "@/lib/validators/auth";
 import { AuthSegmentedControl } from "./AuthSegmentedControl";
+import { VerificationCodeForm } from "./VerificationCodeForm";
 import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 
 interface RegisterFormProps {
@@ -25,6 +26,7 @@ export function RegisterForm({ nextParam }: RegisterFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const enableGoogleAuth =
     process.env.NEXT_PUBLIC_ENABLE_GOOGLE_AUTH === "true";
@@ -87,6 +89,11 @@ export function RegisterForm({ nextParam }: RegisterFormProps) {
         return;
       }
 
+      if (data.requireVerification) {
+        setUnverifiedEmail(email);
+        return;
+      }
+
       // Successful registration -> redirect to destination
       const destination = data.redirectUrl || `/${locale}/dashboard`;
       window.location.href = destination;
@@ -96,6 +103,20 @@ export function RegisterForm({ nextParam }: RegisterFormProps) {
       setLoading(false);
     }
   };
+
+  if (unverifiedEmail) {
+    return (
+      <div className="w-full space-y-6">
+        <AuthSegmentedControl activeTab="register" nextParam={nextParam} />
+        <VerificationCodeForm
+          email={unverifiedEmail}
+          nextParam={nextParam}
+          password={password}
+          onCancel={() => setUnverifiedEmail(null)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">

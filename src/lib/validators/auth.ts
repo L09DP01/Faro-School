@@ -61,6 +61,13 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 // 2. Signup schema
+export const passwordStrengthSchema = z
+  .string()
+  .min(10, { message: "passwordTooShort" })
+  .regex(/[A-Z]/, { message: "passwordMissingUppercase" })
+  .regex(/[a-z]/, { message: "passwordMissingLowercase" })
+  .regex(/\d/, { message: "passwordMissingNumber" });
+
 export const signupSchema = z.object({
   fullName: z
     .string()
@@ -74,7 +81,7 @@ export const signupSchema = z.object({
       message: "invalidPhone",
     }),
   email: z.string().trim().email({ message: "invalidEmail" }),
-  password: z.string().min(8, { message: "passwordTooShort" }),
+  password: passwordStrengthSchema,
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: "acceptTermsRequired" }),
   }),
@@ -91,7 +98,7 @@ export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 // 4. Update password schema
 export const resetPasswordSchema = z.object({
-  password: z.string().min(8, { message: "passwordTooShort" }),
+  password: passwordStrengthSchema,
 });
 
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
