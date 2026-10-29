@@ -11,6 +11,7 @@ const suites = [
   { name: "Step S1-D: Production Data & Fixture Isolation", cmd: "npx tsx --require ./tests/setup-test-env.js tests/step-s1d-data-integrity.test.ts" },
   { name: "Step S1-E: AI Guardrails & Governance", cmd: "npx tsx --require ./tests/setup-test-env.js tests/step-s1e-ai-guardrails.test.ts" },
   { name: "Step S1-F: Account Recovery & Cron Verification", cmd: "npx tsx --require ./tests/setup-test-env.js tests/step-s1f-audit.test.ts" },
+  { name: "Step S1-G: Database Migration & Anon Table Grants", cmd: "npx tsx tests/anon-table-grants.test.ts" },
   { name: "Production Fail-Closed & Environment Validation", cmd: "npx tsx --require ./tests/setup-test-env.js tests/production-fail-closed.test.ts" },
   { name: "Full System Security & RLS Audit (66 Assertions)", cmd: "npx tsx tests/security-audit.ts" },
 ];

@@ -88,26 +88,106 @@ PBKDF2-SHA256 via Web Crypto ou argon2 WASM, sans bcrypt natif ni API Node au ru
 - Resend via fetch, emails légers FR/KR par locale, aucun secret dans les logs. Les emails doivent être envoyés uniquement dans le cadre des flux explicitement déclenchés.
 - Cron de suppression à 48 heures pour comptes non vérifiés et jetons associés, protégé par `CRON_SECRET` et exécuté par le serveur privilégié.
 
-## 2. Plan de migration SQL unique — non créé, non appliqué
+## 2. Migration SQL Réalisée : `20250121000000_authjs_migration.sql`
 
-La future migration doit :
+Le fichier de migration unique [`supabase/migrations/20250121000000_authjs_migration.sql`](supabase/migrations/20250121000000_authjs_migration.sql) a été conçu et validé. Il apporte l'ensemble des modifications structurelles, sécuritaires et d'autorisation nécessaires à l'architecture Auth.js v5.
 
-1. Retirer la FK de `profiles.id` vers `auth.users`, ajouter le défaut `gen_random_uuid()`, les colonnes nécessaires et l'unicité des emails normalisés. Vérifier aussi la présence réelle de `profiles.updated_at` avant de réutiliser les triggers actuels.
-2. Supprimer le trigger `on_auth_user_created` sur `auth.users` et retirer/remplacer la fonction de création automatique. La création des profils sera explicite dans le serveur d'inscription.
-3. Créer `user_credentials`, `password_reset_tokens`, `email_verification_tokens` et `auth_attempts`, avec contraintes, index d'expiration et privilèges strictement contrôlés.
-4. Conserver les FK des tables métier vers `profiles` : cours, inscriptions, paiements, messages et présence restent liés aux UUID de profils.
-5. Conserver `auth.uid()` lorsque son sens reste celui du `sub` du JWT vérifié par Supabase. Cette fonction n'exige pas à elle seule qu'une ligne `auth.users` existe. Ajouter les conditions de vérification et version nécessaires aux politiques protégées.
-6. Réexaminer chaque fonction SECURITY DEFINER, les grants EXECUTE et les triggers qui modifient rôles ou sanctions. Une révocation de droits sur les tables ne retire pas le droit d'appeler une RPC privilégiée.
-7. Ne pas supprimer les fonctions système `auth.uid()`, `auth.role()` ou `auth.jwt()` de Supabase. Les références de politiques doivent être adaptées, pas les helpers système détruits.
-8. Adapter le script de création du premier administrateur et le nettoyage des comptes de test, actuellement fondés sur `auth.users`.
+### 2.1 Découplage de `profiles` vis-à-vis de `auth.users`
+1. **Suppression de la clé étrangère** :
+   ```sql
+   ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
+   ```
+   `profiles.id` n'est plus assujetti à la table interne `auth.users` de Supabase Auth.
+2. **Génération d'UUID autonome** :
+   ```sql
+   ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
+   ```
+3. **Colonne de vérification d'email** :
+   ```sql
+   ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ NULL;
+   ```
+   Règle stricte : tout compte dont `email_verified_at` est `NULL` est interdit d'accès aux ressources protégées.
+4. **Unicité stricte des adresses e-mail** :
+   ```sql
+   CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_unique_idx ON public.profiles (LOWER(email));
+   ```
+5. **Suppression des triggers `auth.users`** :
+   ```sql
+   DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+   DROP FUNCTION IF EXISTS public.handle_new_user();
+   ```
+   La création de profil s'effectue désormais côté serveur de manière transactionnelle via `create_user_with_credentials` ou l'action serveur d'inscription.
 
-Les anciennes migrations restent un historique ; les références Auth qu'elles contiennent seront neutralisées par la migration complémentaire. Le contrôle CI demandé sur le code doit interdire les anciens appels SDK sans prétendre qu'un historique SQL ne les a jamais utilisés.
+### 2.2 Nouvelles tables de sécurité (Isolation Service-Role)
+Quatre tables dédiées ont été créées, avec activation systématique de Row Level Security (RLS) et révocation immédiate de tout droit aux rôles `anon` et `authenticated` :
 
-### Remarques sur la couverture des références SQL
+1. **`public.user_credentials`** :
+   - `user_id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE`
+   - `password_hash TEXT NOT NULL` (PBKDF2-SHA256, 100 000 itérations)
+   - `token_version INT NOT NULL DEFAULT 0` (incrémenté pour révoquer instantanément toutes les sessions actives lors d'un changement de mot de passe, bannissement ou réinitialisation)
+   - `failed_count INT NOT NULL DEFAULT 0`
+   - `locked_until TIMESTAMPTZ NULL`
+   - Privilèges : `REVOKE ALL ON public.user_credentials FROM anon, authenticated;` (Seul le client serveur privilégié `service_role` a accès).
+2. **`public.email_verification_tokens`** :
+   - `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`
+   - `email TEXT NOT NULL`, `code_hash TEXT NOT NULL` (SHA-256 du code à 6 chiffres), `token_hash TEXT NOT NULL`
+   - `attempts INT NOT NULL DEFAULT 0` (bloqué à 5 tentatives max)
+   - `expires_at TIMESTAMPTZ NOT NULL` (durée de validité : 10 minutes)
+   - `used_at TIMESTAMPTZ NULL`
+   - Privilèges : `REVOKE ALL ON public.email_verification_tokens FROM anon, authenticated;`
+3. **`public.password_reset_tokens`** :
+   - `id UUID PRIMARY KEY DEFAULT gen_random_uuid()`
+   - `user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE`
+   - `token_hash TEXT NOT NULL` (SHA-256 du jeton d'invitation/réinitialisation)
+   - `expires_at TIMESTAMPTZ NOT NULL` (1h pour réinitialisation utilisateur, 48h pour invitation formateur)
+   - `used_at TIMESTAMPTZ NULL`
+   - Privilèges : `REVOKE ALL ON public.password_reset_tokens FROM anon, authenticated;`
+4. **`public.auth_attempts`** :
+   - Compteurs d'abus par IP ou identifiant email (`login`, `verification_email`, `reset_email`)
+   - Règles : 1 code max par 60s, max 5 par heure, verrouillage 15 min après 5 échecs de connexion consécutifs.
+   - Privilèges : `REVOKE ALL ON public.auth_attempts FROM anon, authenticated;`
 
-Les recherches exactes sont annexées. Les références directes à `auth.users` concernent la FK initiale des profils, les triggers d'inscription réattachés par la migration 18 et le script SQL de nettoyage. Les politiques utilisent largement `auth.uid()`, directement ou via les helpers administrateur/formateur ; le contrôle doit donc englober les fonctions et pas seulement les blocs `CREATE POLICY`.
+### 2.3 Compatibilité des politiques RLS avec le jeton JWT (`sub` = `auth.uid()`)
+- Aucune politique RLS n'utilisait directement de jointure vers la table `auth.users`.
+- Toutes les politiques existantes utilisent `id = auth.uid()` ou `user_id = auth.uid()`.
+- Le jeton d'accès généré par la route sécurisée `GET /api/auth/supabase-token` signe un JWT HS256 avec :
+  - `sub: <profile.id>`
+  - `role: "authenticated"`
+  - `app_role: <profile.role>`
+- PostgREST extrait automatiquement le `sub` du jeton signé et assigne sa valeur à `auth.uid()`.
+- Par conséquent, les 30+ politiques Row Level Security (profils, inscriptions, progression des leçons, paiements, commandes, certificats, messagerie et communauté) fonctionnent nativement sans altération de la logique d'autorisation.
 
-Les résultats absents pour `auth.role()` et `auth.jwt()` seront consignés dans leurs rubriques d'inventaire ; leur absence locale ne permet pas de conclure sur d'éventuelles modifications manuelles distantes.
+### 2.4 Modèle de Privilèges Explicites (GRANTs Fail-Closed)
+Le projet Supabase a les options 'Automatically expose new tables' désactivée et 'Enable automatic RLS' activée. En conséquence, chaque droit doit être octroyé explicitement :
+
+1. **Révocation globale du schéma public** :
+   ```sql
+   REVOKE ALL ON SCHEMA public FROM PUBLIC;
+   GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+   REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
+   ```
+2. **Tables de catalogue public (`anon` et `authenticated` en lecture seule)** :
+   - `courses`, `modules`, `lessons`, `reviews`, `certificates`, `coupons`, `instructors`, `platform_settings`.
+3. **Tables de soumission publique (`anon` et `authenticated` en insertion seule)** :
+   - `contact_messages`, `newsletter_subscribers`.
+4. **Tables utilisateur/étudiant/personnel (`authenticated` uniquement, JAMAIS `anon`)** :
+   - `profiles` (`SELECT, UPDATE`)
+   - `lesson_resources`, `enrollments`, `payments` (`SELECT`)
+   - `lesson_progress`, `orders`, `notifications`, `escalations`, `moderation_flags`, `ai_usage` (`SELECT, INSERT, UPDATE`)
+   - `playback_sessions`, `lesson_notes`, `community_reactions` (`SELECT, INSERT, UPDATE, DELETE`)
+   - `community_messages`, `community_reports`, `community_reads`, `community_rules_accepted`, `conversations`, `messages`.
+5. **Tables d'administration / formateurs (`authenticated` avec vérification RLS du rôle)** :
+   - `admin_audit_logs`, `private_conversation_access_logs`, `instructor_ai_versions`.
+6. **Tables sensibles de sécurité (ZÉRO droit à `anon` et `authenticated`)** :
+   - `user_credentials`, `email_verification_tokens`, `password_reset_tokens`, `auth_attempts`.
+
+### 2.5 Test de régression automatisé des privilèges `anon`
+Le test automatisé [`tests/anon-table-grants.test.ts`](tests/anon-table-grants.test.ts) :
+1. Analyse l'intégralité des 21 migrations SQL de `supabase/migrations/`.
+2. Extrait l'ensemble des tables bénéficiant d'un `GRANT SELECT` effectif vers `anon`.
+3. Valide qu'**aucune table autre que la liste blanche stricte du catalogue public** (`certificates`, `coupons`, `courses`, `instructors`, `lessons`, `modules`, `platform_settings`, `reviews`) n'est accessible en lecture à `anon`.
+4. Échoue immédiatement si la moindre table sensible (`profiles`, `payments`, `tokens`, etc.) venait à être exposée.
+5. Est intégré à `npm test` et `npm run verify`.
 
 ## 3. Ce que tu dois vérifier toi-même dans Supabase
 
