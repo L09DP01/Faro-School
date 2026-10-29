@@ -240,8 +240,15 @@ export async function callAiAssistant({
   locale = "fr",
 }: CallAiAssistantParams): Promise<AiResponseResult> {
   const globalSettings = await getPersistedGlobalAiSettings();
-  const model = process.env.AI_MODEL || globalSettings.defaultModel || "claude-3-haiku-20240307";
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const isGemini = Boolean(
+    process.env.GEMINI_API_KEY ||
+      (!process.env.ANTHROPIC_API_KEY && (!process.env.AI_MODEL || process.env.AI_MODEL.includes("gemini"))) ||
+      (process.env.AI_MODEL && process.env.AI_MODEL.includes("gemini"))
+  );
+  const model =
+    process.env.AI_MODEL ||
+    (isGemini ? "gemini-1.5-flash" : globalSettings.defaultModel || "claude-3-haiku-20240307");
 
   // 1. Kill Switch Check (env variable OR persisted setting)
   const isEnvDisabled =
@@ -416,11 +423,11 @@ Question actuelle de ${studentName} :
 ${safeQuestion}
 `;
 
-  // 7. Fail closed if ANTHROPIC_API_KEY is missing
+  // 7. Fail closed if AI API key is missing
   if (!apiKey) {
     if (!isDemoMode()) {
       console.warn(
-        "[AI Assistant] ANTHROPIC_API_KEY is not configured in production. Failing closed: transmitting to human instructor."
+        "[AI Assistant] GEMINI_API_KEY (or ANTHROPIC_API_KEY) is not configured in production. Failing closed: transmitting to human instructor."
       );
       return {
         answer: "",
@@ -472,52 +479,110 @@ ${safeQuestion}
     }
   }
 
-  // 8. Live Anthropic API call with 20s timeout
+  // 8. Live API Call: Google Gemini or Anthropic Claude with 20s timeout
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        max_tokens: 600,
-        temperature: 0.2,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
-      }),
-    });
+    let rawContent = "{}";
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let costUsd = 0;
 
-    clearTimeout(timeoutId);
+    if (isGemini) {
+      const geminiModel = model.includes("gemini") ? model : "gemini-1.5-flash";
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: systemPrompt }],
+            },
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: userPrompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 800,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
 
-    if (!res.ok) {
-      const errBody = await res.text();
-      console.error("[ANTHROPIC API ERROR]", errBody);
-      return {
-        answer: "",
-        can_answer: false,
-        confidence: 0,
-        escalate_reason: "Service IA temporairement indisponible.",
-        model,
-        inputTokens: 0,
-        outputTokens: 0,
-      };
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error("[GEMINI API ERROR]", errBody);
+        return {
+          answer: "",
+          can_answer: false,
+          confidence: 0,
+          escalate_reason: "Service IA temporairement indisponible.",
+          model: geminiModel,
+          inputTokens: 0,
+          outputTokens: 0,
+        };
+      }
+
+      const data = await res.json();
+      rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      const usage = data.usageMetadata || {};
+      inputTokens = Number(usage.promptTokenCount || 0);
+      outputTokens = Number(usage.candidatesTokenCount || 0);
+      // Gemini 1.5 Flash ($0.075/M input, $0.30/M output)
+      costUsd = (inputTokens * 0.075 + outputTokens * 0.30) / 1_000_000;
+    } else {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey!,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model,
+          max_tokens: 600,
+          temperature: 0.2,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }],
+        }),
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        console.error("[ANTHROPIC API ERROR]", errBody);
+        return {
+          answer: "",
+          can_answer: false,
+          confidence: 0,
+          escalate_reason: "Service IA temporairement indisponible.",
+          model,
+          inputTokens: 0,
+          outputTokens: 0,
+        };
+      }
+
+      const data = await res.json();
+      rawContent = data.content?.[0]?.text || "{}";
+      const usage = data.usage || {};
+      inputTokens = Number(usage.input_tokens || 0);
+      outputTokens = Number(usage.output_tokens || 0);
+      // Calculate Claude-3-Haiku cost ($0.25/M input, $1.25/M output)
+      costUsd = (inputTokens * 0.25 + outputTokens * 1.25) / 1_000_000;
     }
-
-    const data = await res.json();
-    const rawContent = data.content?.[0]?.text || "{}";
-    const usage = data.usage || {};
-    const inputTokens = Number(usage.input_tokens || 0);
-    const outputTokens = Number(usage.output_tokens || 0);
-
-    // Calculate Claude-3-Haiku cost ($0.25/M input, $1.25/M output)
-    const costUsd = (inputTokens * 0.25 + outputTokens * 1.25) / 1_000_000;
 
     // 9. Validate Model Output with Zod
     let parsedData: {

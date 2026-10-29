@@ -28,9 +28,10 @@ export const serverEnvSchema = z.object({
   KOBARA_API_URL: z.string().optional(),
   KOBARA_WEBHOOK_SECRET: z.string().optional(),
 
-  // AI Assistant (Claude)
+  // AI Assistant (Google Gemini / Anthropic Claude)
+  GEMINI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().default("claude-3-haiku-20240307"),
+  AI_MODEL: z.string().default("gemini-1.5-flash"),
   DISABLE_AI: z.string().optional(),
   AI_ASSISTANT_ENABLED: z.string().optional(),
 
@@ -145,7 +146,7 @@ export function validateEnvironment(customEnv?: Record<string, string | undefine
 
   // AI graceful degradation: AI key is optional, system falls back to human escalation if missing
   const isAiAvailable = Boolean(
-    serverEnv.ANTHROPIC_API_KEY &&
+    (serverEnv.GEMINI_API_KEY || serverEnv.ANTHROPIC_API_KEY) &&
       serverEnv.DISABLE_AI !== "true" &&
       serverEnv.AI_ASSISTANT_ENABLED !== "false"
   );
