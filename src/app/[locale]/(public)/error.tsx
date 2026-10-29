@@ -17,7 +17,11 @@ export default function PublicError({
       <Container>
         <ErrorState
           title={t("error")}
-          message={error.message || "Une erreur inattendue est survenue."}
+          message={
+            process.env.NODE_ENV === "production"
+              ? "Une erreur inattendue est survenue. Veuillez réessayer ultérieurement."
+              : error.message || "Une erreur inattendue est survenue."
+          }
           onRetry={reset}
         />
       </Container>

@@ -139,6 +139,12 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // Prevent indexing on staging/preview environments and on private routes
+  const isProduction = process.env.APP_ENV === "production" || process.env.NODE_ENV === "production";
+  if (!isProduction || isDashboardRoute || isAdminRoute) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+
   return response;
 }
 

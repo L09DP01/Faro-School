@@ -56,47 +56,7 @@ export default async function StudentPaymentsPage({ params }: PaymentsPageProps)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  let orderList: any[] = orders || [];
-  if (orderList.length === 0) {
-    orderList = [
-      {
-        id: "mock-order-1",
-        reference: "FARO-ORD-8821",
-        amount_htg: 3500,
-        status: "validated",
-        created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-        courses: {
-          title_fr: "Marketing Digital pour Entreprises en Haïti",
-          title_ht: "Maketing Dijital pou Biznis an Ayiti",
-        },
-        payments: [
-          {
-            provider: "moncash",
-            status: "validated",
-            created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-          },
-        ],
-      },
-      {
-        id: "mock-order-2",
-        reference: "FARO-ORD-7409",
-        amount_htg: 3800,
-        status: "validated",
-        created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
-        courses: {
-          title_fr: "Excel pour Entreprise et Comptabilité",
-          title_ht: "Eksèl pou Antrepriz ak Jesyon",
-        },
-        payments: [
-          {
-            provider: "natcash",
-            status: "validated",
-            created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
-          },
-        ],
-      },
-    ];
-  }
+  const orderList: any[] = orders || [];
 
   return (
     <div className="space-y-6">

@@ -208,45 +208,10 @@ export default async function StudentDashboardPage({
     }
   }
 
-  // Development/Test mock fallback when database has no enrollments
-  if (coursesStats.length === 0) {
-    coursesStats.push(
-      {
-        id: "c1-marketing-digital",
-        slug: "marketing-digital",
-        title: locale === "ht" ? "Maketing Dijital pou Biznis an Ayiti" : "Marketing Digital pour Entreprises en Haïti",
-        coverUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-        level: "débutant",
-        totalLessons: 6,
-        completedLessons: 3,
-        percent: 50,
-        firstLessonId: "mock_vid_101",
-        nextLesson: {
-          id: "mock_vid_103",
-          title: locale === "ht" ? "Konfigire Meta Business Suite" : "Configurer le Meta Business Suite",
-          moduleTitle: locale === "ht" ? "Piblisite Facebook ak Instagram" : "Facebook & Instagram Ads",
-        },
-      },
-      {
-        id: "c2-excel",
-        slug: "excel-pour-entreprise",
-        title: locale === "ht" ? "Eksèl pou Antrepriz ak Jesyon" : "Excel pour Entreprise et Comptabilité",
-        coverUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800",
-        level: "intermédiaire",
-        totalLessons: 6,
-        completedLessons: 6,
-        percent: 100,
-        firstLessonId: "mock_vid_201",
-      }
-    );
-    totalCompletedLessonsCount = 9;
-    totalSecondsLearned = 13800;
-  }
-
   // General stat tile values
   const activeCoursesCount = coursesStats.filter((c) => c.percent < 100).length;
   const hoursLearned = Math.round((totalSecondsLearned / 3600) * 10) / 10;
-  const certificatesCount = (certificates?.length || 0) > 0 ? certificates!.length : 1;
+  const certificatesCount = certificates?.length || 0;
 
   // "Continue Learning" candidate
   let recentLesson: {

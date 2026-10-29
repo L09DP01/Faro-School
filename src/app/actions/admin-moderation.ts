@@ -139,7 +139,7 @@ export async function muteReportAuthorAction(
       if (mutedStore) {
         mutedStore.set(authorId, {
           name: "Utilisateur",
-          email: "user@example.com",
+          email: "",
           role: "student",
           mutedUntil,
         });
@@ -211,7 +211,7 @@ export async function banReportAuthorAction(
       if (bannedStore) {
         bannedStore.set(authorId, {
           name: "Utilisateur",
-          email: "banned@example.com",
+          email: "",
           role: "student",
           bannedAt,
         });

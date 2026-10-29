@@ -1,16 +1,14 @@
 import type { VideoProvider } from "./types";
 import { BunnyStreamProvider } from "./bunny-stream";
-import { MockVideoProvider } from "./mock-provider";
 
 export * from "./types";
 export * from "./access";
 export * from "./bunny-stream";
 export * from "./bunny-storage";
-export * from "./mock-provider";
 export * from "./session";
 
 /**
- * Factory helper: Returns BunnyStreamProvider if API keys are set, otherwise MockVideoProvider.
+ * Factory helper: Returns BunnyStreamProvider if API keys are set, otherwise throws failing closed.
  */
 export function getVideoProvider(): VideoProvider {
   const hasBunnyConfig =
@@ -22,5 +20,5 @@ export function getVideoProvider(): VideoProvider {
     return new BunnyStreamProvider();
   }
 
-  return new MockVideoProvider();
+  throw new Error("Bunny Stream configuration is missing. Video playback cannot proceed.");
 }

@@ -141,32 +141,6 @@ export default async function StudentCoursesPage({ params }: CoursesPageProps) {
     }
   }
 
-  if (coursesList.length === 0) {
-    coursesList.push(
-      {
-        id: "c1-marketing-digital",
-        slug: "marketing-digital",
-        title: locale === "ht" ? "Maketing Dijital pou Biznis an Ayiti" : "Marketing Digital pour Entreprises en Haïti",
-        coverUrl: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-        totalLessons: 6,
-        completedCount: 3,
-        percent: 50,
-        firstLessonId: "mock_vid_101",
-        nextLessonId: "mock_vid_103",
-      },
-      {
-        id: "c2-excel",
-        slug: "excel-pour-entreprise",
-        title: locale === "ht" ? "Eksèl pou Antrepriz ak Jesyon" : "Excel pour Entreprise et Comptabilité",
-        coverUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800",
-        totalLessons: 6,
-        completedCount: 6,
-        percent: 100,
-        firstLessonId: "mock_vid_201",
-      }
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Page Title */}

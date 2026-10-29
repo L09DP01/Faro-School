@@ -6,6 +6,8 @@ import { Logo } from "./brand/Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslations } from "next-intl";
 import { usePwa } from "@/lib/pwa/use-pwa";
+import { siteConfig } from "@/config/site";
+import { contactConfig } from "@/config/contact";
 
 export function SiteFooter() {
   const tFooter = useTranslations("footer");
@@ -14,6 +16,7 @@ export function SiteFooter() {
 
   const appStoreUrl = process.env.APP_STORE_URL;
   const playStoreUrl = process.env.PLAY_STORE_URL;
+  const whatsappDigits = contactConfig.whatsapp.replace(/\D/g, "");
 
   // Never render marketing footer inside installed / standalone PWA app
   if (isStandalone) {
@@ -30,14 +33,14 @@ export function SiteFooter() {
               <Logo variant="on-dark" width={170} height={46} />
             </Link>
             <p className="text-sm text-white/70 leading-relaxed max-w-sm">
-              Apprenez aujourd&apos;hui, construisez demain.
+              {siteConfig.slogan}
             </p>
 
-            {/* Social Icons (Facebook, Instagram, WhatsApp, YouTube, TikTok) */}
+            {/* Social Icons */}
             <div className="pt-2 flex items-center gap-3">
               {/* Facebook */}
               <a
-                href="https://facebook.com"
+                href={siteConfig.links.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-orange hover:text-white transition-all"
@@ -49,7 +52,7 @@ export function SiteFooter() {
               </a>
               {/* Instagram */}
               <a
-                href="https://instagram.com"
+                href={siteConfig.links.instagram}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-orange hover:text-white transition-all"
@@ -61,7 +64,7 @@ export function SiteFooter() {
               </a>
               {/* WhatsApp */}
               <a
-                href="https://wa.me/50937000000"
+                href={`https://wa.me/${whatsappDigits}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-ok hover:text-white transition-all"
@@ -73,7 +76,7 @@ export function SiteFooter() {
               </a>
               {/* YouTube */}
               <a
-                href="https://youtube.com"
+                href={siteConfig.links.youtube}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-red hover:text-white transition-all"

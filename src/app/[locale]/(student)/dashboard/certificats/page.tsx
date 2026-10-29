@@ -55,23 +55,7 @@ export default async function StudentCertificatesPage({
     .eq("user_id", user.id)
     .order("issued_at", { ascending: false });
 
-  let certList: any[] = certificates || [];
-  if (certList.length === 0) {
-    certList = [
-      {
-        id: "mock-cert-1",
-        code: "FARO-EXCEL-8942",
-        issued_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-        course_id: "c2-excel",
-        courses: {
-          id: "c2-excel",
-          slug: "excel-pour-entreprise",
-          title_fr: "Excel pour Entreprise et Comptabilité",
-          title_ht: "Eksèl pou Antrepriz ak Jesyon",
-        },
-      },
-    ];
-  }
+  const certList: any[] = certificates || [];
 
   return (
     <div className="space-y-6">

@@ -216,68 +216,6 @@
     "statusValidated": "Paiement validé",
     "statusFailed": "Paiement échoué"
   },
-  "routes": {
-    "landing": {
-      "title": "Accueil",
-      "todo": "TODO page 01 - Page d'accueil"
-    },
-    "catalog": {
-      "title": "Catalogue des formations",
-      "todo": "TODO page 02 - Catalogue des formations"
-    },
-    "course": {
-      "title": "Détails de la formation",
-      "todo": "TODO page 03 - Page formation"
-    },
-    "login": {
-      "title": "Connexion",
-      "todo": "TODO page 04 - Page de connexion"
-    },
-    "register": {
-      "title": "Inscription",
-      "todo": "TODO page 04 - Page d'inscription"
-    },
-    "checkout": {
-      "title": "Paiement sécurisé",
-      "todo": "TODO page 05 - Page de paiement"
-    },
-    "confirmation": {
-      "title": "Confirmation de commande",
-      "todo": "TODO page 06 - Page de confirmation"
-    },
-    "dashboard": {
-      "title": "Tableau de bord étudiant",
-      "todo": "TODO page 07 - Tableau de bord étudiant"
-    },
-    "player": {
-      "title": "Espace de visionnage",
-      "todo": "TODO page 08 - Lecteur de cours"
-    },
-    "adminDashboard": {
-      "title": "Administration",
-      "todo": "TODO page 09 - Tableau de bord admin"
-    },
-    "adminCourses": {
-      "title": "Gestion des formations",
-      "todo": "TODO page 10 - Liste des formations admin"
-    },
-    "adminCourseNew": {
-      "title": "Nouvelle formation",
-      "todo": "TODO page 10 - Création formation admin"
-    },
-    "adminPayments": {
-      "title": "Gestion des paiements",
-      "todo": "TODO page 11 - Suivi des paiements admin"
-    },
-    "about": {
-      "title": "À propos de Faro School",
-      "todo": "TODO page 12 - Page à propos"
-    },
-    "contact": {
-      "title": "Contactez-nous",
-      "todo": "TODO page 12 - Page de contact"
-    }
-  },
   "courseDetail": {
     "breadcrumb": "Formations",
     "level": "Niveau {level}",

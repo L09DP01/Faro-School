@@ -37,16 +37,7 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
     .eq("status", "published")
     .maybeSingle();
 
-  let course = dbCourse;
-  if (!course && slug === "marketing-digital") {
-    course = {
-      title_fr: "Marketing Digital pour Entreprises en Haïti",
-      title_ht: "Maketing Dijital pou Biznis an Ayiti",
-      description_fr: "Apprenez à développer votre clientèle sur Facebook, WhatsApp et Instagram avec des stratégies adaptées au marché haïtien.",
-      description_ht: "Aprann devlope kliyantèl ou sou Facebook, WhatsApp ak Instagram ak estrateji ki adapte pou mache ayisyen an.",
-      cover_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-    };
-  }
+  const course = dbCourse;
 
   if (!course) {
     return {
@@ -103,45 +94,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     .eq("status", "published")
     .maybeSingle();
 
-  let course: any = dbCourse;
-  if (!course && (error || !dbCourse) && slug === "marketing-digital") {
-    course = {
-      id: "c1-marketing-digital",
-      slug: "marketing-digital",
-      title_fr: "Marketing Digital pour Entreprises en Haïti",
-      title_ht: "Maketing Dijital pou Biznis an Ayiti",
-      description_fr: "Apprenez à développer votre clientèle sur Facebook, WhatsApp et Instagram avec des stratégies adaptées au marché haïtien.",
-      description_ht: "Aprann devlope kliyantèl ou sou Facebook, WhatsApp ak Instagram ak estrateji ki adapte pou mache ayisyen an.",
-      price_htg: 3500,
-      compare_price_htg: 5000,
-      level: "débutant",
-      category: "marketing",
-      cover_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800",
-      status: "published",
-      created_at: new Date().toISOString(),
-      modules: [
-        {
-          id: "m1",
-          position: 1,
-          title_fr: "Fondations du Marketing en Ligne",
-          title_ht: "Baz Maketing sou Entènèt",
-          lessons: [
-            { id: "l1", position: 1, title_fr: "Introduction au marché numérique haïtien", title_ht: "Entwodiksyon sou mache nimerik ayisyen an", video_id: "mock_vid_101", duration_sec: 720, is_free_preview: true, description_fr: "Vue globale des opportunités", description_ht: "Apèsi sou opòtinite yo" },
-            { id: "l2", position: 2, title_fr: "Définir sa cible et son offre", title_ht: "Defini sib ou ak òf ou", video_id: "mock_vid_102", duration_sec: 900, is_free_preview: false, description_fr: "Identifier vos clients idéaux", description_ht: "Idantifye kliyan ideyal ou" },
-          ],
-        },
-        {
-          id: "m2",
-          position: 2,
-          title_fr: "Facebook & Instagram Ads",
-          title_ht: "Piblisite Facebook ak Instagram",
-          lessons: [
-            { id: "l3", position: 1, title_fr: "Configurer le Meta Business Suite", title_ht: "Konfigire Meta Business Suite", video_id: "mock_vid_103", duration_sec: 1100, is_free_preview: false, description_fr: "Guide pas à pas", description_ht: "Gid etap pa etap" },
-          ],
-        },
-      ],
-    };
-  }
+  const course: any = dbCourse;
 
   // Unknown slug or unpublished course -> return 404
   if (!course) {

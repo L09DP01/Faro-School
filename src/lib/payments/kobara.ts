@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { isDemoMode } from "@/lib/config";
 import type {
   PaymentProvider,
@@ -8,6 +7,29 @@ import type {
   PaymentMethod,
 } from "./types";
 
+async function computeHmacSha256(secret: string, data: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await globalThis.crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sigBuffer = await globalThis.crypto.subtle.sign("HMAC", key, enc.encode(data));
+  const hashArray = Array.from(new Uint8Array(sigBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export class KobaraProvider implements PaymentProvider {
   private apiUrl: string;
   private secretKey: string | undefined;
@@ -15,9 +37,36 @@ export class KobaraProvider implements PaymentProvider {
   public readonly isMock: boolean;
 
   constructor() {
-    this.apiUrl = process.env.KOBARA_API_URL || "https://api.kobara.app";
-    this.secretKey = process.env.KOBARA_SECRET_KEY;
+    this.apiUrl =
+      process.env.KOBARA_BASE_URL ||
+      process.env.KOBARA_API_URL ||
+      "https://api.kobara.app";
+    this.secretKey =
+      process.env.KOBARA_API_KEY || process.env.KOBARA_SECRET_KEY;
     this.webhookSecret = process.env.KOBARA_WEBHOOK_SECRET;
+
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      process.env.APP_ENV === "production";
+    const mode = process.env.KOBARA_MODE;
+
+    if (isProd) {
+      if (mode !== "live") {
+        throw new Error(
+          "SECURITY HALT: KOBARA_MODE must be 'live' in production. Payment processing refused."
+        );
+      }
+      if (!this.secretKey || this.secretKey.startsWith("mock_")) {
+        throw new Error(
+          "SECURITY HALT: KOBARA_API_KEY (or KOBARA_SECRET_KEY) is missing or invalid in production."
+        );
+      }
+      if (!this.webhookSecret) {
+        throw new Error(
+          "SECURITY HALT: KOBARA_WEBHOOK_SECRET is missing in production."
+        );
+      }
+    }
 
     // Simulation is ONLY allowed when isDemoMode() is true (APP_MODE=demo and not production)
     this.isMock = Boolean(
@@ -31,28 +80,17 @@ export class KobaraProvider implements PaymentProvider {
   ): Promise<PaymentCreationResult> {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-    if (this.isMock) {
-      // Simulation mode for demo development only
-      const mockPaymentId = `kbr_mock_${Date.now()}`;
-      const redirectUrl = `${appUrl}/api/payments/kobara/mock-gate?paymentId=${mockPaymentId}&orderId=${encodeURIComponent(
-        order.orderId
-      )}&reference=${encodeURIComponent(
-        order.reference
-      )}&amount=${order.amountHtg}&method=${method}&course=${encodeURIComponent(
-        order.courseTitle
-      )}`;
+    const isProd =
+      process.env.NODE_ENV === "production" ||
+      process.env.APP_ENV === "production";
 
-      return {
-        redirectUrl,
-        reference: order.reference,
-        kobaraPaymentId: mockPaymentId,
-        status: "pending",
-      };
+    if (isProd && this.isMock) {
+      throw new Error("SECURITY VIOLATION: Payment simulation is forbidden in production.");
     }
 
     if (!this.secretKey) {
       throw new Error(
-        "KOBARA_SECRET_KEY is missing. Payment creation refused."
+        "KOBARA_API_KEY / KOBARA_SECRET_KEY is missing. Payment creation refused."
       );
     }
 
@@ -248,28 +286,18 @@ export class KobaraProvider implements PaymentProvider {
       }
 
       // Compute expected HMAC SHA-256 over raw payload
-      const hmac = crypto.createHmac("sha256", this.webhookSecret);
-      hmac.update(rawBody);
-      const expectedHex = hmac.digest("hex");
-
-      const sigBuf = Buffer.from(sigToCompare, "hex");
-      const expBuf = Buffer.from(expectedHex, "hex");
-
-      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
+      const expectedHex = await computeHmacSha256(this.webhookSecret, rawBody);
+      if (constantTimeEqual(sigToCompare.toLowerCase(), expectedHex.toLowerCase())) {
         return true;
       }
 
       // If timestamp header was supplied, also verify if signed payload was `${timestamp}.${rawBody}`
       if (timestampHeader) {
-        const hmacWithTs = crypto.createHmac("sha256", this.webhookSecret);
-        hmacWithTs.update(`${timestampHeader}.${rawBody}`);
-        const expectedHexWithTs = hmacWithTs.digest("hex");
-        const expBufWithTs = Buffer.from(expectedHexWithTs, "hex");
-
-        if (
-          sigBuf.length === expBufWithTs.length &&
-          crypto.timingSafeEqual(sigBuf, expBufWithTs)
-        ) {
+        const expectedHexWithTs = await computeHmacSha256(
+          this.webhookSecret,
+          `${timestampHeader}.${rawBody}`
+        );
+        if (constantTimeEqual(sigToCompare.toLowerCase(), expectedHexWithTs.toLowerCase())) {
           return true;
         }
       }

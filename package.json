@@ -13,7 +13,8 @@
     "test:db": "npx tsx tests/db-roles-and-rls.test.ts",
     "audit": "npx tsx tests/security-audit.ts",
     "test": "npx tsx tests/run-all-tests.ts",
-    "verify": "npm run typecheck && npm test",
+    "secret-scan": "npx tsx scripts/secret-scan.ts",
+    "verify": "npm run typecheck && npm run secret-scan && npm test",
     "lint": "next lint"
   },
   "dependencies": {

@@ -216,68 +216,6 @@
     "statusValidated": "Peman valide",
     "statusFailed": "Peman pa pase"
   },
-  "routes": {
-    "landing": {
-      "title": "Akèy",
-      "todo": "TODO page 01 - Paj akèy"
-    },
-    "catalog": {
-      "title": "Katalòg fòmasyon yo",
-      "todo": "TODO page 02 - Katalòg fòmasyon"
-    },
-    "course": {
-      "title": "Detay fòmasyon an",
-      "todo": "TODO page 03 - Paj fòmasyon"
-    },
-    "login": {
-      "title": "Koneksyon",
-      "todo": "TODO page 04 - Paj koneksyon"
-    },
-    "register": {
-      "title": "Enskripsyon",
-      "todo": "TODO page 04 - Paj enskripsyon"
-    },
-    "checkout": {
-      "title": "Peman an sekirite",
-      "todo": "TODO page 05 - Paj peman"
-    },
-    "confirmation": {
-      "title": "Konfimasyon kòmand",
-      "todo": "TODO page 06 - Paj konfimasyon"
-    },
-    "dashboard": {
-      "title": "Tablo bò etidyan",
-      "todo": "TODO page 07 - Tablo bò etidyan"
-    },
-    "player": {
-      "title": "Espas gade kou",
-      "todo": "TODO page 08 - Espas videyo"
-    },
-    "adminDashboard": {
-      "title": "Administrasyon",
-      "todo": "TODO page 09 - Tablo bò admin"
-    },
-    "adminCourses": {
-      "title": "Jesyon fòmasyon yo",
-      "todo": "TODO page 10 - Lis fòmasyon admin"
-    },
-    "adminCourseNew": {
-      "title": "Nouvo fòmasyon",
-      "todo": "TODO page 10 - Kreye nouvo fòmasyon"
-    },
-    "adminPayments": {
-      "title": "Jesyon peman yo",
-      "todo": "TODO page 11 - Suivi peman admin"
-    },
-    "about": {
-      "title": "Konsènan Faro School",
-      "todo": "TODO page 12 - Paj konsènan"
-    },
-    "contact": {
-      "title": "Kontakte nou",
-      "todo": "TODO page 12 - Paj kontak"
-    }
-  },
   "courseDetail": {
     "breadcrumb": "Fòmasyon yo",
     "level": "Nivo {level}",

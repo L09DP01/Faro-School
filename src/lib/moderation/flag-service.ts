@@ -22,30 +22,7 @@ declare global {
 
 export function getMockModerationFlagsStore(): ModerationFlagRecord[] {
   if (!globalThis.__mockModerationFlagsStore) {
-    globalThis.__mockModerationFlagsStore = [
-      {
-        id: "flag-001",
-        channelId: "community",
-        userId: "user-violator-1",
-        userName: "Jean Pierre",
-        userEmail: "jp@example.com",
-        reason: "phone",
-        excerpt: "+509 •• •• 45 67",
-        status: "open",
-        createdAt: new Date(Date.now() - 3600000).toISOString(),
-      },
-      {
-        id: "flag-002",
-        channelId: "community",
-        userId: "user-violator-2",
-        userName: "Marc Antoine",
-        userEmail: "marc@example.com",
-        reason: "offplatform",
-        excerpt: "ekri m sou whatsapp...",
-        status: "open",
-        createdAt: new Date(Date.now() - 7200000).toISOString(),
-      },
-    ];
+    globalThis.__mockModerationFlagsStore = [];
   }
   return globalThis.__mockModerationFlagsStore;
 }
