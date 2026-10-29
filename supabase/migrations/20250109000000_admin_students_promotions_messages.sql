@@ -41,6 +41,17 @@ CREATE INDEX IF NOT EXISTS idx_contact_messages_read ON public.contact_messages(
 CREATE INDEX IF NOT EXISTS idx_contact_messages_created_at ON public.contact_messages(created_at DESC);
 
 -- 4. Extend admin_audit_logs with user_id and course_id
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  payment_id UUID REFERENCES public.payments(id) ON DELETE CASCADE,
+  note TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
 ALTER TABLE public.admin_audit_logs
 ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
 ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES public.courses(id) ON DELETE SET NULL;

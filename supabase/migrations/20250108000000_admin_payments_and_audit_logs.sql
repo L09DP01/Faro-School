@@ -1,5 +1,8 @@
 -- Migration: Admin Payments, Audit Logs, and Payment Management RPCs
 
+-- 0. Ensure profiles table has email column (required by get_admin_payments_list)
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+
 -- 1. Create admin_audit_logs table
 CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -14,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
 -- Enable RLS on audit logs
 ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Admins can view and insert audit logs" ON public.admin_audit_logs;
 CREATE POLICY "Admins can view and insert audit logs"
 ON public.admin_audit_logs
 FOR ALL

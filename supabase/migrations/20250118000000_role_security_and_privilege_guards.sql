@@ -1,6 +1,25 @@
 -- Migration: 20250118000000_role_security_and_privilege_guards.sql
 -- Description: Absolute protection of user roles, handle_new_user hardening, admin-only RPC set_user_role, and table grants review.
 
+-- 0. Ensure profiles table and admin_audit_logs exist with necessary columns
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS banned_at TIMESTAMPTZ NULL;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS muted_until TIMESTAMPTZ NULL;
+
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  payment_id UUID,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  course_id UUID,
+  note TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
 -- 1. Helper function: verify if the caller is an active administrator
 CREATE OR REPLACE FUNCTION public.is_current_user_admin()
 RETURNS BOOLEAN AS $$
@@ -180,8 +199,19 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM anon
 -- Revoke TRUNCATE on all tables from authenticated
 REVOKE TRUNCATE ON ALL TABLES IN SCHEMA public FROM authenticated;
 
--- Revoke direct mutations on sensitive administrative logs
-REVOKE INSERT, UPDATE, DELETE ON public.admin_audit_logs FROM authenticated, anon;
-REVOKE INSERT, UPDATE, DELETE ON public.coupons FROM authenticated, anon;
-REVOKE INSERT, UPDATE, DELETE ON public.ai_usage FROM authenticated, anon;
-REVOKE INSERT, UPDATE, DELETE ON public.platform_settings FROM authenticated, anon;
+-- Revoke direct mutations on sensitive administrative logs safely
+DO $$
+BEGIN
+  IF to_regclass('public.admin_audit_logs') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON public.admin_audit_logs FROM authenticated, anon;
+  END IF;
+  IF to_regclass('public.coupons') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON public.coupons FROM authenticated, anon;
+  END IF;
+  IF to_regclass('public.ai_usage') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON public.ai_usage FROM authenticated, anon;
+  END IF;
+  IF to_regclass('public.platform_settings') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON public.platform_settings FROM authenticated, anon;
+  END IF;
+END $$;

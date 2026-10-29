@@ -11,6 +11,8 @@
 -- ============================================================================
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 ALTER TABLE public.profiles ALTER COLUMN id SET DEFAULT gen_random_uuid();
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ NULL;
 
 -- Ensure email is unique (case-insensitive)
@@ -204,6 +206,40 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
 -- Revoke all table privileges from PUBLIC
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
 
+-- Ensure prerequisite tables exist before explicit grants
+CREATE TABLE IF NOT EXISTS public.platform_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key TEXT UNIQUE NOT NULL,
+  value JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.instructors (
+  id UUID PRIMARY KEY REFERENCES public.profiles(id) ON DELETE CASCADE,
+  bio TEXT DEFAULT '',
+  title TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.contact_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.newsletter_subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  action TEXT NOT NULL,
+  payment_id UUID,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  course_id UUID,
+  note TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- 5.2 Public Catalog Tables: Read-Only for anon & authenticated
 GRANT SELECT ON public.courses TO anon, authenticated;
 GRANT SELECT ON public.modules TO anon, authenticated;
@@ -219,31 +255,44 @@ GRANT INSERT ON public.contact_messages TO anon, authenticated;
 GRANT INSERT ON public.newsletter_subscribers TO anon, authenticated;
 
 -- 5.4 Authenticated Student & User Data (Strictly authenticated, NEVER anon)
-GRANT SELECT, UPDATE ON public.profiles TO authenticated;
-GRANT SELECT ON public.lesson_resources TO authenticated;
-GRANT SELECT ON public.enrollments TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.lesson_progress TO authenticated;
-GRANT SELECT, INSERT ON public.orders TO authenticated;
-GRANT SELECT ON public.payments TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.playback_sessions TO authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_notes TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.community_messages TO authenticated;
-GRANT SELECT, INSERT, DELETE ON public.community_reactions TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.community_reports TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.community_reads TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.community_rules_accepted TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.conversations TO authenticated;
-GRANT SELECT, INSERT ON public.messages TO authenticated;
-GRANT SELECT, UPDATE ON public.notifications TO authenticated;
-GRANT SELECT, UPDATE ON public.escalations TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.moderation_flags TO authenticated;
-GRANT SELECT, INSERT ON public.ai_usage TO authenticated;
-
--- 5.5 Instructor & Administrator Specific Tables (authenticated role, RLS gated)
-GRANT UPDATE ON public.instructors TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON public.instructor_ai_versions TO authenticated;
-GRANT SELECT, INSERT ON public.admin_audit_logs TO authenticated;
-GRANT SELECT, INSERT ON public.private_conversation_access_logs TO authenticated;
+DO $$
+DECLARE
+  statements text[] := ARRAY[
+    'GRANT SELECT, UPDATE ON public.profiles TO authenticated',
+    'GRANT SELECT ON public.lesson_resources TO authenticated',
+    'GRANT SELECT ON public.enrollments TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.lesson_progress TO authenticated',
+    'GRANT SELECT, INSERT ON public.orders TO authenticated',
+    'GRANT SELECT ON public.payments TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE, DELETE ON public.playback_sessions TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_notes TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.community_messages TO authenticated',
+    'GRANT SELECT, INSERT, DELETE ON public.community_reactions TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.community_reports TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.community_reads TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.community_rules_accepted TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.conversations TO authenticated',
+    'GRANT SELECT, INSERT ON public.messages TO authenticated',
+    'GRANT SELECT, UPDATE ON public.notifications TO authenticated',
+    'GRANT SELECT, UPDATE ON public.escalations TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.moderation_flags TO authenticated',
+    'GRANT SELECT, INSERT ON public.ai_usage TO authenticated',
+    'GRANT UPDATE ON public.instructors TO authenticated',
+    'GRANT SELECT, INSERT, UPDATE ON public.instructor_ai_versions TO authenticated',
+    'GRANT SELECT, INSERT ON public.admin_audit_logs TO authenticated',
+    'GRANT SELECT, INSERT ON public.private_conversation_access_logs TO authenticated'
+  ];
+  stmt text;
+BEGIN
+  FOREACH stmt IN ARRAY statements LOOP
+    BEGIN
+      EXECUTE stmt;
+    EXCEPTION
+      WHEN undefined_table THEN
+        NULL;
+    END;
+  END LOOP;
+END $$;
 
 -- 5.6 Internal & Service-Role Tables: ZERO grants to anon or authenticated
 REVOKE ALL ON public.user_credentials FROM anon, authenticated;
