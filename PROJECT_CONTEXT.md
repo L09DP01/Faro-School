@@ -548,3 +548,9 @@ Auth.js utilise Resend pour les envois transactionnels ; Supabase reste Postgres
 ## Branche principale et déploiement
 
 La branche principale est `auth-migration`. Toutes les mises à jour doivent y être intégrées puis poussées sur `origin/auth-migration`, branche de production Cloudflare. Ne pas créer de nouvelle branche pour les prochaines corrections, sauf demande explicite de l’utilisateur. Les branches de travail déjà existantes doivent être intégrées à `auth-migration` avant publication ; ne pas les supprimer sans demande.
+
+## Conservation des variables Cloudflare
+
+Le déploiement principal conserve désormais les variables runtime saisies dans le tableau de bord : `keep_vars: true` dans `wrangler.jsonc`, et `--keep-vars` dans `pnpm run deploy`. Sans ce réglage, Wrangler supprime les variables ordinaires absentes de sa configuration ; les secrets chiffrés sont conservés séparément. Cela expliquait la disparition des variables après déploiement et les erreurs de démarrage. Les valeurs déjà supprimées doivent être ressaisies une fois ; cette correction ne permet pas de les récupérer. Les clés sensibles doivent être enregistrées comme secrets, jamais dans le dépôt. Les variables de build restent distinctes des variables runtime.
+
+Référence : https://developers.cloudflare.com/workers/wrangler/configuration/#source-of-truth

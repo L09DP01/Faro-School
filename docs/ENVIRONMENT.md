@@ -104,3 +104,7 @@ Obligatoires en production, jamais `NEXT_PUBLIC_`. Déployer la migration locale
 - `SUPPORT_EMAIL` : Reply-To et notifications de contact.
 - `INSTRUCTOR_ESCALATION_EMAIL` : secours uniquement si le formateur n’a aucune adresse.
 - Appliquer les trois migrations email et configurer le cron avant activation ; voir EMAIL_FIX_NOTES.md.
+
+### Variables supprimées lors des déploiements — correctif
+
+La configuration utilise `keep_vars: true` et la commande `opennextjs-cloudflare deploy --keep-vars` afin de conserver les variables runtime ajoutées via le dashboard. Les variables déjà supprimées ne sont pas récupérables par ce réglage : les ressaisir une fois après application du correctif, puis enregistrer/déployer. Utiliser le type Secret pour RESEND_WEBHOOK_SECRET et BUNNY_STREAM_READ_ONLY_API_KEY ; ne jamais mettre leurs valeurs dans le dépôt. Ne pas confondre les paramètres de compilation avec les bindings runtime. La disparition de variables ordinaires au déploiement est confirmée par la documentation Wrangler, alors que les secrets sont normalement préservés.
