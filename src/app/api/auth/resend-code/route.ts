@@ -32,47 +32,20 @@ export async function POST(req: NextRequest) {
 
     const supabase = getAdminSupabase();
 
-    // Verify user exists and is not yet verified
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id, email_verified_at")
-      .eq("email", normEmail)
-      .maybeSingle();
-
-    if (!profile) {
-      // Do not reveal email existence
-      return NextResponse.json({ success: true });
-    }
-
-    if (profile.email_verified_at) {
-      return NextResponse.json({
-        success: true,
-        alreadyVerified: true,
-        message: "Cet e-mail est déjà vérifié. Vous pouvez vous connecter.",
-      });
-    }
-
-    // Rate limit check (60s cooldown + 5/hr max)
-    const limit = await checkEmailDispatchLimit(normEmail, ip, "verification_email");
-    if (!limit.allowed) {
-      return NextResponse.json(
-        {
-          error: limit.reason || "Veuillez patienter avant de renvoyer un code.",
-          retryAfterSeconds: limit.retryAfterSeconds,
-        },
-        { status: 429 }
-      );
-    }
-
+    const limit=await checkEmailDispatchLimit(normEmail,ip,"verification_email");
+    if(!limit.allowed)return NextResponse.json({success:true});
+    const {data:profile,error}=await supabase.from("profiles").select("id,email_verified_at").eq("email",normEmail).maybeSingle();
+    if(error||!profile||profile.email_verified_at)return NextResponse.json({success:true});
     const { code, token } = await createEmailVerificationToken(normEmail);
     const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
 
-    await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    const sent=await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    if(sent.status!=="accepted")console.warn("[email] verification_pending",{correlationId:sent.correlationId});
     await recordEmailDispatched(normEmail, ip, "verification_email");
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Resend code error:", err);
-    return NextResponse.json({ error: "Erreur lors de l'envoi du code." }, { status: 500 });
+    console.error("[email] resend_unavailable");
+    return NextResponse.json({success:true});
   }
 }

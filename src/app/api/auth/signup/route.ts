@@ -83,11 +83,15 @@ export async function POST(req: NextRequest) {
       .eq("email", normEmail)
       .maybeSingle();
 
+    const budget = await checkEmailDispatchLimit(normEmail, ip, "verification_email");
+    if (!budget.allowed) return NextResponse.json({ success:true, requireVerification:true });
+
     if (existingProfile) {
       if (existingProfile.email_verified_at) {
         // Already verified: Never leak existence. Send a security alert email.
         const resetUrl = `${origin}/${locale}/mot-de-passe-oublie`;
-        await sendSecurityAlertEmail(normEmail, resetUrl, locale);
+        const sent = await sendSecurityAlertEmail(normEmail, resetUrl, locale);
+        if (sent.status !== "accepted") console.warn("[email] registration_alert_pending", {correlationId:sent.correlationId});
         return NextResponse.json({
           success: true,
           requireVerification: true,
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Unverified account: rate limit check before refreshing code
-      const limitCheck = await checkEmailDispatchLimit(normEmail, ip, "verification_email");
+      const limitCheck = budget;
       if (!limitCheck.allowed) {
         return NextResponse.json(
           { error: "rateLimit", message: limitCheck.reason },
@@ -108,7 +112,8 @@ export async function POST(req: NextRequest) {
       // Refresh code and resend
       const { code, token } = await createEmailVerificationToken(normEmail);
       const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
-      await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+      const sent = await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+      if (sent.status !== "accepted") console.warn("[email] verification_pending", {correlationId:sent.correlationId});
       await recordEmailDispatched(normEmail, ip, "verification_email");
 
       return NextResponse.json({
@@ -163,7 +168,7 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (profileError || !newProfile) {
-        console.error("Profile insert error:", profileError?.message);
+        console.error("[auth] profile_creation_failed");
         return NextResponse.json(
           { error: "signupFailed", message: "Impossible de créer le profil." },
           { status: 500 }
@@ -181,7 +186,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (credsError) {
-        console.error("Credentials insert error:", credsError?.message);
+        console.error("[auth] credential_creation_failed");
         await supabase.from("profiles").delete().eq("id", userId);
         return NextResponse.json(
           { error: "signupFailed", message: "Impossible de créer les identifiants de sécurité." },
@@ -193,7 +198,8 @@ export async function POST(req: NextRequest) {
     // 7. Generate verification token and send email
     const { code, token } = await createEmailVerificationToken(normEmail);
     const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
-    await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    const sent = await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+      if (sent.status !== "accepted") console.warn("[email] verification_pending", {correlationId:sent.correlationId});
     await recordEmailDispatched(normEmail, ip, "verification_email");
 
     return NextResponse.json({
@@ -203,7 +209,7 @@ export async function POST(req: NextRequest) {
       redirectUrl,
     });
   } catch (err: any) {
-    console.error("Signup route error:", err);
+    console.error("[auth] signup_unavailable");
     return NextResponse.json(
       { error: "serverError" },
       { status: 500 }

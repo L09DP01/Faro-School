@@ -1,0 +1,165 @@
+{
+  "method": "Actual modules and HTTP handlers; database, tokens and provider I/O isolated as described; zero real email and zero remote database calls.",
+  "checks": 14,
+  "results": [
+    {
+      "name": "missing_suppression_table_blocks_before_resend",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_unavailable"
+        },
+        "providerCalls": 0
+      }
+    },
+    {
+      "name": "suppressed_recipient_blocks_before_resend",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_suppressed"
+        },
+        "providerCalls": 0
+      }
+    },
+    {
+      "name": "missing_production_key_blocks_before_resend",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_configuration"
+        },
+        "providerCalls": 0
+      }
+    },
+    {
+      "name": "development_without_key_reports_success_without_send",
+      "evidence": {
+        "result": {
+          "success": true
+        },
+        "providerCalls": 0
+      }
+    },
+    {
+      "name": "provider_403_collapsed_to_generic_error",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_delivery"
+        },
+        "providerCalls": 1,
+        "retainedHttpStatus": "absent"
+      }
+    },
+    {
+      "name": "provider_429_collapsed_to_generic_error",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_delivery"
+        },
+        "providerCalls": 1,
+        "retainedHttpStatus": "absent"
+      }
+    },
+    {
+      "name": "provider_500_collapsed_to_generic_error",
+      "evidence": {
+        "result": {
+          "success": false,
+          "error": "email_delivery"
+        },
+        "providerCalls": 1,
+        "retainedHttpStatus": "absent"
+      }
+    },
+    {
+      "name": "signup_reports_success_and_counts_failed_send",
+      "evidence": {
+        "http": 200,
+        "publicSuccess": true,
+        "requireVerification": true,
+        "providerCalls": 0,
+        "recordedDispatches": 1
+      }
+    },
+    {
+      "name": "resend_reports_success_and_counts_failed_send",
+      "evidence": {
+        "http": 200,
+        "publicSuccess": true,
+        "requireVerification": null,
+        "providerCalls": 0,
+        "recordedDispatches": 1
+      }
+    },
+    {
+      "name": "forgot_reports_success_and_counts_failed_send",
+      "evidence": {
+        "http": 200,
+        "publicSuccess": true,
+        "requireVerification": null,
+        "providerCalls": 0,
+        "recordedDispatches": 1
+      }
+    },
+    {
+      "name": "existing_verified_signup_alert_bypasses_dispatch_limiter",
+      "evidence": {
+        "limiterCalls": 0,
+        "providerCalls": 1
+      }
+    },
+    {
+      "name": "token_creation_reports_success_when_insert_fails",
+      "evidence": {
+        "tokenReturned": true,
+        "databaseInsertError": true
+      }
+    },
+    {
+      "name": "dispatch_limiter_allows_when_queries_return_database_errors",
+      "evidence": {
+        "allowed": true
+      }
+    },
+    {
+      "name": "student_message_html_is_embedded_unescaped",
+      "evidence": {
+        "unescapedHtmlConfirmed": true
+      }
+    }
+  ],
+  "basisCommit": "c8d9bed",
+  "productionChecks": {
+    "userReportedResendAttempt": "none_visible",
+    "publicGet": [
+      {
+        "path": "/fr/inscription",
+        "status": 200
+      },
+      {
+        "path": "/fr/verification-email",
+        "status": 404
+      },
+      {
+        "path": "/api/webhooks/resend",
+        "status": 405
+      }
+    ],
+    "resendReadOnly": {
+      "operation": "GET /domains",
+      "status": 401,
+      "category": "restricted_api_key",
+      "interpretation": "Sending-only key; domain administration cannot be verified with this scope. Does not prove a sending failure."
+    },
+    "dns": {
+      "senderDomain": "faroschool.com",
+      "dkimAtDefaultSelector": true,
+      "spfAtSendSubdomain": true,
+      "dmarc": "not_confirmed_by_local_resolver"
+    },
+    "restrictions": "No real email, no production signup/resend/reset POST, no remote Supabase query or mutation, no Cloudflare/Resend/DNS changes."
+  }
+}

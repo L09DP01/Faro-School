@@ -28,7 +28,9 @@ export const serverEnvSchema = z.object({
   // Email Dispatch (Resend)
   RESEND_API_KEY: z.string().optional(),
   RESEND_WEBHOOK_SECRET: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
+  EMAIL_FROM: z.string().trim().refine(v => !/[\r\n]/.test(v) && z.string().email().safeParse(v.match(/^[^<>]+<([^<>]+)>$/)?.[1] ?? v).success, 'Invalid sender format').optional(),
+  SUPPORT_EMAIL: z.string().trim().email().optional(),
+  INSTRUCTOR_ESCALATION_EMAIL: z.string().trim().email().optional(),
 
   // Kobara Payment Gateway
   KOBARA_MODE: z.string().optional(), // 'live' required in production
@@ -73,7 +75,9 @@ export function validateEnvironment(customEnv?: Record<string, string | undefine
   isProduction: boolean;
   isAiAvailable: boolean;
 } {
-  const raw = customEnv || process.env;
+  const source = customEnv || process.env;
+  const raw = Object.fromEntries(Object.entries(source).map(([k,v]) => [k, typeof v === 'string' ? v.trim() || undefined : v]));
+  if (!customEnv) for (const [k,v] of Object.entries(raw)) if (v !== undefined) process.env[k] = v;
 
   const publicResult = publicEnvSchema.safeParse(raw);
   if (!publicResult.success) {

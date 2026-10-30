@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Loader2, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
+import { sanitizeRedirectUrl } from "@/lib/validators/auth";
 import { signIn } from "next-auth/react";
 
 interface VerificationCodeFormProps {
@@ -75,7 +76,7 @@ export function VerificationCodeForm({
         });
 
         if (signInRes?.ok) {
-          const dest = nextParam || `/${locale}/dashboard`;
+          const dest = sanitizeRedirectUrl(nextParam, `/${locale}/dashboard`);
           window.location.href = dest;
           return;
         }
@@ -137,8 +138,8 @@ export function VerificationCodeForm({
         </h2>
         <p className="font-sans text-sm text-muted-faro max-w-sm mx-auto">
           {isHt
-            ? `Nou voye yon kòd sekirite 6 chif nan ${email}. Antre l pou aktive kont ou.`
-            : `Un code de sécurité à 6 chiffres a été envoyé à ${email}. Entrez-le pour activer votre compte.`}
+            ? "Si adrès sa a ka resevwa yon kont, yon kòd ap rive nan kèk minit. Verifye dosye endezirab ou tou."
+            : "Si cette adresse peut recevoir un compte, un code arrive dans quelques minutes. Vérifiez aussi vos courriers indésirables."}
         </p>
       </div>
 
@@ -160,8 +161,8 @@ export function VerificationCodeForm({
           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             {isHt
-              ? "Nou voye yon nouvo kòd pa imèl !"
-              : "Un nouveau code a été envoyé avec succès !"}
+              ? "Si adrès sa a ka resevwa yon kont, yon kòd ap rive nan kèk minit. Verifye dosye endezirab ou tou."
+              : "Si cette adresse peut recevoir un compte, un code arrive dans quelques minutes. Vérifiez aussi vos courriers indésirables."}
           </span>
         </div>
       )}

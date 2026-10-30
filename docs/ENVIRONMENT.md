@@ -54,7 +54,7 @@ Ce document détaille l'ensemble des variables d'environnement utilisées par Fa
 *Variables présentes dans des fichiers de configuration ou scripts anciens mais non requises par le runtime de production :*
 - `KOBARA_PUBLIC_KEY` : L'API Kobara v1 s'authentifie via Bearer secret côté serveur ; la clé publique n'est pas requise.
 - `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` : Inutilisé car l'authentification MVP repose exclusivement sur e-mail/mot de passe et liens magiques de récupération.
-- `RESEND_API_KEY` : Remplacé par les templates d'e-mail natifs de Supabase Auth.
+- `RESEND_API_KEY` : requis ; Auth.js utilise Resend pour les emails transactionnels.
 - `ENABLE_NOTIFICATION_DISPATCH` : Reste d'un flag expérimental de notifications.
 
 ### Variables Dupliquées (`DUPLICATED`)

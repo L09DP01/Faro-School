@@ -539,3 +539,6 @@ Routes `/api/webhooks/bunny` et `/api/webhooks/resend`, compatibles Workers avec
 Cloudflare build fix: `pnpm-workspace.yaml` explicitly lists the root package; `packageManager` pins pnpm 9.10.0. API route handlers use the Next.js nodejs runtime required by OpenNext; middleware remains separate. Clean frozen installation and complete OpenNext Worker build verified locally. Temporary validation projects are excluded from TypeScript.
 
 Workers Builds command contract: `pnpm run build` produces the complete OpenNext Worker, while `build:next` is the internal Next.js-only compilation selected by `open-next.config.ts.buildCommand`. This prevents both a missing compiled OpenNext config at deploy time and recursive builds.
+
+## Email transactionnel
+Auth.js ne transmet pas les emails via Supabase Auth : Resend est requis avec RESEND_API_KEY et EMAIL_FROM dans les secrets runtime du Worker.

@@ -10,7 +10,7 @@ interface SendEmailParams {
   html: string;
 }
 
-export async function sendEmail(message:SendEmailParams):Promise<{success:boolean;error?:string}>{
+export async function sendEmail(message:SendEmailParams):Promise<import("./result").EmailResult>{
   return sendResendEmail(message);
 }
 

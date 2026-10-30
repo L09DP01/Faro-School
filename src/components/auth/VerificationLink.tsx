@@ -1,0 +1,11 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {sanitizeRedirectUrl} from '@/lib/validators/auth';
+export function VerificationLink({locale}:{locale:string}){
+ const ht=locale==='ht',secret=useRef(''),next=useRef('/'+locale+'/dashboard');
+ const[state,setState]=useState('ready');
+ useEffect(()=>{const q=new URLSearchParams(location.search);secret.current=q.get('token')??'';next.current=sanitizeRedirectUrl(q.get('next'),'/'+locale+'/dashboard');history.replaceState(null,'',location.pathname);},[locale]);
+ async function verify(){setState('loading');try{const r=await fetch('/api/auth/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:secret.current})});const d=await r.json();secret.current='';setState(d.success?'valid':d.reason==='expired'?'expired':d.reason==='already_used'?'already_used':'invalid');}catch{setState('invalid');}}
+ const titles:Record<string,string[]>= {ready:['Confirmez votre adresse e-mail','Konfime adrès imèl ou'],loading:['Vérification…','Verifikasyon…'],valid:['Adresse e-mail vérifiée','Adrès imèl verifye'],expired:['Ce lien a expiré','Lyen sa a ekspire'],already_used:['Ce lien a déjà été utilisé','Lyen sa a deja itilize'],invalid:['Lien invalide ou indisponible','Lyen envalid oswa pa disponib']};
+ return <section className="mx-auto w-full max-w-md space-y-6 rounded-2xl border border-line bg-surface p-6 text-center text-ink"><h1 className="font-heading text-2xl font-bold">{(titles[state]??titles.invalid)[ht?1:0]}</h1><p className="text-muted-faro">{ht?'Sèvi ak kòd la nan aplikasyon an oswa konfime lyen sa a.':'Utilisez le code dans l’application ou confirmez ce lien.'}</p>{state==='ready'&&<button onClick={verify} className="w-full rounded-xl bg-navy-deep px-4 py-3 font-semibold text-white">{ht?'Konfime imèl mwen':'Confirmer mon adresse e-mail'}</button>}{state==='valid'?<button className="rounded-xl bg-orange p-3 font-semibold text-ink" onClick={()=>location.assign(next.current)}>{ht?'Kontinye':'Continuer'}</button>:state!=='ready'&&state!=='loading'&&<a href={'/'+locale+'/connexion'} className="text-orange underline">{ht?'Konekte oswa mande yon lòt kòd':'Se connecter ou demander un nouveau code'}</a>}</section>;
+}

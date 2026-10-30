@@ -1,3 +1,4 @@
+import {jwtVerify} from "jose";
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
@@ -23,11 +24,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
+        verificationGrant: {type:"text"},
         email: { label: "Email", type: "email" },
         password: { label: "Mot de passe", type: "password" },
         ip: { label: "IP", type: "text" },
       },
       async authorize(credentials) {
+        if (typeof credentials?.verificationGrant === 'string') {
+          try {
+            const {payload}=await jwtVerify(credentials.verificationGrant,new TextEncoder().encode(process.env.AUTH_SECRET),{audience:'email-verification-login',issuer:'faro',algorithms:['HS256']});
+            const db=getAdminSupabase();
+            const {data:p,error}=await db.from('profiles').select('id,email,full_name,role,email_verified_at').eq('id',payload.sub!).single();
+            const {data:c,error:ce}=await db.from('user_credentials').select('token_version').eq('user_id',payload.sub!).single();
+            if(error||ce||!p?.email_verified_at||!c)return null;
+            return{id:p.id,email:p.email,name:p.full_name,role:p.role,emailVerified:p.email_verified_at,tokenVersion:c.token_version};
+          }catch{return null;}
+        }
         if (!credentials?.email || !credentials?.password) {
           return null;
         }

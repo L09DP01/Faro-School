@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       "127.0.0.1";
 
     // Rate limit: 10 attempts per 5 minutes per IP to prevent coupon enumeration
-    const rateLimit = checkRateLimit(`coupon:${ip}`, 10, 5 * 60 * 1000);
+    const rateLimit = await checkRateLimit(`coupon:${ip}`, 10, 5 * 60 * 1000);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { valid: false, error: "rateLimit" },

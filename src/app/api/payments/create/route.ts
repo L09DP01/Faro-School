@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       "127.0.0.1";
 
     // Rate limit: 10 payment initiation attempts per 10 minutes per IP
-    const rateLimit = checkRateLimit(`checkout:${ip}`, 10, 10 * 60 * 1000);
+    const rateLimit = await checkRateLimit(`checkout:${ip}`, 10, 10 * 60 * 1000);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "rateLimit", message: "Trop de tentatives de paiement. Veuillez patienter avant de réessayer." },

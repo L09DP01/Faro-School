@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       "127.0.0.1";
 
     // Enforce max 5 subscriptions per hour per IP
-    const rateLimit = checkRateLimit(`newsletter:${ip}`, 5, 3600 * 1000);
+    const rateLimit = await checkRateLimit(`newsletter:${ip}`, 5, 3600 * 1000);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "rateLimit", message: "Trop de tentatives. Veuillez réessayer plus tard." },

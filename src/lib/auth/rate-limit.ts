@@ -46,120 +46,15 @@ export function isCommonPassword(password: string): boolean {
  * - 60s cooldown per email
  * - Max 5 emails per hour per email and per IP
  */
-export async function checkEmailDispatchLimit(
-  email: string,
-  ip: string,
-  type: "verification_email" | "reset_email"
-): Promise<RateLimitCheckResult> {
-  const supabase = getAdminSupabase();
-  const normEmail = normalizeEmail(email);
-  const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString();
-  const sixtySecsAgo = new Date(now.getTime() - 60 * 1000).toISOString();
-
-  try {
-    // 1. Check email cooldown (60 seconds)
-    const { data: emailRecent } = await supabase
-      .from("auth_attempts")
-      .select("last_attempt_at, attempts, first_attempt_at")
-      .eq("identifier", normEmail)
-      .eq("attempt_type", type)
-      .single();
-
-    if (emailRecent) {
-      const lastAttempt = new Date(emailRecent.last_attempt_at).getTime();
-      const elapsedSeconds = Math.floor((now.getTime() - lastAttempt) / 1000);
-      if (elapsedSeconds < 60) {
-        return {
-          allowed: false,
-          reason: "Veuillez patienter 60 secondes avant de demander un nouvel e-mail.",
-          retryAfterSeconds: 60 - elapsedSeconds,
-        };
-      }
-
-      // Check hourly cap (max 5)
-      const firstAttempt = new Date(emailRecent.first_attempt_at).getTime();
-      if (now.getTime() - firstAttempt < 60 * 60 * 1000 && emailRecent.attempts >= 5) {
-        return {
-          allowed: false,
-          reason: "Limite horaire atteinte (maximum 5 e-mails par heure). Réessayez plus tard.",
-          retryAfterSeconds: Math.ceil((firstAttempt + 60 * 60 * 1000 - now.getTime()) / 1000),
-        };
-      }
-    }
-
-    // 2. Check IP hourly limit (max 5 per hour)
-    const { data: ipRecent } = await supabase
-      .from("auth_attempts")
-      .select("attempts, first_attempt_at")
-      .eq("identifier", ip)
-      .eq("attempt_type", type)
-      .single();
-
-    if (ipRecent) {
-      const firstAttempt = new Date(ipRecent.first_attempt_at).getTime();
-      if (now.getTime() - firstAttempt < 60 * 60 * 1000 && ipRecent.attempts >= 5) {
-        return {
-          allowed: false,
-          reason: "Trop de requêtes depuis cette adresse IP. Réessayez dans une heure.",
-          retryAfterSeconds: Math.ceil((firstAttempt + 60 * 60 * 1000 - now.getTime()) / 1000),
-        };
-      }
-    }
-
-    return { allowed: true };
-  } catch (err) {
-    console.error("[RateLimit] Error checking email limit:", err);
-    return { allowed: true }; // Fail open for database latency/transient error in non-prod
-  }
+export async function reserveBudget(address:string,ip:string,kind:string,max=5,window=3600,cooldown=60):Promise<RateLimitCheckResult>{
+ try{const{data,error}=await getAdminSupabase().rpc('reserve_email_budget',{p_address:address.trim().toLowerCase(),p_ip:ip,p_kind:kind,p_max:max,p_window:window,p_cooldown:cooldown});
+ if(error||!data){console.error('[email] rate_limit_unavailable');return{allowed:false,reason:'unavailable',retryAfterSeconds:60};}return data;
+ }catch{console.error('[email] rate_limit_unavailable');return{allowed:false,reason:'unavailable',retryAfterSeconds:60};}
 }
-
-/**
- * Records an email dispatch attempt for email and IP.
- */
-export async function recordEmailDispatchAttempt(
-  email: string,
-  ip: string,
-  type: "verification_email" | "reset_email"
-): Promise<void> {
-  const supabase = getAdminSupabase();
-  const normEmail = normalizeEmail(email);
-  const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-
-  const recordForIdentifier = async (identifier: string) => {
-    const { data: existing } = await supabase
-      .from("auth_attempts")
-      .select("id, attempts, first_attempt_at")
-      .eq("identifier", identifier)
-      .eq("attempt_type", type)
-      .single();
-
-    if (existing) {
-      const isPastHour = new Date(existing.first_attempt_at) < oneHourAgo;
-      await supabase
-        .from("auth_attempts")
-        .update({
-          attempts: isPastHour ? 1 : existing.attempts + 1,
-          first_attempt_at: isPastHour ? now.toISOString() : existing.first_attempt_at,
-          last_attempt_at: now.toISOString(),
-        })
-        .eq("id", existing.id);
-    } else {
-      await supabase.from("auth_attempts").insert({
-        identifier,
-        attempt_type: type,
-        attempts: 1,
-        first_attempt_at: now.toISOString(),
-        last_attempt_at: now.toISOString(),
-      });
-    }
-  };
-
-  await Promise.all([recordForIdentifier(normEmail), recordForIdentifier(ip)]);
-}
-
-export const recordEmailDispatched = recordEmailDispatchAttempt;
+/** Reserves atomically: a separate record step must never increment twice. */
+export const checkEmailDispatchLimit=(email:string,ip:string,type:'verification_email'|'reset_email')=>reserveBudget(email,ip,type);
+export async function recordEmailDispatchAttempt(_email:string,_ip:string,_type:string):Promise<void>{/* Budget already reserved atomically. */}
+export const recordEmailDispatched=recordEmailDispatchAttempt;
 
 /**
  * Checks login rate limit & lockout for email and IP.

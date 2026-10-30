@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       "127.0.0.1";
 
     // 2. Enforce 5 messages per hour per IP
-    const rateLimit = checkRateLimit(`contact:${ip}`, 5, 3600 * 1000);
+    const rateLimit = await checkRateLimit(`contact:${ip}`, 5, 3600 * 1000);
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "rateLimit", message: "Limite de messages atteinte. Réessayez plus tard." },

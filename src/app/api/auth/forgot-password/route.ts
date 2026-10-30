@@ -28,10 +28,7 @@ export async function POST(req: NextRequest) {
     // Rate limit check: max 5 emails per hour per email & IP, 60s cooldown
     const limit = await checkEmailDispatchLimit(normEmail, ip, "reset_email");
     if (!limit.allowed) {
-      return NextResponse.json(
-        { error: limit.reason || "Trop de demandes. Veuillez patienter." },
-        { status: 429 }
-      );
+      return NextResponse.json({success:true});
     }
 
     const supabase = getAdminSupabase();
@@ -48,14 +45,15 @@ export async function POST(req: NextRequest) {
       const token = await createPasswordResetToken(profile.id, 1);
       const resetUrl = `${origin}/${locale}/reinitialiser-mot-de-passe?token=${token}`;
 
-      await sendPasswordResetEmail(normEmail, resetUrl, locale);
+      const sent=await sendPasswordResetEmail(normEmail, resetUrl, locale);
+      if(sent.status!=="accepted")console.warn("[email] reset_pending",{correlationId:sent.correlationId});
       await recordEmailDispatched(normEmail, ip, "reset_email");
     }
 
     // ALWAYS return success to prevent email enumeration attacks
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Forgot password route error:", err);
-    return NextResponse.json({ error: "serverError" }, { status: 500 });
+    console.error("[email] reset_unavailable");
+    return NextResponse.json({success:true});
   }
 }

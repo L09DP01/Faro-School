@@ -24,7 +24,7 @@ let failedCount = 0;
 for (const suite of suites) {
   console.log(`\n>>> RUNNING: ${suite.name}...`);
   try {
-    execSync(suite.cmd, { stdio: "inherit" });
+    execSync(suite.cmd.replace(/^npx tsx /, `"${process.execPath}" node_modules/tsx/dist/cli.mjs `), { stdio: "inherit" });
     console.log(`>>> [PASSED]: ${suite.name}`);
   } catch (error) {
     failedCount++;

@@ -1,3 +1,5 @@
+import {SignJWT} from "jose";
+import {signIn} from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { verifyEmailCode, verifyEmailLinkToken } from "@/lib/auth/tokens";
@@ -14,6 +16,10 @@ const verifyTokenSchema = z.object({
   token: z.string().min(10),
 });
 
+async function startVerifiedSession(userId:string){
+ const grant=await new SignJWT({}).setProtectedHeader({alg:'HS256'}).setSubject(userId).setAudience('email-verification-login').setIssuer('faro').setIssuedAt().setExpirationTime('30s').sign(new TextEncoder().encode(process.env.AUTH_SECRET));
+ await signIn('credentials',{verificationGrant:grant,redirect:false});
+}
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -33,7 +39,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: msg, reason: result.reason }, { status: 400 });
       }
 
-      return NextResponse.json({ success: true, verified: true, email: result.email });
+      await startVerifiedSession(result.userId);
+      return NextResponse.json({ success: true, verified: true });
     }
 
     const parsed = verifyCodeSchema.safeParse(body);
@@ -59,13 +66,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg, reason: result.reason }, { status: 400 });
     }
 
+    await startVerifiedSession(result.userId);
     return NextResponse.json({
       success: true,
       verified: true,
-      email: result.email,
+
     });
   } catch (err: any) {
-    console.error("Verify code error:", err);
+    console.error("[auth] verification_unavailable");
     return NextResponse.json({ error: "Erreur serveur lors de la vérification." }, { status: 500 });
   }
 }
