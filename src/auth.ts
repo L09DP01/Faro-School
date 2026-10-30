@@ -29,7 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Mot de passe", type: "password" },
         ip: { label: "IP", type: "text" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (typeof credentials?.verificationGrant === 'string') {
           try {
             const {payload}=await jwtVerify(credentials.verificationGrant,new TextEncoder().encode(process.env.AUTH_SECRET),{audience:'email-verification-login',issuer:'faro',algorithms:['HS256']});
@@ -46,7 +46,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const email = normalizeEmail(credentials.email as string);
         const password = credentials.password as string;
-        const ip = (credentials.ip as string) || "127.0.0.1";
+        const ip = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
 
         // 1. Rate limiting and lockout check
         const limitCheck = await checkLoginRateLimit(email, ip);

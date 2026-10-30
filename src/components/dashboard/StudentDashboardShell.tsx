@@ -4,6 +4,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Logo } from "@/components/brand/Logo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
@@ -306,13 +307,13 @@ export function StudentDashboardShell({
               })}
 
               {/* Sign out item */}
-              <Link
-                href="/connexion"
+              <LogoutButton
+                locale={locale}
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-heading text-white/60 hover:text-red-300 hover:bg-white/5 font-semibold transition-all"
               >
                 <LogOut className="w-5 h-5 shrink-0 text-white/60" />
-                <span>Déconnexion</span>
-              </Link>
+                <span>{locale === "ht" ? "Dekonekte" : "Déconnexion"}</span>
+              </LogoutButton>
             </nav>
           </div>
         </div>

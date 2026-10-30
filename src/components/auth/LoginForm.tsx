@@ -61,13 +61,13 @@ export function LoginForm({ nextParam }: LoginFormProps) {
 
       if (signInRes?.error) {
         if (
-          signInRes.error === "EMAIL_NOT_VERIFIED" ||
+          signInRes.code === "EMAIL_NOT_VERIFIED" || signInRes.error === "EMAIL_NOT_VERIFIED" ||
           signInRes.error.includes("EMAIL_NOT_VERIFIED")
         ) {
           setUnverifiedEmail(email);
           return;
         } else if (
-          signInRes.error === "ACCOUNT_LOCKED" ||
+          signInRes.code === "ACCOUNT_LOCKED" || signInRes.error === "ACCOUNT_LOCKED" ||
           signInRes.error.includes("ACCOUNT_LOCKED")
         ) {
           setGlobalError(t("errors.rateLimit"));
@@ -79,7 +79,7 @@ export function LoginForm({ nextParam }: LoginFormProps) {
 
       if (signInRes?.ok) {
         // Successful login -> redirect to destination
-        const destination = sanitizeRedirectUrl(nextParam, `/${locale}/dashboard`);
+        const destination = sanitizeRedirectUrl(nextParam, `/app`);
         window.location.href = destination;
       }
     } catch {

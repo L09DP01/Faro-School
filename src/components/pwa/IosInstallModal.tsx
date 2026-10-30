@@ -12,9 +12,9 @@ export function IosInstallModal({ locale = "fr" }: { locale?: string }) {
   const isHt = locale === "ht";
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
       <div
-        className="w-full sm:max-w-md bg-surface border-t sm:border border-line rounded-t-3xl sm:rounded-3xl p-6 shadow-card space-y-5 animate-in slide-in-from-bottom duration-300"
+        className="w-full max-h-[calc(100dvh-env(safe-area-inset-top))] overflow-y-auto sm:max-w-md bg-surface border-t sm:border border-line rounded-t-3xl sm:rounded-3xl p-6 shadow-card space-y-5 animate-in slide-in-from-bottom duration-300"
         style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
       >
         {/* Header */}
@@ -45,12 +45,13 @@ export function IosInstallModal({ locale = "fr" }: { locale?: string }) {
           <button
             onClick={() => setShowIosModal(false)}
             className="p-1.5 rounded-full text-muted-faro hover:text-ink hover:bg-bg transition-colors"
-            aria-label="Fermer"
+            aria-label={isHt ? "Fèmen" : "Fermer"}
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
+        <p className="text-xs text-muted-faro">{isHt ? "Sou iPhone, ouvri faroschool.com nan Safari, epi swiv etap sa yo." : "Sur iPhone, ouvrez faroschool.com dans Safari, puis suivez ces étapes."}</p>
         {/* Steps */}
         <div className="space-y-3.5 text-xs text-ink">
           {/* Step 1 */}

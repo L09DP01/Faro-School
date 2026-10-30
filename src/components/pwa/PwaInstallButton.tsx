@@ -4,8 +4,10 @@ import { usePwa } from "@/lib/pwa/use-pwa";
 import { Smartphone, CheckCircle2, ChevronRight, Download } from "lucide-react";
 
 export function PwaInstallButton({ locale = "fr" }: { locale?: string }) {
-  const { isStandalone, triggerInstallPrompt } = usePwa();
+  const { isStandalone, isInstallable, triggerInstallPrompt } = usePwa();
   const isHt = locale === "ht";
+
+  if (!isStandalone && !isInstallable) return null;
 
   if (isStandalone) {
     return (
@@ -26,7 +28,7 @@ export function PwaInstallButton({ locale = "fr" }: { locale?: string }) {
           </div>
         </div>
         <span className="text-xs font-semibold text-ok px-2 py-0.5 rounded-full bg-white border border-ok/30">
-          Actif
+          {isHt ? "Aktif" : "Actif"}
         </span>
       </div>
     );

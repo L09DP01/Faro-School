@@ -12,7 +12,7 @@ export async function requireAdmin(
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect(`/${currentLocale}/connexion?redirectTo=/${currentLocale}/admin`);
+    redirect(`/${currentLocale}/connexion?next=/${currentLocale}/admin`);
   }
 
   if (user.role === "instructor") {
@@ -37,7 +37,7 @@ export async function requireInstructor(
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect(`/${currentLocale}/connexion?redirectTo=/${currentLocale}${redirectTo}`);
+    redirect(`/${currentLocale}/connexion?next=/${currentLocale}${redirectTo}`);
   }
 
   if (user.role !== "instructor" && user.role !== "admin") {
@@ -58,7 +58,7 @@ export async function requireStaff(
   const user = await getCurrentUser();
 
   if (!user) {
-    redirect(`/${currentLocale}/connexion?redirectTo=/${currentLocale}${redirectTo}`);
+    redirect(`/${currentLocale}/connexion?next=/${currentLocale}${redirectTo}`);
   }
 
   if (user.role !== "admin" && user.role !== "instructor") {
@@ -78,7 +78,7 @@ export async function requireUser(
   const user = await getCurrentUser();
 
   if (!user) {
-    const query = redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : "";
+    const query = redirectTo ? `?next=${encodeURIComponent(redirectTo)}` : "";
     redirect(`/${currentLocale}/connexion${query}`);
   }
 

@@ -5,6 +5,8 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"PWA mobile installation and logout controls",cmd:"npx tsx tests/pwa-controls.test.ts"},
+  {name:"Credentials admin login and trusted IP",cmd:"npx tsx tests/auth-login-regression.test.ts"},
   {name:"Student staff selection and ticket flow",cmd:"npx tsx tests/student-messaging-flow.test.ts"},
   {name:"PWA controlled update",cmd:"npx tsx tests/pwa-update.test.ts"},
   {name:"Dashboard community actions and real unread counts",cmd:"npx tsx tests/dashboard-access.test.ts"},

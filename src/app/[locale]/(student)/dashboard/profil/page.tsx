@@ -1,3 +1,4 @@
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
@@ -146,9 +147,9 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
           <PwaInstallButton locale={locale} />
 
           {/* Sign Out Action */}
-          <Link
-            href="/connexion"
-            className="flex items-center justify-between p-3 rounded-xl hover:bg-red-50 text-red transition-colors group min-h-[48px]"
+          <LogoutButton
+            locale={locale}
+            className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-50 text-red transition-colors group min-h-[48px]"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-tint flex items-center justify-center shrink-0">
@@ -164,7 +165,7 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
               </div>
             </div>
             <ChevronRight className="w-4 h-4 text-red/60 group-hover:text-red transition-colors" />
-          </Link>
+          </LogoutButton>
         </div>
       </div>
 

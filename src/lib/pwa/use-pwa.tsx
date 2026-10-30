@@ -35,9 +35,9 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     const checkStandalone = () => {
       const matchMediaStandalone = window.matchMedia("(display-mode: standalone)").matches;
       const navigatorStandalone = (window.navigator as any).standalone === true;
-      const urlPwaSource = new URLSearchParams(window.location.search).get("source") === "pwa";
-      const hasCookie = document.cookie.includes("faro_display=standalone");
-      return matchMediaStandalone || navigatorStandalone || urlPwaSource || hasCookie;
+
+
+      return matchMediaStandalone || navigatorStandalone;
     };
 
     const standalone = checkStandalone();
@@ -53,10 +53,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     // 2. Detect iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIosDevice =
-      /iphone|ipad|ipod/.test(userAgent) &&
-      !(window as any).MSStream &&
-      /safari/.test(userAgent) &&
-      !/crios|fxios|optios|edgios/.test(userAgent);
+      (/iphone|ipad|ipod/.test(userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
     setIsIos(isIosDevice);
 
     // 3. Track visit count and dismiss status
@@ -69,7 +66,11 @@ export function PwaProvider({ children }: { children: ReactNode }) {
     setIsBannerDismissed(dismissed);
 
     // 4. Listen for beforeinstallprompt (Android / Desktop Chrome)
+    const handleInstalled = () => { setDeferredPrompt(null); };
+    window.addEventListener("appinstalled", handleInstalled);
     const handleBeforeInstallPrompt = (e: Event) => {
+      // Leave desktop installation entirely to the browser.
+      if (!/android/i.test(navigator.userAgent)) return;
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -114,6 +115,7 @@ export function PwaProvider({ children }: { children: ReactNode }) {
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleInstalled);
     };
   }, []);
 

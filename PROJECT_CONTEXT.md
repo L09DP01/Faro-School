@@ -584,3 +584,5 @@ La branche principale est `auth-migration`. Toutes les mises à jour doivent y �
 Le déploiement principal conserve désormais les variables runtime saisies dans le tableau de bord : `keep_vars: true` dans `wrangler.jsonc`, et `--keep-vars` dans `pnpm run deploy`. Sans ce réglage, Wrangler supprime les variables ordinaires absentes de sa configuration ; les secrets chiffrés sont conservés séparément. Cela expliquait la disparition des variables après déploiement et les erreurs de démarrage. Les valeurs déjà supprimées doivent être ressaisies une fois ; cette correction ne permet pas de les récupérer. Les clés sensibles doivent être enregistrées comme secrets, jamais dans le dépôt. Les variables de build restent distinctes des variables runtime.
 
 Référence : https://developers.cloudflare.com/workers/wrangler/configuration/#source-of-truth
+
+PWA install/login fixes: see docs/PWA_INSTALL_LOGIN_FIXES.md. Full screen uses CSS dvh except while the keyboard is open. Custom install controls are mobile-only; short_name is Faro School. Logout must call Auth.js signOut, never just link to login.

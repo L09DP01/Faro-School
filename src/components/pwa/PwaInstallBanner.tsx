@@ -7,7 +7,7 @@ export function PwaInstallBanner({ locale = "fr" }: { locale?: string }) {
   const {
     isStandalone,
     isInstallable,
-    visitCount,
+    isIos,
     isBannerDismissed,
     triggerInstallPrompt,
     dismissInstallBanner,
@@ -18,7 +18,7 @@ export function PwaInstallBanner({ locale = "fr" }: { locale?: string }) {
   // 2. Only show after the second visit (visitCount >= 2)
   // 3. Hidden for 14 days after dismissal
   // 4. Must be installable (deferredPrompt ready or iOS Safari)
-  if (isStandalone || isBannerDismissed || visitCount < 2 || !isInstallable) {
+  if (isStandalone || isBannerDismissed || !isInstallable) {
     return null;
   }
 
@@ -31,12 +31,12 @@ export function PwaInstallBanner({ locale = "fr" }: { locale?: string }) {
           <Smartphone className="w-5 h-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-heading font-bold text-navy-deep truncate">
+          <p className="text-xs sm:text-sm font-heading font-bold text-navy-deep">
             {isHt
               ? "Enstale aplikasyon Faro School la"
               : "Installez l'application Faro School"}
           </p>
-          <p className="text-[11px] sm:text-xs text-muted-faro truncate">
+          <p className="text-[11px] sm:text-xs text-muted-faro">
             {isHt
               ? "Aksè rapid san w pa louvri navigatè w."
               : "Accès direct et rapide depuis votre écran d'accueil."}
@@ -50,7 +50,7 @@ export function PwaInstallBanner({ locale = "fr" }: { locale?: string }) {
           className="px-3.5 py-1.5 sm:py-2 rounded-xl bg-orange hover:bg-orange-strong text-white text-xs font-heading font-bold flex items-center gap-1.5 shadow-subtle transition-transform active:scale-95"
         >
           <Download className="w-3.5 h-3.5" />
-          <span>{isHt ? "Enstale" : "Installer"}</span>
+          <span>{isIos ? (isHt ? "Enstriksyon" : "Instructions") : (isHt ? "Enstale" : "Installer")}</span>
         </button>
 
         <button

@@ -15,13 +15,17 @@ export function PwaViewport(){
    root.dataset.appStandalone=String(standalone&&!landing);
    const viewport=window.visualViewport;
    // Pinch zoom remains available; changing the layout while zoomed would fight the gesture.
-   if(!viewport||viewport.scale===1)root.style.setProperty('--app-height',`${viewport?.height??window.innerHeight}px`);
+   // CSS dvh owns the full screen, including safe areas. Only override for the keyboard.
+   const editing=document.activeElement instanceof HTMLElement && document.activeElement.matches('input,textarea,select,[contenteditable=true]');
+   if(viewport?.scale===1 && editing && window.innerHeight-viewport.height>120){
+    root.style.setProperty('--app-height',`${viewport.height}px`);
+   }else root.style.removeProperty('--app-height');
    if(standalone&&!landing&&viewport&&viewport.scale===1){
     requestAnimationFrame(()=>{const focused=document.activeElement;if(focused instanceof HTMLElement&&focused.matches('input,textarea,select,[contenteditable=true]'))focused.scrollIntoView({block:'nearest',inline:'nearest'});});
    }
   };
-  update();media.addEventListener('change',update);window.addEventListener('resize',update);window.visualViewport?.addEventListener('resize',update);
-  return()=>{media.removeEventListener('change',update);window.removeEventListener('resize',update);window.visualViewport?.removeEventListener('resize',update);delete root.dataset.appRoute;delete root.dataset.appShell;delete root.dataset.appStandalone;root.style.removeProperty('--app-height');};
+  update();media.addEventListener('change',update);window.addEventListener('resize',update);window.addEventListener('focusout',update);window.visualViewport?.addEventListener('resize',update);
+  return()=>{media.removeEventListener('change',update);window.removeEventListener('resize',update);window.removeEventListener('focusout',update);window.visualViewport?.removeEventListener('resize',update);delete root.dataset.appRoute;delete root.dataset.appShell;delete root.dataset.appStandalone;root.style.removeProperty('--app-height');};
  },[pathname]);
  return null;
 }

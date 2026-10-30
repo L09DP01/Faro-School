@@ -1,6 +1,6 @@
 {
   "name": "Faro School",
-  "short_name": "Faro",
+  "short_name": "Faro School",
   "description": "Plateforme d'apprentissage en ligne conçue pour Haïti",
   "start_url": "/app?source=pwa",
   "id": "/app",

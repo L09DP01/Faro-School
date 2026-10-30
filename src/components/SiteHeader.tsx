@@ -38,7 +38,6 @@ export function SiteHeader() {
   const handleSignOut = async () => {
     closeMenu();
     try {
-      await fetch("/api/auth/signout", { method: "POST" });
       await signOut({ redirect: false });
       setIsAuthenticated(false);
       router.push("/connexion");

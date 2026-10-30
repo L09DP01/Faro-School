@@ -27,7 +27,7 @@ export default async function LoginPage({ params, searchParams }: LoginPageProps
   // 1. Logged-in users are redirected away
   const user = await getCurrentUser();
   if (user) {
-    const dest = sanitizeRedirectUrl(sp.next, `/${locale}/dashboard`);
+    const dest = sanitizeRedirectUrl(sp.next, user.role === "admin" ? `/${locale}/admin` : user.role === "instructor" ? `/${locale}/admin/tableau-de-bord` : `/${locale}/dashboard`);
     redirect(dest);
   }
 
