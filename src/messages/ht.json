@@ -376,7 +376,7 @@
     "forgotPasswordTitle": "Bliye modpas ou?",
     "forgotPasswordSubtitle": "Mete adrès imèl ou pou w resevwa yon lyen an sekirite pou chanje modpas ou.",
     "resetPasswordTitle": "Nouvo modpas",
-    "resetPasswordSubtitle": "Mete nouvo modpas ou a (omwen 8 karaktè).",
+    "resetPasswordSubtitle": "Chwazi yon modpas ki gen omwen 10 karaktè, yon lèt majiskil, yon lèt miniskil ak yon chif.",
     "fullNameLabel": "Non konplè",
     "fullNamePlaceholder": "Egz: Jean-Marc Joseph",
     "phoneLabel": "Nimewo telefòn an Ayiti",
@@ -415,6 +415,9 @@
     "and": "ak",
     "privacyPolicy": "Règleman sou vi prive a",
     "errors": {
+      "passwordMissingUppercase": "Ajoute omwen yon lèt majiskil.",
+      "passwordMissingLowercase": "Ajoute omwen yon lèt miniskil.",
+      "passwordMissingNumber": "Ajoute omwen yon chif.",
       "invalidCredentials": "Enfòmasyon koneksyon yo pa kòrèk. Tanpri verifye imèl ou ak modpas ou.",
       "invalidName": "Tanpri mete non konplè ou (omwen 2 lèt).",
       "invalidPhone": "Nimewo telefòn ayisyen an pa bon. Li dwe gen 8 chif apre +509 (egz: +509 36123456).",

@@ -376,7 +376,7 @@
     "forgotPasswordTitle": "Mot de passe oublié",
     "forgotPasswordSubtitle": "Indiquez votre adresse email pour recevoir un lien de réinitialisation sécurisé.",
     "resetPasswordTitle": "Nouveau mot de passe",
-    "resetPasswordSubtitle": "Définissez votre nouveau mot de passe (8 caractères minimum).",
+    "resetPasswordSubtitle": "Définissez un mot de passe d’au moins 10 caractères, avec une majuscule, une minuscule et un chiffre.",
     "fullNameLabel": "Nom complet",
     "fullNamePlaceholder": "Ex: Jean-Marc Joseph",
     "phoneLabel": "Numéro de téléphone en Haïti",
@@ -415,6 +415,9 @@
     "and": "et la",
     "privacyPolicy": "Politique de confidentialité",
     "errors": {
+      "passwordMissingUppercase": "Ajoutez au moins une lettre majuscule.",
+      "passwordMissingLowercase": "Ajoutez au moins une lettre minuscule.",
+      "passwordMissingNumber": "Ajoutez au moins un chiffre.",
       "invalidCredentials": "Identifiants incorrects. Veuillez vérifier votre adresse email et votre mot de passe.",
       "invalidName": "Veuillez entrer votre nom complet (au moins 2 caractères).",
       "invalidPhone": "Numéro de téléphone haïtien invalide. Le numéro doit comporter 8 chiffres après +509 (ex: +509 36123456).",

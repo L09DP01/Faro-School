@@ -59,7 +59,7 @@ export function ResetPasswordForm() {
       } else if (issue.message === "passwordTooShort") {
         setError(t("errors.passwordTooShort"));
       } else {
-        setError(issue.message);
+        setError(t(`errors.${issue.message}` as any));
       }
       return;
     }
@@ -110,10 +110,10 @@ export function ResetPasswordForm() {
         </div>
         <div className="space-y-1">
           <h2 className="font-heading font-black text-2xl text-ink">
-            {t("recoveryExpiredTitle")}
+            {t("expiredLinkTitle")}
           </h2>
           <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto">
-            {t("recoveryExpiredSubtitle")}
+            {t("expiredLinkDesc")}
           </p>
         </div>
         <div className="pt-2">
@@ -121,7 +121,7 @@ export function ResetPasswordForm() {
             href="/mot-de-passe-oublie"
             className="inline-flex items-center justify-center w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all"
           >
-            {t("requestNewResetLink")}
+            {t("requestNewLink")}
           </Link>
         </div>
       </div>
@@ -136,10 +136,10 @@ export function ResetPasswordForm() {
         </div>
         <div className="space-y-1">
           <h2 className="font-heading font-black text-2xl text-ink">
-            {t("passwordUpdatedTitle")}
+            {t("resetSuccessTitle")}
           </h2>
           <p className="font-sans text-xs sm:text-sm text-muted-faro max-w-sm mx-auto">
-            {t("passwordUpdatedSubtitle")}
+            {t("resetSuccessDesc")}
           </p>
         </div>
         <div className="pt-2">
@@ -147,7 +147,7 @@ export function ResetPasswordForm() {
             href="/connexion"
             className="inline-flex items-center justify-center w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all shadow-sm"
           >
-            {t("loginTitle")}
+            {t("loginSubmit")}
           </Link>
         </div>
       </div>
@@ -177,11 +177,14 @@ export function ResetPasswordForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
-            {t("newPassword")}
+          <label htmlFor="reset_password" className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
+            {t("newPasswordLabel")}
           </label>
           <div className="relative">
             <input
+              id="reset_password"
+              autoComplete="new-password"
+              minLength={10}
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -193,6 +196,8 @@ export function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? t("hidePassword") : t("showPassword")}
+              aria-pressed={showPassword}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-faro hover:text-ink"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -201,10 +206,13 @@ export function ResetPasswordForm() {
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
-            {t("confirmPassword")}
+          <label htmlFor="reset_confirm_password" className="block text-xs font-semibold text-ink uppercase tracking-wider mb-1.5">
+            {t("confirmPasswordLabel")}
           </label>
           <input
+            id="reset_confirm_password"
+            autoComplete="new-password"
+            minLength={10}
             type={showPassword ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -220,7 +228,7 @@ export function ResetPasswordForm() {
           className="w-full py-3 px-4 rounded-xl bg-ink hover:bg-ink/90 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
         >
           {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          <span>{t("updatePasswordButton")}</span>
+          <span>{t("updatePasswordSubmit")}</span>
         </button>
       </form>
 
