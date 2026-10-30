@@ -118,14 +118,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 4. Rate limit check for new registration
-    const limitCheck = await checkEmailDispatchLimit(normEmail, ip, "verification_email");
-    if (!limitCheck.allowed) {
-      return NextResponse.json(
-        { error: "rateLimit", message: limitCheck.reason },
-        { status: 429 }
-      );
-    }
+    // The atomic email budget was already reserved above; reserving again would
+    // immediately hit the cooldown and prevent every new account from being created.
 
     // 5. Hash password with PBKDF2 (Workers Web Crypto)
     const passwordHash = await hashPassword(password);

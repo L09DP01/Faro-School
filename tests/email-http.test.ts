@@ -6,7 +6,7 @@ async function main(){
  for(const name of ['signup','resend-code','forgot-password'])await build({entryPoints:['src/app/api/auth/'+name+'/route.ts'],outfile:'tmp/email-http/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'fixture'}));b.onResolve({filter:/^@\/lib\/(supabase\/admin|auth\/password|email\/outbox|auth\/rate-limit|email\/resend|auth\/tokens)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>{let code='export {};';if(a.path.endsWith('/admin'))code=`export function getAdminSupabase(){const s=globalThis.__emailHttp;return{from(){const b={select(){return b},eq(){return b},maybeSingle:async()=>({data:s.profile,error:null})};return b},rpc:async()=>({data:{user_id:'11111111-1111-4111-8111-111111111111'},error:null})}}`;
  if(a.path.endsWith('/password'))code=`export const hashPassword=async()=>"fixture-hash";`;
  if(a.path.endsWith('/outbox'))code=`export async function queueAuthEmail(to,kind){const s=globalThis.__emailHttp;const result={status:s.status,category:'provider_unavailable',correlationId:'fixture',success:false};s.queued.push({kind,result});return result;}`;
- if(a.path.endsWith('/rate-limit'))code=`export const normalizeEmail=e=>e.trim().toLowerCase();export const isDisposableEmail=()=>false;export const isCommonPassword=()=>false;export async function checkEmailDispatchLimit(){const s=globalThis.__emailHttp;s.budgets++;return{allowed:s.allowed}};export async function recordEmailDispatched(){}`;
+ if(a.path.endsWith('/rate-limit'))code=`export const normalizeEmail=e=>e.trim().toLowerCase();export const isDisposableEmail=()=>false;export const isCommonPassword=()=>false;export async function checkEmailDispatchLimit(){const s=globalThis.__emailHttp;s.budgets++;return{allowed:s.allowed&&s.budgets===1}};export async function recordEmailDispatched(){}`;
  if(a.path.endsWith('/resend'))code=`export const sendVerificationEmail=()=>{throw Error('legacy email path')};export const sendSecurityAlertEmail=sendVerificationEmail;export const sendPasswordResetEmail=sendVerificationEmail;`;
  if(a.path.endsWith('/tokens'))code=`export const createEmailVerificationToken=()=>{throw Error('premature token')};export const createPasswordResetToken=createEmailVerificationToken;`;
  return{loader:'js',contents:code};});}}]});
@@ -17,7 +17,8 @@ async function main(){
   for(const profile of [null,{id:'11111111-1111-4111-8111-111111111111',email_verified_at:null},{id:'11111111-1111-4111-8111-111111111111',email_verified_at:'2026-10-01'}]){
    state.profile=profile;state.queued=[];state.budgets=0;
    const response=await handlers[name].POST(new NextRequest('https://example.test/api/auth/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}));
-   assert.equal(response.status,200);const json=await response.json();replies.push(JSON.stringify(json));assert(!('alreadyVerified' in json));assert(!JSON.stringify(json).includes('@'));assert(state.budgets>0);
+   assert.equal(response.status,200);const json=await response.json();replies.push(JSON.stringify(json));assert(!('alreadyVerified' in json));assert(!JSON.stringify(json).includes('@'));assert.equal(state.budgets,1,"Reserve the atomic email budget exactly once");
+   if(name==='signup')assert.equal(state.queued.length,1,"A new signup must reach the email queue");
    if(name==='signup'&&profile?.email_verified_at)assert.equal(state.queued[0].kind,'registration_alert');
    assert(state.queued.every((r:any)=>r.result.status==='failed'));
   }

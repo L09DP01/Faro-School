@@ -53,7 +53,7 @@ async function messageFor(row:OutboxRow):Promise<EmailMessage>{
 export async function processClaimed(row:OutboxRow):Promise<EmailResult>{
  let result:EmailResult;
  try{result=await sendResendEmail(await messageFor(row));}
- catch(e){const category=e instanceof Error&&e.message==='config_missing'?'config_missing':'unknown';result={...queued(row.correlation_id),status:'failed',category,error:category};}
+ catch(e){const stage=e instanceof Error&&['config_missing','email_material_unavailable','token_preparation_failed'].includes(e.message)?e.message:'message_preparation_failed';console.error('[email] preparation_failed',{correlationId:row.correlation_id,stage});const category=stage==='config_missing'?'config_missing':'unknown';result={...queued(row.correlation_id),status:'failed',category,error:category};}
  const next=nextRetry(row.attempts,result.category,result.retryAfterSeconds);
  const status=result.status==='accepted'?'accepted':result.category==='suppressed'?'suppressed':next?'failed_temporary':'failed_permanent';
  const {error}=await createAdminClient().rpc('finish_email_outbox',{p_id:row.id,p_attempt:row.attempts,p_status:status,p_category:result.category,p_http:result.httpStatus,p_message:result.messageId,p_next:next});
