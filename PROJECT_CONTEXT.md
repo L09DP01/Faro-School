@@ -544,3 +544,7 @@ Workers Builds command contract: `pnpm run build` produces the complete OpenNext
 Auth.js ne transmet pas les emails via Supabase Auth : Resend est requis avec RESEND_API_KEY et EMAIL_FROM dans les secrets runtime du Worker.
 ## Système email — built (code local)
 Auth.js utilise Resend pour les envois transactionnels ; Supabase reste Postgres et Realtime. Outbox privée, reprise planifiée, webhooks de livraison, écran /admin/emails, activation par code/lien FR/KR, invitations et notifications métier sont implémentés. L’état accepted signifie acceptation prestataire, jamais delivered. Le déploiement nécessite les trois migrations email, les secrets runtime et le cron décrits dans EMAIL_FIX_NOTES.md. Aucun envoi ni modification Supabase distant n’a été effectué pendant la correction.
+
+## Branche principale et déploiement
+
+La branche principale est `auth-migration`. Toutes les mises à jour doivent y être intégrées puis poussées sur `origin/auth-migration`, branche de production Cloudflare. Ne pas créer de nouvelle branche pour les prochaines corrections, sauf demande explicite de l’utilisateur. Les branches de travail déjà existantes doivent être intégrées à `auth-migration` avant publication ; ne pas les supprimer sans demande.
