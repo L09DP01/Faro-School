@@ -9,6 +9,8 @@ signup/resend/recovery pipeline. Reserve the atomic email budget once per reques
 Account creation must call the existing `create_user_with_credentials` RPC with
 `p_id` and read its JSON `user_id`; never fall back to separate credential/profile
 inserts. See `docs/EMAIL_REBUILD.md` for operations and verification limits.
+`custom-worker.mjs` preserves OpenNext HTTP handling and dispatches the private
+email-outbox cron internally every minute using the runtime `CRON_SECRET`.
 
 - **Framework**: Next.js 15 (App Router) + TypeScript (strict mode) + pnpm
 - **Styling**: Tailwind CSS + shadcn/ui design tokens (via `src/styles/tokens.css`)

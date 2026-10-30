@@ -46,6 +46,12 @@ unique du code et à la connexion autorisée après vérification. Ils couvrent 
 quota partagé inscription/renvoi, les erreurs de RPC/table, les reprises et les
 contrôles d’accès. Aucun de ces tests n’envoie de message réel.
 
+Validation finale : 17/17 suites, 66/66 assertions de l’audit de sécurité,
+TypeScript, lint, scan des secrets, build OpenNext/Cloudflare et bundling
+Wrangler `deploy --dry-run` réussis. Les builds utilisent une copie isolée avec
+configuration fictive. Le test du scheduler couvre le dispatch authentifié,
+le maintien du handler HTTP, le refus sans secret et la remontée d’un échec.
+
 Aucune migration supplémentaire et aucune opération sur Supabase distant.
 Les cinq migrations existantes Auth.js/webhooks/email restent nécessaires ;
 les trois migrations email ont déjà été déclarées appliquées par le propriétaire.
@@ -58,13 +64,20 @@ n’apparaît dans Resend, consulter les logs Worker `[email] pipeline_failed` :
 `42P01` une table absente, `42501` une permission manquante. Le propriétaire
 effectue toute correction distante ; ne jamais coller les clés ou les codes.
 
-La route protégée `/api/cron/email-outbox` doit être appelée périodiquement par
-un ordonnanceur avec `Authorization: Bearer <CRON_SECRET>` pour les reprises
-et les emails issus des événements métier. L’envoi initial d’inscription est
-immédiat et ne dépend pas de ce cron. Ne pas exposer ce secret dans une URL.
+La route protégée `/api/cron/email-outbox` est appelée automatiquement chaque
+minute par le handler `scheduled` de `custom-worker.mjs`, déclaré dans Wrangler.
+Le dispatch interne réutilise OpenNext et transmet `CRON_SECRET` dans l’en-tête
+Authorization, jamais dans une URL. Il traite les reprises et les événements
+métier par lots de cinq, avec les verrous et limites existants. L’envoi initial
+d’inscription reste immédiat. Les déclencheurs Cloudflare peuvent prendre jusqu’à
+quinze minutes à se propager ; vérifier ensuite les événements planifiés du Worker.
+Si un ordonnanceur externe appelait déjà cette route, le désactiver évite des
+appels inutiles ; les verrous de la file protègent malgré tout contre les doublons.
 
 Sources : [API d’envoi Resend](https://resend.com/docs/api-reference/emails/send-email),
-[idempotence Resend](https://resend.com/docs/dashboard/emails/idempotency-keys).
+[idempotence Resend](https://resend.com/docs/dashboard/emails/idempotency-keys),
+[Worker OpenNext personnalisé](https://opennext.js.org/cloudflare/howtos/custom-worker),
+[déclencheurs Cloudflare](https://developers.cloudflare.com/workers/configuration/cron-triggers/).
 
 La livraison du nouveau parcours dans le Worker de production reste un contrôle
 à effectuer après déploiement ; les tests locaux ne prouvent pas la présence
