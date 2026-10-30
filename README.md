@@ -161,7 +161,10 @@ pnpm test
 # Linting ESLint
 pnpm lint
 
-# Build de l'application Next.js
+# Compilation Next.js seule (sans Worker)
+pnpm build:next
+
+# Build complet pour Cloudflare Workers
 pnpm build
 
 # Build OpenNext Cloudflare Adapter
@@ -185,3 +188,9 @@ Le dépôt fixe `packageManager: pnpm@9.10.0` et déclare explicitement le packa
 Les route handlers utilisent le runtime Next.js `nodejs` pour OpenNext Cloudflare ; la cryptographie reste fondée sur Web Crypto. Le middleware conserve sa configuration distincte. Voir https://opennext.js.org/cloudflare#supported-nextjs-runtimes .
 
 Validation avant push : installation complète pnpm 9.10.0 à lockfile gelé réussie ; build OpenNext complet réussi depuis l’installation propre ; 12 suites locales, typage, lint et contrôle de secrets réussis. L’installation de contrôle ne copie aucun secret réel et n’applique aucune migration distante.
+
+### Commandes Cloudflare Workers Builds
+
+Dans Cloudflare, la commande de build `pnpm run build` génère désormais le Worker OpenNext et sa configuration compilée dans `.open-next/`. OpenNext utilise explicitement `pnpm run build:next` pour sa compilation Next.js interne, ce qui évite toute récursion. `pnpm run build:worker` reste compatible. La commande de déploiement recommandée est `pnpm run deploy` ; `npx wrangler deploy` détecte également OpenNext et nécessite le même dossier `.open-next/` déjà généré. Exécuter seulement `next build` produit `.next/` et ne suffit pas pour déployer ce Worker.
+
+Contrôle du correctif : `pnpm run build` testé jusqu’à `OpenNext build complete`, puis chargement réussi via la fonction `retrieveCompiledConfig()` employée par le déploiement. La présence du Worker et des assets a aussi été contrôlée. Aucun déploiement distant n’a été lancé pour cette vérification.

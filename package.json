@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "opennextjs-cloudflare build",
     "start": "next start",
     "build:worker": "opennextjs-cloudflare build",
     "preview": "opennextjs-cloudflare preview",
@@ -18,7 +18,8 @@
     "lint": "next lint",
     "test:certificates": "tsx tests/certificates.test.ts",
     "test:certificates:api": "tsx tests/certificates-api.test.ts",
-    "test:webhooks": "tsx tests/webhooks.test.ts"
+    "test:webhooks": "tsx tests/webhooks.test.ts",
+    "build:next": "next build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
