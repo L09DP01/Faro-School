@@ -14,9 +14,10 @@ interface ProfileFormProps {
     locale: "fr" | "ht";
   };
   currentLocale: string;
+  section?: "profile" | "settings";
 }
 
-export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
+export function ProfileForm({ user, currentLocale, section = "profile" }: ProfileFormProps) {
   const t = useTranslations("dashboard.profile");
   const router = useRouter();
 
@@ -46,11 +47,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
       const res = await fetch("/api/auth/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fullName,
-          phone,
-          locale: localePref,
-        }),
+        body: JSON.stringify(section === "settings" ? {locale: localePref} : {fullName, phone}),
       });
 
       const data = await res.json();
@@ -118,7 +115,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
         className="rounded-[18px] border border-line bg-surface p-6 sm:p-8 shadow-card space-y-5"
       >
         <h2 className="text-base font-heading font-bold text-navy-deep border-b border-line pb-3">
-          {t("personalSection")}
+          {section === "settings" ? t("preferencesSection") : t("personalSection")}
         </h2>
 
         {personalSuccess && (
@@ -135,6 +132,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           </div>
         )}
 
+        {section === "profile" && <>
         <div>
           <label
             htmlFor="profile-name"
@@ -190,6 +188,9 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           </span>
         </div>
 
+        </>}
+
+        {section === "settings" && <>
         <div>
           <label
             htmlFor="profile-locale"
@@ -209,6 +210,8 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           </select>
         </div>
 
+        </>}
+
         <button
           type="submit"
           disabled={personalLoading}
@@ -225,6 +228,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
         </button>
       </form>
 
+      {section === "settings" && <>
       <ChangeEmailForm locale={currentLocale}/>
       {/* 2. Password Change Form */}
       <form
@@ -303,6 +307,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           )}
         </button>
       </form>
+      </>}
     </div>
   );
 }

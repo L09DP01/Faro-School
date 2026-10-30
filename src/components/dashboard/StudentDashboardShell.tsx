@@ -138,20 +138,20 @@ export function StudentDashboardShell({
   const accountNavItems = [
     {
       href: "/dashboard/profil" as const,
-      exact: false,
-      label: "Profil",
+      exact: true,
+      label: locale === "ht" ? "Pwofil" : "Profil",
       icon: <User className="w-5 h-5 shrink-0" />,
     },
     {
-      href: "/dashboard/profil" as const,
+      href: "/dashboard/profil/parametres" as const,
       exact: false,
-      label: "Paramètres",
+      label: locale === "ht" ? "Paramèt" : "Paramètres",
       icon: <Settings className="w-5 h-5 shrink-0" />,
     },
     {
       href: whatsappUrl,
       isExternal: true,
-      label: "Aide",
+      label: locale === "ht" ? "Èd" : "Aide",
       icon: <HelpCircle className="w-5 h-5 shrink-0" />,
     },
   ];
@@ -292,6 +292,7 @@ export function StudentDashboardShell({
                   <Link
                     key={idx}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-heading transition-all ${
                       active
                         ? "bg-orange text-white font-bold shadow-orange"

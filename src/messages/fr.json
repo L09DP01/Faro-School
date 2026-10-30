@@ -605,8 +605,12 @@
       "downloadReceipt": "Télécharger le reçu (PDF)"
     },
     "profile": {
-      "title": "Mon profil & Paramètres",
-      "subtitle": "Gérez vos informations personnelles, votre numéro de téléphone et la sécurité de votre compte.",
+      "settingsTitle": "Paramètres & Sécurité",
+      "settingsSubtitle": "Gérez votre langue d’affichage, votre adresse e-mail et votre mot de passe.",
+      "preferencesSection": "Préférences",
+      "backToProfile": "Retour au profil",
+      "title": "Mon profil",
+      "subtitle": "Gérez votre nom, votre téléphone et consultez les informations de votre compte.",
       "personalSection": "Informations personnelles",
       "fullName": "Nom complet",
       "phone": "Numéro de téléphone en Haïti (MonCash / NatCash)",

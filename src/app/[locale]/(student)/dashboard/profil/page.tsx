@@ -61,7 +61,7 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
       icon: <CreditCard className="w-5 h-5 text-orange" />,
     },
     {
-      href: "#parametres",
+      href: "/dashboard/profil/parametres",
       label: locale === "ht" ? "Paramèt & Sekirite" : "Paramètres & Sécurité",
       description: locale === "ht" ? "Modpas ak preferans lang" : "Modifier votre mot de passe et vos préférences",
       icon: <Settings className="w-5 h-5 text-orange" />,
@@ -169,7 +169,7 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
         </div>
       </div>
 
-      <div id="parametres">
+      <div>
         <ProfileForm user={user} currentLocale={locale} />
       </div>
     </div>

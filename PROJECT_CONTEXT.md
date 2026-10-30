@@ -588,3 +588,5 @@ Référence : https://developers.cloudflare.com/workers/wrangler/configuration/#
 PWA install/login fixes: see docs/PWA_INSTALL_LOGIN_FIXES.md. Full screen uses CSS dvh except while the keyboard is open. Custom install controls are mobile-only; short_name is Faro School. Logout must call Auth.js signOut, never just link to login.
 
 Production HTTPS invariant: custom-worker.mjs upgrades HTTP public hosts before serving OpenNext, including /api/auth. Secure Auth.js cookies must stay enabled; MissingCSRF is not an invalid-password error. See docs/ADMIN_LOGIN_HTTP_CSRF.md.
+
+Student account navigation: /dashboard/profil is identity and account shortcuts; /dashboard/profil/parametres is language and security. Desktop profile matching is exact; only one account entry can be active. Both reuse ProfileForm and existing APIs. See docs/PROFILE_SETTINGS_AUDIT.md for remaining product and implementation gaps.

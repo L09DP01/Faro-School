@@ -605,8 +605,12 @@
       "downloadReceipt": "Telechaje resi a (PDF)"
     },
     "profile": {
-      "title": "Pwofil mwen & Anviwònman",
-      "subtitle": "Jere enfòmasyon pèsonèl ou, nimewo telefòn ou ak sekirite kont ou.",
+      "settingsTitle": "Paramèt & Sekirite",
+      "settingsSubtitle": "Jere lang afichaj ou, adrès imèl ou ak modpas ou.",
+      "preferencesSection": "Preferans",
+      "backToProfile": "Tounen nan pwofil la",
+      "title": "Pwofil mwen",
+      "subtitle": "Jere non ou, nimewo telefòn ou epi konsilte enfòmasyon kont ou.",
       "personalSection": "Enfòmasyon pèsonèl",
       "fullName": "Non konplè",
       "phone": "Nimewo telefòn Ayiti (MonCash / NatCash)",
