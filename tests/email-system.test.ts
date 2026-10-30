@@ -154,6 +154,14 @@ async function main(){
   const proof=await tokens.verifyEmailCode(email,code);assert.equal(proof.success,true);assert.equal(proof.userId,user.id);assert.equal((await tokens.verifyEmailCode(email,code)).success,false);
   assert.equal((await authorize({email,password:pass},new Request('https://example.test/login')))?.id,user.id,'Verified registration can log in');
  }
+ // Urgent regression: cron must drain obsolete verification requests WITHOUT sending.
+ const verified=(await db.query<any>("SELECT * FROM profiles WHERE email='fr-registration@example.test'")).rows[0];
+ const sentBeforeStop=state.calls;
+ const stopped=await outbox.enqueueEmail({kind:'verification',to:verified.email,userId:verified.id,key:'obsolete-verified'});assert.equal(stopped.status,'skipped');assert.equal(state.calls,sentBeforeStop);
+ assert.equal((await db.query<any>("SELECT status FROM email_outbox WHERE idempotency_key='obsolete-verified'")).rows[0].status,'suppressed');
+ await outbox.queueAuthEmail(verified.email,'verification','fr');assert.equal(state.calls,sentBeforeStop);
+ const stale=(await db.query<any>("INSERT INTO email_outbox(kind,user_id,recipient,idempotency_key,created_at) VALUES('verification',$1,'stale@example.test','obsolete-expired',now()-interval '11 minutes') RETURNING id",[verified.id])).rows[0];
+ await outbox.processOutbox(stale.id);assert.equal(state.calls,sentBeforeStop);assert.equal((await db.query<any>('SELECT status FROM email_outbox WHERE id=$1',[stale.id])).rows[0].status,'suppressed');
  const saved={...env};Object.assign(env,{NODE_ENV:'production',APP_ENV:'production',NEXT_PUBLIC_APP_URL:'https://example.test',NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',NEXT_PUBLIC_SUPABASE_ANON_KEY:'fake',SUPABASE_SERVICE_ROLE_KEY:'fake',SUPABASE_JWT_SECRET:'x'.repeat(32),AUTH_SECRET:'y'.repeat(32),RESEND_API_KEY:'fake',RESEND_WEBHOOK_SECRET:'whsec_fake',EMAIL_FROM:'Faro <sender@example.test>',CRON_SECRET:'fake',KOBARA_MODE:'live',KOBARA_API_KEY:'live-fake',KOBARA_BASE_URL:'https://example.test',KOBARA_WEBHOOK_SECRET:'fake',BUNNY_STREAM_API_KEY:'fake',BUNNY_STREAM_READ_ONLY_API_KEY:'fake',BUNNY_STREAM_LIBRARY_ID:'1',BUNNY_STREAM_TOKEN_AUTH_KEY:'fake'});delete env.NEXT_PHASE;
  for(const key of ['RESEND_API_KEY','EMAIL_FROM','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_JWT_SECRET','AUTH_SECRET','CRON_SECRET']){const value=env[key];delete env[key];assert.throws(()=>startup.register(),new RegExp(key));env[key]=value;}startup.register();
  Object.keys(env).forEach(k=>{if(!(k in saved))delete env[k]});Object.assign(env,saved);

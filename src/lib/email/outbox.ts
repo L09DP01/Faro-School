@@ -53,7 +53,20 @@ async function messageFor(row:OutboxRow):Promise<EmailMessage>{
 }
 export async function processClaimed(row:OutboxRow):Promise<EmailResult>{
  let result:EmailResult;
- try{result=await sendResendEmail(await messageFor(row));}
+ try{
+  let obsolete=false;
+  if(row.kind==='verification'){
+   // A repaired backlog must never continue asking a verified user to verify.
+   // Verification requests expire from creation, not from a delayed retry.
+   obsolete=Date.now()-Date.parse(row.created_at)>=EMAIL_TIMES.verificationMinutes*60000;
+   if(!obsolete){
+    const{data:profile,error}=await createAdminClient({timeoutMs:10000}).from('profiles').select('email_verified_at').eq('id',row.user_id).maybeSingle();
+    if(error){logEmailFailure('verification_state_lookup',error,row.correlation_id);throw new Error('verification_state_unavailable');}
+    obsolete=!profile||!!profile.email_verified_at;
+   }
+  }
+  result=obsolete?{...queued(row.correlation_id),status:'skipped',category:'suppressed',error:'verification_no_longer_needed'}:await sendResendEmail(await messageFor(row));
+ }
  catch(e){const stage=e instanceof Error&&['config_missing','email_material_unavailable','token_preparation_failed'].includes(e.message)?e.message:'message_preparation_failed';console.error('[email] preparation_failed',{correlationId:row.correlation_id,stage});const category=stage==='config_missing'?'config_missing':'unknown';result={...queued(row.correlation_id),status:'failed',category,error:category};}
  const next=nextRetry(row.attempts,result.category,result.retryAfterSeconds);
  const status=result.status==='accepted'?'accepted':result.category==='suppressed'?'suppressed':next?'failed_temporary':'failed_permanent';
@@ -84,8 +97,9 @@ export async function enqueueEmail(input:{kind:string;to:string;locale?:string;u
  }
 }
 export async function queueAuthEmail(to:string,kind:'verification'|'reset'|'invitation'|'registration_alert',locale:string,key=crypto.randomUUID(),next?:string){
- const{data,error}=await createAdminClient({timeoutMs:10000}).from('profiles').select('id,locale').eq('email',to.trim().toLowerCase()).maybeSingle();
+ const{data,error}=await createAdminClient({timeoutMs:10000}).from('profiles').select('id,locale,email_verified_at').eq('email',to.trim().toLowerCase()).maybeSingle();
  if(error){const correlationId=crypto.randomUUID();console.error('[email] profile_lookup_unavailable',{correlationId});return{...queued(correlationId),status:'failed' as const,category:'unknown' as const};}
  if(!data){logEmailFailure('dispatch_profile_missing');return{...queued(),status:'failed' as const,category:'unknown' as const};}
+ if(kind==='verification'&&data.email_verified_at)return{...queued(),status:'skipped' as const,category:'suppressed' as const};
  return enqueueEmail({kind,to,userId:data.id,locale:data.locale??locale,key:kind+':'+key,data:next?{next}:{}});
 }
