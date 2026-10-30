@@ -52,7 +52,23 @@ Wrangler `deploy --dry-run` réussis. Les builds utilisent une copie isolée ave
 configuration fictive. Le test du scheduler couvre le dispatch authentifié,
 le maintien du handler HTTP, le refus sans secret et la remontée d’un échec.
 
-Aucune migration supplémentaire et aucune opération sur Supabase distant.
+Diagnostic réel après déploiement : les logs du Worker montrent
+`stage=token_preparation`, `databaseCode=PGRST202`. La Data API ne résout pas
+`prepare_outbox_token(p_id,p_code_hash,p_token_hash,p_expires)` : la fonction
+attendue manque ou son cache de schéma est périmé. Cela empêche tout appel à
+Resend pour les lignes concernées ; `failed_temporary` ne signifie pas envoyé.
+
+Le propriétaire doit exécuter dans le SQL Editor le fichier complet
+`supabase/migrations/20261030182000_repair_email_token_rpc.sql`. Il rétablit
+uniquement ce contrat, conserve les droits serveur seuls et notifie PostgREST
+de recharger son cache. Il est réexécutable et ne supprime aucune donnée.
+Puis patienter quelques secondes et cliquer une seule fois sur « Renvoyer le
+code » après le cooldown. Les anciennes lignes encore temporaires sont aussi
+reprises à leur échéance ; ne pas effacer la file ni copier les codes de la base.
+
+Aucune opération sur Supabase distant n’a été effectuée par l’agent. La réparation
+a été testée sur PostgreSQL local : deux applications, noms exacts des quatre
+arguments, droits service_role seulement, parcours FR/KR jusqu’au code utilisable.
 Les cinq migrations existantes Auth.js/webhooks/email restent nécessaires ;
 les trois migrations email ont déjà été déclarées appliquées par le propriétaire.
 
