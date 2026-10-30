@@ -1,0 +1,26 @@
+'use client';
+import {useEffect} from 'react';
+import {usePathname} from 'next/navigation';
+/** Layout mode uses the actual display mode, never the navigation-preference cookie. */
+export function PwaViewport(){
+ const pathname=usePathname();
+ useEffect(()=>{
+  const root=document.documentElement;
+  const landing=/^\/(?:fr|ht)?\/?$/.test(pathname);
+  root.dataset.appRoute=String(!landing);
+  const media=window.matchMedia('(display-mode: standalone)');
+  const update=()=>{
+   const standalone=media.matches||(navigator as Navigator&{standalone?:boolean}).standalone===true;
+   root.dataset.appStandalone=String(standalone&&!landing);
+   const viewport=window.visualViewport;
+   // Pinch zoom remains available; changing the layout while zoomed would fight the gesture.
+   if(!viewport||viewport.scale===1)root.style.setProperty('--app-height',`${viewport?.height??window.innerHeight}px`);
+   if(standalone&&!landing&&viewport&&viewport.scale===1){
+    requestAnimationFrame(()=>{const focused=document.activeElement;if(focused instanceof HTMLElement&&focused.matches('input,textarea,select,[contenteditable=true]'))focused.scrollIntoView({block:'nearest',inline:'nearest'});});
+   }
+  };
+  update();media.addEventListener('change',update);window.addEventListener('resize',update);window.visualViewport?.addEventListener('resize',update);
+  return()=>{media.removeEventListener('change',update);window.removeEventListener('resize',update);window.visualViewport?.removeEventListener('resize',update);delete root.dataset.appRoute;delete root.dataset.appStandalone;root.style.removeProperty('--app-height');};
+ },[pathname]);
+ return null;
+}

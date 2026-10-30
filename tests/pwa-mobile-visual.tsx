@@ -1,0 +1,4 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {NextIntlClientProvider} from 'next-intl';
+import {PwaViewport} from '../src/components/pwa/PwaViewport';import AuthLayout from '../src/app/[locale]/(auth)/layout';import {LoginForm} from '../src/components/auth/LoginForm';import fr from '../src/messages/fr.json';
+const query=new URLSearchParams(location.search);const landing=query.has('landing');
+createRoot(document.getElementById('root')!).render(<NextIntlClientProvider locale="fr" messages={fr}><PwaViewport/><div className="pwa-viewport">{landing?<main style={{minHeight:1800}}><h1>Landing fixture</h1><input aria-label="Landing field" style={{fontSize:12}}/></main>:<AuthLayout><LoginForm/><div className="h-80" aria-hidden="true"/></AuthLayout>}</div></NextIntlClientProvider>);

@@ -1,0 +1,13 @@
+{
+  "engine": "chromium",
+  "checks": [
+    "Standalone: inputs >=16px",
+    "Header remains at top after content scroll",
+    "Root does not scroll",
+    "Keyboard-height simulation shrinks app shell",
+    "No horizontal overflow",
+    "Landing excluded from input and scroll overrides",
+    "Browser: >=16px controls, normal document scrolling"
+  ],
+  "limits": "Headless mobile emulation and simulated keyboard; installed iPhone Safari, system keyboard and physical safe areas require a hardware check."
+}

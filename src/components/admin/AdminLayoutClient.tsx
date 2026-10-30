@@ -233,7 +233,7 @@ export function AdminLayoutClient({
   );
 
   return (
-    <div className="min-h-screen md:h-screen md:h-[100dvh] md:overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
+    <div className="pwa-admin-shell min-h-screen md:h-screen md:h-[100dvh] md:overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
       {/* ========================================================= */}
       {/* 1. PERSISTENT 260px NAVY SIDEBAR (Fixed 100dvh on Desktop)*/}
       {/* ========================================================= */}
@@ -334,7 +334,7 @@ export function AdminLayoutClient({
       {/* ========================================================= */}
       {/* 2. MOBILE HEADER & DRAWER (< 768px)                      */}
       {/* ========================================================= */}
-      <div className="md:hidden sticky top-0 z-40 bg-navy-deep border-b border-white/10 px-4 h-16 flex items-center justify-between shadow-subtle">
+      <div className="pwa-admin-header md:hidden sticky top-0 z-40 bg-navy-deep border-b border-white/10 px-4 h-16 flex items-center justify-between shadow-subtle">
         <Link
           href={isInstructor ? "/admin/tableau-de-bord" : "/admin"}
           className="flex items-center gap-2"
@@ -435,7 +435,7 @@ export function AdminLayoutClient({
       {/* ========================================================= */}
       {/* 3. MAIN CONTENT AREA (Scrolls Independently)              */}
       {/* ========================================================= */}
-      <main className="flex-1 min-w-0 h-full md:overflow-y-auto overflow-x-hidden flex flex-col">
+      <main className="pwa-admin-main flex-1 min-w-0 h-full md:overflow-y-auto overflow-x-hidden flex flex-col">
         {/* Desktop Header: Availability Toggle & Context */}
         <header className="hidden md:flex items-center justify-between border-b border-line bg-surface/80 backdrop-blur-md px-6 lg:px-10 py-3 sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-2">

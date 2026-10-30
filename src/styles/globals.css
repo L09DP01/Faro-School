@@ -21,3 +21,54 @@
 @font-face{font-family:FaroCertificateBody;src:url('/fonts/certificates/Inter-Regular.ttf') format('truetype');font-weight:100 900;font-display:swap}
 
 @font-face{font-family:FaroCertificateBodyBold;src:url('/fonts/certificates/Inter-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+
+/* iOS zooms focused controls below 16px. Keep manual/pinch zoom available.
+   The marketing landing page is explicitly excluded by PwaViewport. */
+@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+  html[data-app-route="true"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select, [contenteditable="true"]) {
+    font-size: max(16px, 1rem) !important;
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  }
+  .auth-mobile-header { position: sticky; top: 0; z-index: 40; flex-shrink: 0; }
+}
+.pwa-viewport { display: contents; }
+html[data-app-standalone="true"],
+html[data-app-standalone="true"] body {
+  height: 100%; min-height: 0; overflow: hidden; overscroll-behavior: none;
+  background: var(--navy-deep);
+}
+html[data-app-standalone="true"] body { position: fixed; inset: 0; width: 100%; }
+html[data-app-standalone="true"] .pwa-viewport {
+  display: block; height: var(--app-height, 100dvh); min-height: 0;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: none;
+  background: var(--bg); -webkit-overflow-scrolling: touch;
+}
+/* Cover the status area with a solid surface: scrolling content must never show through. */
+html[data-app-standalone="true"] body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  background: var(--navy-deep); pointer-events: none; z-index: 100;
+}
+html[data-app-standalone="true"] :is(.auth-shell, .pwa-app-shell, .pwa-admin-shell) {
+  height: 100%; max-height: 100%; min-height: 0; overflow: hidden;
+}
+html[data-app-standalone="true"] .auth-form-panel {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+html[data-app-standalone="true"] .pwa-admin-main {
+  min-height: 0; overflow-y: auto; overscroll-behavior-y: contain;
+}
+@media (max-width: 1023px) {
+  html[data-app-standalone="true"] .auth-mobile-header { padding-top: calc(1rem + env(safe-area-inset-top)); }
+}
+@media (max-width: 767px) {
+  html[data-app-standalone="true"] :is(.pwa-app-header, .pwa-admin-header) {
+    height: calc(3.5rem + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top);
+    flex-shrink: 0;
+  }
+  html[data-app-standalone="true"] .pwa-admin-header { height: calc(4rem + env(safe-area-inset-top)); }
+  html[data-app-standalone="true"] .pwa-bottom-nav { height: calc(64px + env(safe-area-inset-bottom)); }
+}
+html[data-app-standalone="true"] .pwa-viewport {
+  padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
+}

@@ -214,7 +214,7 @@ export function StudentDashboardShell({
   const firstName = user.fullName.split(" ")[0] || "Apprenant";
 
   return (
-    <div className="h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-bg flex flex-col md:flex-row">
+    <div className="pwa-app-shell h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-bg flex flex-col md:flex-row">
       {/* ========================================================= */}
       {/* 1. DESKTOP SIDEBAR (285px Fixed Navy-Deep Sidebar)        */}
       {/* ========================================================= */}
@@ -338,7 +338,7 @@ export function StudentDashboardShell({
       {/* ========================================================= */}
       <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
         {/* Top Bar: On mobile shows only notification bell and one avatar */}
-        <header className="shrink-0 h-14 md:h-16 px-4 md:px-8 bg-transparent flex items-center justify-end md:justify-between z-20">
+        <header className="pwa-app-header shrink-0 h-14 md:h-16 px-4 md:px-8 bg-transparent flex items-center justify-end md:justify-between z-20">
           {/* Left area: Hidden on mobile so greeting only appears in page title */}
           <div className="hidden md:flex items-center gap-2">
             <span className="text-xs font-heading font-semibold uppercase tracking-wider text-muted-faro">
@@ -413,7 +413,7 @@ export function StudentDashboardShell({
         {!isKeyboardOpen && (
           <nav
             aria-label="Barre d'onglets mobile"
-            className="md:hidden shrink-0 h-[64px] pb-[env(safe-area-inset-bottom)] bg-white border-t border-line/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-around z-40 select-none"
+            className="pwa-bottom-nav md:hidden shrink-0 h-[64px] pb-[env(safe-area-inset-bottom)] bg-white border-t border-line/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-around z-40 select-none"
           >
             {mobileNavTabs.map((tab) => {
               const active = checkIsActive(tab.href, tab.exact);

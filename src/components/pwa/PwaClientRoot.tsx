@@ -1,5 +1,6 @@
 "use client";
 
+import {PwaViewport} from "./PwaViewport";
 import { ReactNode } from "react";
 import { PwaProvider } from "@/lib/pwa/use-pwa";
 import { PwaUpdateToast } from "./PwaUpdateToast";
@@ -14,7 +15,8 @@ export function PwaClientRoot({
 }) {
   return (
     <PwaProvider>
-      {children}
+      <PwaViewport/>
+      <div className="pwa-viewport">{children}</div>
       <PwaUpdateToast locale={locale} />
       <IosInstallModal locale={locale} />
     </PwaProvider>
