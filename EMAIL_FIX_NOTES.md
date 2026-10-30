@@ -17,3 +17,5 @@
 - E13 confirmé : code dans le sujet, versions texte et Reply-To manquants. Certificat déjà échappé.
 
 Aucun email réel envoyé, aucune opération sur Supabase distant. Corrections et tests locaux en cours.
+
+Lot 1 : commit ad714f6, typecheck/lint et 12 suites + test SQL atomique réussis. Lot 2 : outbox privée, cron, catégories, santé admin et templates FR/KR. Tests réels des modules avec fournisseur simulé : 429/Retry-After, 4xx permanent, doublon, callback, fail-closed et refus du véritable hook de démarrage pour chacun des six secrets requis. Aucun envoi réel.

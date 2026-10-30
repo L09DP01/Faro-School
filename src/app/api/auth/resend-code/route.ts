@@ -1,3 +1,4 @@
+import {queueAuthEmail} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { normalizeEmail, checkEmailDispatchLimit, recordEmailDispatched } from "@/lib/auth/rate-limit";
@@ -36,10 +37,7 @@ export async function POST(req: NextRequest) {
     if(!limit.allowed)return NextResponse.json({success:true});
     const {data:profile,error}=await supabase.from("profiles").select("id,email_verified_at").eq("email",normEmail).maybeSingle();
     if(error||!profile||profile.email_verified_at)return NextResponse.json({success:true});
-    const { code, token } = await createEmailVerificationToken(normEmail);
-    const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
-
-    const sent=await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    const sent=await queueAuthEmail(normEmail,"verification",locale);
     if(sent.status!=="accepted")console.warn("[email] verification_pending",{correlationId:sent.correlationId});
     await recordEmailDispatched(normEmail, ip, "verification_email");
 

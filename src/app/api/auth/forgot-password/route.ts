@@ -1,3 +1,4 @@
+import {queueAuthEmail} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { forgotPasswordSchema } from "@/lib/validators/auth";
 import { normalizeEmail, checkEmailDispatchLimit, recordEmailDispatched } from "@/lib/auth/rate-limit";
@@ -42,10 +43,7 @@ export async function POST(req: NextRequest) {
 
     if (profile) {
       // Generate secure reset token (valid 1 hour)
-      const token = await createPasswordResetToken(profile.id, 1);
-      const resetUrl = `${origin}/${locale}/reinitialiser-mot-de-passe?token=${token}`;
-
-      const sent=await sendPasswordResetEmail(normEmail, resetUrl, locale);
+      const sent=await queueAuthEmail(normEmail,"reset",locale);
       if(sent.status!=="accepted")console.warn("[email] reset_pending",{correlationId:sent.correlationId});
       await recordEmailDispatched(normEmail, ip, "reset_email");
     }

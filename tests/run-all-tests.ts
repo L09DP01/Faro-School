@@ -5,6 +5,8 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Email atomic activation",cmd:"npx tsx tests/email-activation.test.ts"},
+  {name:"Email outbox and startup regressions",cmd:"npx tsx tests/email-system.test.ts"},
   {name:"Bunny and Resend: signatures, transactions and HTTP",cmd:"npx tsx tests/webhooks.test.ts"},
   {name:"Certificates: PostgreSQL rules and RLS",cmd:"npx tsx tests/certificates.test.ts"},
   {name:"Certificates: protected HTTP handlers",cmd:"npx tsx tests/certificates-api.test.ts"},

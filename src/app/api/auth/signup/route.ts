@@ -1,3 +1,4 @@
+import {queueAuthEmail} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { signupSchema, validateAndFormatHaitianPhone, sanitizeRedirectUrl } from "@/lib/validators/auth";
 import {
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
       if (existingProfile.email_verified_at) {
         // Already verified: Never leak existence. Send a security alert email.
         const resetUrl = `${origin}/${locale}/mot-de-passe-oublie`;
-        const sent = await sendSecurityAlertEmail(normEmail, resetUrl, locale);
+        const sent=await queueAuthEmail(normEmail,"registration_alert",locale);
         if (sent.status !== "accepted") console.warn("[email] registration_alert_pending", {correlationId:sent.correlationId});
         return NextResponse.json({
           success: true,
@@ -110,9 +111,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Refresh code and resend
-      const { code, token } = await createEmailVerificationToken(normEmail);
-      const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
-      const sent = await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    const sent=await queueAuthEmail(normEmail,"verification",locale);
       if (sent.status !== "accepted") console.warn("[email] verification_pending", {correlationId:sent.correlationId});
       await recordEmailDispatched(normEmail, ip, "verification_email");
 
@@ -196,9 +195,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Generate verification token and send email
-    const { code, token } = await createEmailVerificationToken(normEmail);
-    const verifyUrl = `${origin}/${locale}/verification-email?token=${token}&email=${encodeURIComponent(normEmail)}`;
-    const sent = await sendVerificationEmail(normEmail, code, verifyUrl, locale);
+    const sent=await queueAuthEmail(normEmail,"verification",locale);
       if (sent.status !== "accepted") console.warn("[email] verification_pending", {correlationId:sent.correlationId});
     await recordEmailDispatched(normEmail, ip, "verification_email");
 

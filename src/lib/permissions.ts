@@ -16,6 +16,7 @@ export type PermissionAction =
   | "community.moderate"
   | "community.pin"
   | "ai.configure"
+  | "emails.manage"
   | "certificates.read"
   | "certificates.manage";
 
