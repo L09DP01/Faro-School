@@ -414,7 +414,9 @@
     "termsOfService": "Conditions d'utilisation",
     "and": "et la",
     "privacyPolicy": "Politique de confidentialité",
+    "passwordMinimumHint": "Au moins 10 caractères",
     "errors": {
+      "securitySessionExpired": "La session de sécurité a expiré. Rechargez cette page en HTTPS puis réessayez.",
       "passwordMissingUppercase": "Ajoutez au moins une lettre majuscule.",
       "passwordMissingLowercase": "Ajoutez au moins une lettre minuscule.",
       "passwordMissingNumber": "Ajoutez au moins un chiffre.",

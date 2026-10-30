@@ -586,3 +586,5 @@ Le déploiement principal conserve désormais les variables runtime saisies dans
 Référence : https://developers.cloudflare.com/workers/wrangler/configuration/#source-of-truth
 
 PWA install/login fixes: see docs/PWA_INSTALL_LOGIN_FIXES.md. Full screen uses CSS dvh except while the keyboard is open. Custom install controls are mobile-only; short_name is Faro School. Logout must call Auth.js signOut, never just link to login.
+
+Production HTTPS invariant: custom-worker.mjs upgrades HTTP public hosts before serving OpenNext, including /api/auth. Secure Auth.js cookies must stay enabled; MissingCSRF is not an invalid-password error. See docs/ADMIN_LOGIN_HTTP_CSRF.md.

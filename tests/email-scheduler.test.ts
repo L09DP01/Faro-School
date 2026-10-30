@@ -25,8 +25,21 @@ async function main() {
   assert.equal(requests[0].headers.get('authorization'), 'Bearer ' + bindings.CRON_SECRET);
   const normal = new Request('https://example.test/fr');
   await worker.fetch(normal, bindings, context); assert.equal(requests.at(-1), normal);
+  for (const host of ['faroschool.com', 'www.faroschool.com']) {
+    for (const path of ['/fr/connexion?next=%2Ffr%2Fadmin', '/api/auth/csrf', '/api/auth/callback/credentials']) {
+      const before: number = requests.length;
+      const input = new Request('http://' + host + path, path.includes('/callback/') ? {method:'POST',body:'synthetic=only'} : {});
+      const upgrade = await worker.fetch(input, bindings, context);
+      assert.equal(upgrade.status,308); assert.equal(upgrade.headers.get('location'),'https://' + host + path);
+      assert.equal(requests.length,before,'HTTP must never reach credentials or database code');
+    }
+  }
+  const secure = new Request('https://faroschool.com/api/auth/csrf');
+  await worker.fetch(secure,bindings,context); assert.equal(requests.at(-1),secure,'No HTTPS redirect loop');
+  const local = new Request('http://localhost:8787/fr/connexion');
+  await worker.fetch(local,bindings,context); assert.equal(requests.at(-1),local,'Local development stays available');
   status = 503; await assert.rejects(() => worker.scheduled({}, bindings, context), /email_cron_failed_503/);
-  const before = requests.length;
+  const before: number = requests.length;
   await assert.rejects(() => worker.scheduled({}, {}, context), /email_cron_secret_missing/);
   assert.equal(requests.length, before);
   const config = JSON.parse(await readFile('wrangler.jsonc', 'utf8'));

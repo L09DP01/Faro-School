@@ -5,6 +5,7 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Login security error feedback",cmd:"npx tsx tests/login-error-feedback.test.ts"},
   {name:"Reset password FR/KR rendered states",cmd:"npx tsx tests/reset-password-copy.test.ts"},
   {name:"PWA mobile installation and logout controls",cmd:"npx tsx tests/pwa-controls.test.ts"},
   {name:"Credentials admin login and trusted IP",cmd:"npx tsx tests/auth-login-regression.test.ts"},

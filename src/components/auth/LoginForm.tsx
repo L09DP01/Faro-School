@@ -71,8 +71,12 @@ export function LoginForm({ nextParam }: LoginFormProps) {
           signInRes.error.includes("ACCOUNT_LOCKED")
         ) {
           setGlobalError(t("errors.rateLimit"));
-        } else {
+        } else if (signInRes.error === "MissingCSRF") {
+          setGlobalError(t("errors.securitySessionExpired"));
+        } else if (signInRes.error === "CredentialsSignin") {
           setGlobalError(t("errors.invalidCredentials"));
+        } else {
+          setGlobalError(t("errors.serverError"));
         }
         return;
       }
@@ -243,7 +247,7 @@ export function LoginForm({ nextParam }: LoginFormProps) {
             </button>
           </div>
           <p id="login_password_hint" className="text-[11px] text-muted-faro mt-1">
-            Au moins 8 caractères • Omwen 8 karaktè
+            {t("passwordMinimumHint")}
           </p>
           {fieldErrors.password && (
             <div id="login_password_err" role="alert" className="flex items-center gap-1.5 mt-1 text-xs text-red font-sans font-medium">

@@ -414,7 +414,9 @@
     "termsOfService": "Kondisyon itilizasyon yo",
     "and": "ak",
     "privacyPolicy": "Règleman sou vi prive a",
+    "passwordMinimumHint": "Omwen 10 karaktè",
     "errors": {
+      "securitySessionExpired": "Sesyon sekirite a ekspire. Rechaje paj sa a an HTTPS epi eseye ankò.",
       "passwordMissingUppercase": "Ajoute omwen yon lèt majiskil.",
       "passwordMissingLowercase": "Ajoute omwen yon lèt miniskil.",
       "passwordMissingNumber": "Ajoute omwen yon chif.",
