@@ -4,14 +4,14 @@ import { setRequestLocale } from "next-intl/server";
 import {
   getStudentConversations,
   getStudentEnrolledCourses,
-  getConversationMessages,
+  getStudentSystemNotifications,
 } from "@/lib/messaging/data";
 import { StudentStaffChatView } from "@/components/messaging/StudentStaffChatView";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Messages du formateur | Faro School",
-  description: "Échangez directement avec vos formateurs et suivez vos questions pédagogiques.",
+  title: "Messages | Faro School",
+  description: "Tickets, messages système et échanges avec vos professeurs et la direction.",
 };
 
 interface StudentMessagesPageProps {
@@ -31,19 +31,19 @@ export default async function StudentMessagesPage({
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/messages`);
   }
 
-  const [conversations, enrolledCourses] = await Promise.all([
+  const [conversations, enrolledCourses, systemNotifications] = await Promise.all([
     getStudentConversations(user.id),
     getStudentEnrolledCourses(user.id),
+    getStudentSystemNotifications(user.id),
   ]);
 
-  const activeConversation = conversations[0] || null;
-  const initialMessages = activeConversation
-    ? await getConversationMessages(activeConversation.id)
-    : [];
+  const activeConversation = null;
+  const initialMessages:never[]=[];
 
   return (
     <div className="w-full h-full p-2 md:p-4">
       <StudentStaffChatView
+        systemNotifications={systemNotifications}
         conversations={conversations}
         activeConversation={activeConversation}
         initialMessages={initialMessages}

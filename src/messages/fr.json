@@ -1227,5 +1227,36 @@
   "title": "La communauté est réservée aux élèves inscrits",
   "description": "Inscrivez-vous à une formation pour échanger avec les autres élèves.",
   "browse": "Découvrir les formations"
+},
+  "messagingFlow": {
+  "emptyHelp": "Choisissez un échange ou cliquez sur Écrire pour contacter un professeur ou la direction.",
+  "write": "Écrire",
+  "chooseRecipient": "À qui souhaitez-vous écrire ?",
+  "teacher": "Écrire à un professeur",
+  "direction": "Écrire à la direction",
+  "teacherHelp": "Choisissez un cours que vous suivez pour contacter son responsable.",
+  "directionHelp": "Questions administratives, tickets et assistance.",
+  "chooseCourse": "Choisir un cours",
+  "noCourses": "Vous ne suivez aucune formation active. Vous pouvez écrire à la direction.",
+  "back": "Retour",
+  "close": "Fermer",
+  "opening": "Ouverture de la discussion…",
+  "inbox": "Messages",
+  "inboxHelp": "Professeurs, tickets et messages système",
+  "all": "Tous",
+  "tickets": "Tickets",
+  "courses": "Professeurs",
+  "system": "Système",
+  "systemEmpty": "Aucun message système.",
+  "systemMessage": "Message système",
+  "viewConversation": "Ouvrir la discussion",
+  "adminBadge": "Direction",
+  "teacherBadge": "Professeur",
+  "errors": {
+    "forbidden": "Connectez-vous avec votre compte élève vérifié.",
+    "courseUnavailable": "Ce cours ne fait pas partie de vos inscriptions actives.",
+    "recipientUnavailable": "Le responsable est indisponible. Vous pouvez écrire à la direction.",
+    "unavailable": "Impossible d’ouvrir la discussion. Réessayez."
+  }
 }
 }

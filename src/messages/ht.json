@@ -1226,5 +1226,36 @@
   "title": "Kominote a rezève pou elèv ki enskri",
   "description": "Enskri nan yon fòmasyon pou pale ak lòt elèv yo.",
   "browse": "Dekouvri fòmasyon yo"
+},
+  "messagingFlow": {
+  "emptyHelp": "Chwazi yon diskisyon oswa klike sou Ekri pou kontakte yon pwofesè oswa direksyon an.",
+  "write": "Ekri",
+  "chooseRecipient": "Pou ki moun ou vle ekri ?",
+  "teacher": "Ekri yon pwofesè",
+  "direction": "Ekri direksyon an",
+  "teacherHelp": "Chwazi yon kou w ap swiv pou kontakte responsab li.",
+  "directionHelp": "Kesyon administratif, tikè ak asistans.",
+  "chooseCourse": "Chwazi yon kou",
+  "noCourses": "Ou pa gen okenn fòmasyon aktif. Ou ka ekri direksyon an.",
+  "back": "Retounen",
+  "close": "Fèmen",
+  "opening": "N ap louvri diskisyon an…",
+  "inbox": "Mesaj",
+  "inboxHelp": "Pwofesè, tikè ak mesaj sistèm",
+  "all": "Tout",
+  "tickets": "Tikè",
+  "courses": "Pwofesè",
+  "system": "Sistèm",
+  "systemEmpty": "Pa gen mesaj sistèm.",
+  "systemMessage": "Mesaj sistèm",
+  "viewConversation": "Louvri diskisyon an",
+  "adminBadge": "Direksyon",
+  "teacherBadge": "Pwofesè",
+  "errors": {
+    "forbidden": "Konekte ak kont elèv verifye ou.",
+    "courseUnavailable": "Kou sa a pa nan enskripsyon aktif ou yo.",
+    "recipientUnavailable": "Responsab la pa disponib. Ou ka ekri direksyon an.",
+    "unavailable": "Nou pa ka louvri diskisyon an. Eseye ankò."
+  }
 }
 }

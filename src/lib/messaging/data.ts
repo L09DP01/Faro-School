@@ -1,3 +1,5 @@
+import {createAdminClient} from "@/lib/supabase/admin";
+import {cache} from "react";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/config";
 import type {
@@ -7,6 +9,13 @@ import type {
   EscalationRecord,
 } from "./types";
 import { isStaffOnline } from "./presence";
+
+// Only invoked with staff IDs from a conversation already visible through RLS.
+// Return display fields only: never expose staff email, phone or credentials.
+const visibleStaffDisplay=cache(async(staffId:string)=>{
+ const {data,error}=await createAdminClient({timeoutMs:10000}).from('profiles').select('id,full_name,display_name,role,avatar_url').eq('id',staffId).in('role',['admin','instructor']).maybeSingle();
+ return error?null:data;
+});
 
 declare global {
   // eslint-disable-next-line no-var
@@ -119,6 +128,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
       const convs: Conversation[] = await Promise.all(
         data.map(async (row: any) => {
           const staffOnline = await isStaffOnline(row.staff_id);
+          if(!row.staff)row.staff=await visibleStaffDisplay(row.staff_id);
           const cTitle =
             row.courses?.title_fr ||
             row.courses?.title_ht ||
@@ -129,7 +139,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
             studentId: row.student_id,
             studentName: "Moi",
             staffId: row.staff_id,
-            staffName: row.staff?.display_name || row.staff?.full_name || "Formateur",
+            staffName: row.staff?.full_name || row.staff?.display_name || "Formateur",
             staffRole: row.staff?.role || "instructor",
             staffAvatarUrl: row.staff?.avatar_url || null,
             courseId: row.course_id,
@@ -316,6 +326,7 @@ export async function getConversationById(
         } catch {}
       }
 
+      if(!rowData.staff)rowData.staff=await visibleStaffDisplay(rowData.staff_id);
       const staffOnline = await isStaffOnline(rowData.staff_id);
       const cTitle =
         rowData.courses?.title_fr ||
@@ -328,7 +339,7 @@ export async function getConversationById(
         studentName: rowData.student?.display_name || rowData.student?.full_name || "Étudiant",
         studentAvatarUrl: rowData.student?.avatar_url || null,
         staffId: rowData.staff_id,
-        staffName: rowData.staff?.display_name || rowData.staff?.full_name || "Formateur",
+        staffName: rowData.staff?.full_name || rowData.staff?.display_name || "Formateur",
         staffRole: rowData.staff?.role || "instructor",
         staffAvatarUrl: rowData.staff?.avatar_url || null,
         courseId: rowData.course_id,
@@ -437,11 +448,11 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
           )
         )
       `)
-      .eq("user_id", studentId);
+      .eq("user_id", studentId).is("revoked_at",null);
 
     if (!error && data && data.length > 0) {
       return data
-        .filter((row: any) => row.courses)
+        .filter((row: any) => row.courses?.instructor_id && row.courses?.instructor)
         .map((row: any) => {
           const c = row.courses;
           const inst = c.instructor;
@@ -449,7 +460,7 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
             id: c.id,
             title: c.title_fr || c.title_ht || "Formation",
             instructorId: c.instructor_id,
-            instructorName: inst?.display_name || inst?.full_name || "Formateur Faro School",
+            instructorName: inst?.full_name || inst?.display_name || "Formateur Faro School",
           };
         });
     }
@@ -495,4 +506,11 @@ export async function getUnreadPrivateMessagesCount(userId: string): Promise<num
   }
 
   return 0;
+}
+
+/** Own system inbox, backed by the existing notification table and RLS. */
+export async function getStudentSystemNotifications(userId:string){
+ const db=await createClient();const {data,error}=await db.from('notifications').select('id,type,payload,read_at,created_at').eq('user_id',userId).order('created_at',{ascending:false}).limit(50);
+ if(error)return[];
+ return(data??[]).map(row=>({id:row.id as string,type:row.type as string,createdAt:row.created_at as string,readAt:row.read_at as string|null,senderName:typeof row.payload?.senderName==='string'?row.payload.senderName:null,courseTitle:typeof row.payload?.courseTitle==='string'?row.payload.courseTitle:null,message:typeof row.payload?.messageSnippet==='string'?row.payload.messageSnippet:null,conversationId:typeof row.payload?.conversationId==='string'?row.payload.conversationId:null}));
 }

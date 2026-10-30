@@ -1,5 +1,6 @@
 "use server";
 
+import {resolveStudentRecipient,RecipientError} from "@/lib/messaging/recipients";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import {createAdminClient} from "@/lib/supabase/admin";
@@ -103,8 +104,11 @@ export async function createConversationAction(
     let staffRole: "instructor" | "admin" = "admin";
     let courseTitle: string | null = null;
 
-    // Direct user-to-user DM initiation
-    if (recipientUserId) {
+    if(user.role==='student'){
+      if(recipientUserId)return{success:false,error:'forbidden'};
+      try{const recipient=await resolveStudentRecipient(user,courseId);staffId=recipient.staffId;staffName=recipient.staffName;staffRole=recipient.staffRole;courseTitle=recipient.courseTitle;}
+      catch(error){return{success:false,error:error instanceof RecipientError?error.code:'unavailable'};}
+    } else if (recipientUserId) {
       if (user.role === "admin") {
         // Admin initiating DM with a student
         studentId = recipientUserId;
@@ -150,6 +154,7 @@ export async function createConversationAction(
           .select("id")
           .eq("user_id", user.id)
           .eq("course_id", courseId)
+          .is("revoked_at",null)
           .maybeSingle();
 
         if (!enrollment && user.role !== "admin") {

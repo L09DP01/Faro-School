@@ -4,6 +4,13 @@
 
 ## 2. Stack
 
+Student Messages: `openStaffConversationAction` resolves the actual course owner
+from active enrollments or a verified direction admin; the browser never chooses
+a staff UUID. Existing conversations are reused, tickets use course_id=null,
+and the System tab reads only the account's notifications. Shared PWA navigation
+always occupies its own grid row. Chat scrolling must target its message pane,
+never scrollIntoView on all ancestors. See `docs/MESSAGING_FLOW.md`.
+
 PWA is the primary app. Shared shell scroll/safe-area changes must cover dashboard,
 messages, community, profile, certificates, admin and player; landing is excluded.
 Community requires an active enrollment (or verified staff role), enforced by

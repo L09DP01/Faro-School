@@ -42,6 +42,7 @@ export function StudentDashboardShell({
 }: StudentDashboardShellProps) {
   const pathname = usePathname();
   const tNav = useTranslations("dashboard.nav");
+  const tMessages=useTranslations("messagingFlow");
   const [unread,setUnread]=useState({community:0,messages:0,notifications:0});
   useEffect(()=>{
     const controller=new AbortController();
@@ -56,26 +57,6 @@ export function StudentDashboardShell({
     return()=>{controller.abort();window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[pathname]);
 
-
-  // Track virtual keyboard visibility on mobile
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
-    const handleViewportChange = () => {
-      const vv = window.visualViewport;
-      if (!vv) return;
-      // When mobile keyboard opens, visualViewport shrinks significantly compared to window.innerHeight
-      const keyboardOpen = window.innerHeight - vv.height > 120;
-      setIsKeyboardOpen(keyboardOpen);
-    };
-
-    handleViewportChange();
-    window.visualViewport.addEventListener("resize", handleViewportChange);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", handleViewportChange);
-    };
-  }, []);
 
   // If in lesson player, render without sidebar / mobile tab bar
   if (pathname.includes("/dashboard/learn/")) {
@@ -122,7 +103,7 @@ export function StudentDashboardShell({
     {
       href: "/dashboard/messages" as const,
       exact: false,
-      label: "Messages du formateur",
+      label: tMessages("inbox"),
       icon: <MessageSquare className="w-5 h-5 shrink-0" />,
       badge: unread.messages,
     },
@@ -425,7 +406,7 @@ export function StudentDashboardShell({
         {/* soft shadow, 5 tabs, AA contrast, 3px active top orange  */}
         {/* indicator bar, orange-tint bg, red unread circle badge.  */}
         {/* ========================================================= */}
-        {!isKeyboardOpen && (
+        {(
           <nav
             aria-label="Barre d'onglets mobile"
             className="pwa-bottom-nav md:hidden shrink-0 h-[64px] pb-[env(safe-area-inset-bottom)] bg-white border-t border-line/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-around z-40 select-none"

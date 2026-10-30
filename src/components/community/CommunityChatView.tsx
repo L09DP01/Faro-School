@@ -1,4 +1,5 @@
 "use client";
+import {scrollMessagePane} from "@/lib/messaging/scroll";
 
 import { useState, useEffect, useRef, useTransition, useMemo, Fragment } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -266,7 +267,7 @@ export function CommunityChatView({
 
             if (isNearBottom || newRow.author_id === currentUser.id) {
               setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                scrollMessagePane(messagesEndRef.current,"smooth");
               }, 50);
             } else {
               setShowNewMessagesChip(true);
@@ -388,7 +389,7 @@ export function CommunityChatView({
 
   // Scroll to bottom on initial render
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    scrollMessagePane(messagesEndRef.current);
   }, []);
 
   // Filtered messages based on search query
@@ -496,7 +497,7 @@ export function CommunityChatView({
 
     // Scroll to bottom immediately
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollMessagePane(messagesEndRef.current,"smooth");
     }, 50);
 
     // Execute server action
@@ -962,6 +963,7 @@ export function CommunityChatView({
         {/* Message Stream */}
         <div
           ref={chatScrollContainerRef}
+          data-message-stream
           className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]"
         >
           {/* Messages list */}
@@ -1384,7 +1386,7 @@ export function CommunityChatView({
             <button
               onClick={() => {
                 setShowNewMessagesChip(false);
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                scrollMessagePane(messagesEndRef.current,"smooth");
               }}
               className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 px-3.5 py-1.5 rounded-full bg-navy-deep text-white text-xs font-heading font-bold shadow-lg flex items-center gap-1.5 animate-bounce hover:bg-navy transition-all select-none"
             >

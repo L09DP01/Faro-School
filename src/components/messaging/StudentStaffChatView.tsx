@@ -1,7 +1,11 @@
 "use client";
+import {scrollMessagePane} from "@/lib/messaging/scroll";
 
 import { useState, useEffect, useRef, useTransition, useMemo } from "react";
-import { Link } from "@/i18n/navigation";
+import {useTranslations} from "next-intl";
+import {markSystemNotificationsReadAction} from "@/app/actions/student-messaging";
+import type {getStudentSystemNotifications} from "@/lib/messaging/data";
+import { Link,useRouter } from "@/i18n/navigation";
 import {
   MessageSquare,
   Sparkles,
@@ -31,6 +35,7 @@ import type {
 } from "@/lib/messaging/types";
 
 interface StudentStaffChatViewProps {
+  systemNotifications?: Awaited<ReturnType<typeof getStudentSystemNotifications>>;
   conversations: Conversation[];
   activeConversation: Conversation | null;
   initialMessages: PrivateMessage[];
@@ -42,6 +47,7 @@ interface StudentStaffChatViewProps {
 }
 
 export function StudentStaffChatView({
+  systemNotifications=[],
   conversations: initialConversations,
   activeConversation,
   initialMessages,
@@ -51,7 +57,13 @@ export function StudentStaffChatView({
   enrolledCourses,
   locale,
 }: StudentStaffChatViewProps) {
-  const [conversations] = useState<Conversation[]>(initialConversations);
+  const [conversations,setConversations] = useState<Conversation[]>(initialConversations);
+  const router=useRouter();
+  useEffect(()=>{setConversations(initialConversations);},[initialConversations]);
+  const t=useTranslations('messagingFlow');
+  const [inboxFilter,setInboxFilter]=useState<'all'|'tickets'|'courses'|'system'>('all');
+  useEffect(()=>{if(inboxFilter==='system')void markSystemNotificationsReadAction().catch(()=>{});},[inboxFilter]);
+
   const [messages, setMessages] = useState<PrivateMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
@@ -63,6 +75,21 @@ export function StudentStaffChatView({
 
   const isHt = locale === "ht";
   const isStaffView = currentUserRole === "instructor" || currentUserRole === "admin";
+
+  // Refresh the inbox when its own conversations/system notifications change.
+  useEffect(()=>{
+    if(isStaffView)return;
+    let disposed=false,channel:any=null,timer:ReturnType<typeof setTimeout>|undefined;
+    const refresh=()=>{if(timer)clearTimeout(timer);timer=setTimeout(()=>router.refresh(),200);};
+    void initAuthenticatedRealtimeClient().then(client=>{
+      if(disposed)return;
+      channel=client.channel('student-inbox-'+currentUserId)
+       .on('postgres_changes',{event:'*',schema:'public',table:'conversations',filter:'student_id=eq.'+currentUserId},refresh)
+       .on('postgres_changes',{event:'*',schema:'public',table:'notifications',filter:'user_id=eq.'+currentUserId},refresh)
+       .subscribe();
+    }).catch(()=>{});
+    return()=>{disposed=true;if(timer)clearTimeout(timer);if(channel)void channel.unsubscribe();};
+  },[currentUserId,isStaffView,router]);
 
   // Mark active conversation read on mount
   useEffect(() => {
@@ -135,7 +162,7 @@ export function StudentStaffChatView({
               });
 
               setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                scrollMessagePane(messagesEndRef.current,"smooth");
               }, 50);
             }
           )
@@ -155,21 +182,22 @@ export function StudentStaffChatView({
 
   // Scroll to bottom on initial render
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    scrollMessagePane(messagesEndRef.current);
   }, [messages.length]);
 
   // Filtered conversations list
   const filteredConversations = useMemo(() => {
-    if (!searchQuery.trim()) return conversations;
+    const eligible=conversations.filter(c=>inboxFilter==='all'||(inboxFilter==='tickets'?!c.courseId:inboxFilter==='courses'?!!c.courseId:false));
+    if (!searchQuery.trim()) return eligible;
     const q = searchQuery.toLowerCase();
-    return conversations.filter(
+    return eligible.filter(
       (c) =>
         c.subject.toLowerCase().includes(q) ||
         (c.courseTitle && c.courseTitle.toLowerCase().includes(q)) ||
         c.staffName.toLowerCase().includes(q) ||
         c.studentName.toLowerCase().includes(q)
     );
-  }, [conversations, searchQuery]);
+  }, [conversations, searchQuery,inboxFilter]);
 
   const isSendingRef = useRef(false);
 
@@ -204,7 +232,7 @@ export function StudentStaffChatView({
     setInputText("");
 
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      scrollMessagePane(messagesEndRef.current,"smooth");
     }, 50);
 
     startTransition(async () => {
@@ -257,7 +285,7 @@ export function StudentStaffChatView({
       case "waiting_staff":
         return (
           <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300">
-            {isHt ? "Ap tann fòmatè" : "En attente"}
+            {isHt ? "Ap tann repons" : "En attente"}
           </span>
         );
       case "staff_replied":
@@ -292,12 +320,12 @@ export function StudentStaffChatView({
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-heading font-bold text-ink leading-tight">
-                    {isStaffView ? "Messages Étudiants" : isHt ? "Mesaj Fòmatè" : "Messages du formateur"}
+                    {isStaffView ? (isHt?"Mesaj elèv yo":"Messages étudiants") : t("inbox")}
                   </h2>
                   <p className="text-xs text-muted-faro mt-0.5">
                     {isStaffView
                       ? "Discussions pédagogiques directes"
-                      : "Échanges privés avec vos formateurs"}
+                      : t("inboxHelp")}
                   </p>
                 </div>
 
@@ -307,11 +335,12 @@ export function StudentStaffChatView({
                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-orange hover:bg-orange-strong text-white text-xs font-heading font-semibold shadow-orange transition-all active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>{isHt ? "Nouvo" : "Écrire"}</span>
+                    <span>{t("write")}</span>
                   </button>
                 )}
               </div>
 
+              {!isStaffView&&<div role="tablist" aria-label={t('inbox')} className="flex gap-1 overflow-x-auto pb-1">{(['all','tickets','courses','system'] as const).map(filter=><button type="button" role="tab" key={filter} aria-selected={inboxFilter===filter} onClick={()=>setInboxFilter(filter)} className={`min-h-11 shrink-0 rounded-full px-3 text-xs font-semibold ${inboxFilter===filter?'bg-navy-deep text-white':'bg-bg text-muted-faro'}`}>{t(filter)}</button>)}</div>}
               {/* Search bar */}
               <div className="relative">
                 <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted-faro" />
@@ -327,7 +356,7 @@ export function StudentStaffChatView({
 
             {/* Conversation Items List */}
             <div className="flex-1 min-h-0 overflow-y-auto py-3 space-y-2 focus-visible:outline-none">
-              {filteredConversations.length === 0 ? (
+              {inboxFilter==='system'?<div className="space-y-3">{systemNotifications.length===0?<p className="p-4 text-sm text-muted-faro">{t('systemEmpty')}</p>:systemNotifications.map(notification=><article key={notification.id} className="rounded-xl border border-line bg-surface p-4"><p className="font-heading text-sm font-bold text-ink">{notification.senderName||t('systemMessage')}</p>{notification.courseTitle&&<p className="mt-1 text-xs text-muted-faro">{notification.courseTitle}</p>}{notification.message&&<p className="mt-2 break-words text-sm text-ink">{notification.message}</p>}<time className="mt-2 block text-xs text-muted-faro">{new Date(notification.createdAt).toLocaleDateString(locale==='ht'?'fr-HT':'fr-FR')}</time>{notification.conversationId&&<Link href={`/dashboard/messages/${encodeURIComponent(notification.conversationId)}` as any} className="mt-3 inline-block text-sm font-semibold text-orange">{t('viewConversation')}</Link>}</article>)}</div>:filteredConversations.length === 0 ? (
                 <div className="py-12 text-center text-muted-faro space-y-2">
                   <div className="w-14 h-14 rounded-full bg-blue-tint text-navy-deep flex items-center justify-center mx-auto mb-2 shadow-2xs">
                     <MessageSquare className="w-6 h-6" />
@@ -338,7 +367,7 @@ export function StudentStaffChatView({
                   <p className="text-xs text-muted-faro max-w-[200px] mx-auto leading-relaxed">
                     {isHt
                       ? "Klike sou 'Nouvo' pou poze fòmatè w la yon kesyon dirèk."
-                      : "Cliquez sur 'Écrire' pour échanger en privé avec votre formateur."}
+                      : t("emptyHelp")}
                   </p>
                 </div>
               ) : (
@@ -405,10 +434,11 @@ export function StudentStaffChatView({
           {activeConversation ? (
             <>
               {/* Header */}
-              <header className="shrink-0 h-18 px-5 md:px-6 border-b border-line/60 bg-white flex items-center justify-between gap-3 shadow-subtle z-10">
+              <header className="shrink-0 min-h-[72px] py-3 px-4 md:px-6 border-b border-line/60 bg-white flex items-center justify-between gap-3 shadow-subtle z-10">
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Mobile Back Button */}
                   <Link
+                    aria-label={t("back")}
                     href={(isStaffView ? "/admin/messages" : "/dashboard/messages") as any}
                     className="md:hidden p-1.5 rounded-lg text-muted-faro hover:text-ink hover:bg-bg"
                   >
@@ -428,7 +458,7 @@ export function StudentStaffChatView({
                   {/* Info */}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h1 className="font-heading font-bold text-base text-ink truncate leading-tight">
+                      <h1 className="font-heading min-w-0 flex-1 font-bold text-base text-ink truncate leading-tight">
                         {isStaffView
                           ? activeConversation.studentName
                           : activeConversation.staffName}
@@ -437,7 +467,7 @@ export function StudentStaffChatView({
                       {!isStaffView && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange text-white text-[10px] font-bold uppercase tracking-wider shadow-2xs">
                           <CheckCircle2 className="w-3.5 h-3.5 text-blue fill-blue text-white" />
-                          FORMATEUR
+                          {t(activeConversation.staffRole==='admin'?'adminBadge':'teacherBadge')}
                         </span>
                       )}
                     </div>
@@ -478,7 +508,7 @@ export function StudentStaffChatView({
               </header>
 
               {/* Message Stream */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]">
+              <div data-message-stream className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]">
                 {/* Subject Header Banner */}
                 <div className="p-3.5 rounded-2xl bg-white border border-line/60 shadow-2xs flex items-center justify-between text-xs">
                   <div>
@@ -553,7 +583,7 @@ export function StudentStaffChatView({
                     >
                       {!isOwn && (
                         <div className="shrink-0 w-9 h-9 rounded-full bg-navy-deep text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                          {(msg.senderName || "Faro").slice(0, 2).toUpperCase()}
+                          {(msg.senderName || activeConversation.staffName || "Faro").slice(0, 2).toUpperCase()}
                         </div>
                       )}
 
@@ -564,7 +594,7 @@ export function StudentStaffChatView({
                       >
                         {!isOwn && (
                           <span className="text-xs font-heading font-bold text-ink mb-1 px-1">
-                            {msg.senderName}
+                            {msg.senderName || (msg.senderType==='staff'?activeConversation.staffName:t('systemMessage'))}
                           </span>
                         )}
 
@@ -670,7 +700,7 @@ export function StudentStaffChatView({
                   ? "Sélectionnez un étudiant dans la liste pour consulter ses questions et lui répondre."
                   : isHt
                   ? "Chwazi yon konvèsasyon sou bò gòch la oswa klike sou 'Nouvo' pou poze yon kesyon."
-                  : "Choisissez une discussion à gauche ou commencez un nouvel échange avec votre formateur."}
+                  : t("emptyHelp")}
               </p>
               {!isStaffView && (
                 <button
@@ -691,7 +721,6 @@ export function StudentStaffChatView({
         isOpen={isNewModalOpen}
         onClose={() => setIsNewModalOpen(false)}
         enrolledCourses={enrolledCourses}
-        defaultCourseId={activeConversation?.courseId}
         locale={locale}
       />
     </>

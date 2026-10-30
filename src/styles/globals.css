@@ -100,3 +100,16 @@ html[data-app-standalone="true"] .pwa-lesson-shell > header {
 }
 
 .chat-dotted-background { background-image:radial-gradient(var(--line) 1px,transparent 1px); }
+
+/* Reserve a dedicated grid row for navigation; content never lives underneath it. */
+html[data-app-shell="true"] .pwa-app-shell { --app-nav-height:calc(64px + env(safe-area-inset-bottom,0px)); }
+html[data-app-shell="true"] .pwa-app-shell > .flex-1 {
+ display:grid; grid-template-rows:auto minmax(0,1fr) var(--app-nav-height); min-height:0;
+}
+html[data-app-shell="true"] .pwa-bottom-nav { position:relative; align-self:end; width:100%; z-index:60; }
+@media(min-width:768px){
+ html[data-app-shell="true"] .pwa-app-shell { --app-nav-height:0px; }
+ html[data-app-shell="true"] .pwa-app-shell > .flex-1 { grid-template-rows:auto minmax(0,1fr); }
+}
+
+.compose-backdrop { background:color-mix(in srgb,var(--navy-deep) 60%,transparent); }

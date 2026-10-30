@@ -1,195 +1,35 @@
 "use client";
-
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { X, MessageSquare, Send, BookOpen, AlertCircle, Loader2 } from "lucide-react";
-import { createConversationAction } from "@/app/actions/private-messaging";
-import type { EnrolledCourseOption } from "@/lib/messaging/types";
-
-interface NewConversationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  enrolledCourses: EnrolledCourseOption[];
-  defaultCourseId?: string | null;
-  locale: string;
-}
-
-export function NewConversationModal({
-  isOpen,
-  onClose,
-  enrolledCourses,
-  defaultCourseId,
-  locale,
-}: NewConversationModalProps) {
-  const router = useRouter();
-  const [selectedCourseId, setSelectedCourseId] = useState<string>(
-    defaultCourseId || (enrolledCourses[0]?.id || "general")
-  );
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  if (!isOpen) return null;
-
-  const isHt = locale === "ht";
-
-  // Find instructor for the selected course
-  const selectedCourse = enrolledCourses.find((c) => c.id === selectedCourseId);
-  const recipientName = selectedCourse
-    ? selectedCourse.instructorName
-    : "Support Administratif Faro School";
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!subject.trim() || !message.trim()) return;
-
-    setErrorMessage(null);
-    startTransition(async () => {
-      const courseIdToSubmit = selectedCourseId === "general" ? null : selectedCourseId;
-      const res = await createConversationAction(courseIdToSubmit, subject, message);
-
-      if (!res.success) {
-        setErrorMessage(res.error || "Impossible d'initier la conversation.");
-      } else if (res.data?.conversationId) {
-        onClose();
-        router.push(`/${locale}/dashboard/messages/${res.data.conversationId}`);
-        router.refresh();
-      }
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface border border-line rounded-2xl max-w-lg w-full p-6 shadow-card space-y-4 animate-in fade-in zoom-in-95">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-line">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-full bg-orange-tint text-orange flex items-center justify-center shadow-subtle">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-heading font-bold text-base text-ink">
-                {isHt ? "Kontakte fòmatè a" : "Contacter le formateur"}
-              </h3>
-              <p className="text-xs text-muted-faro">
-                {isHt
-                  ? "Voye yon mesaj prive bay fòmatè w la oswa ekip Faro a."
-                  : "Échange privé et confidentiel avec votre formateur ou l'équipe Faro."}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full text-muted-faro hover:text-ink hover:bg-bg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {errorMessage && (
-          <div className="p-3 rounded-xl bg-red-tint border border-red text-red text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
-          {/* Course Selector */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-heading font-semibold text-ink">
-              {isHt ? "Chwazi fòmasyon an" : "Formation concernée"}
-            </label>
-            <div className="relative">
-              <select
-                value={selectedCourseId}
-                onChange={(e) => setSelectedCourseId(e.target.value)}
-                className="w-full py-2.5 px-3.5 text-xs sm:text-sm rounded-xl bg-bg border border-line text-ink focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 appearance-none transition-all cursor-pointer"
-              >
-                {enrolledCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title} — ({c.instructorName})
-                  </option>
-                ))}
-                <option value="general">
-                  {isHt ? "Kesyon jeneral / Sipò Faro School (Admin)" : "Autre question / Support Faro School (Admin)"}
-                </option>
-              </select>
-              <BookOpen className="w-4 h-4 text-muted-faro absolute right-3.5 top-3 pointer-events-none" />
-            </div>
-            <p className="text-[11px] text-muted-faro">
-              {isHt ? "Destinatè" : "Destinataire"} : <strong className="text-ink">{recipientName}</strong>
-            </p>
-          </div>
-
-          {/* Subject Field */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-heading font-semibold text-ink">
-              {isHt ? "Sijè mesaj la" : "Sujet de votre question"}
-            </label>
-            <input
-              type="text"
-              required
-              placeholder={isHt ? "Eg: Kesyon sou modil 2, difikilte pou aplike..." : "Ex: Question sur la leçon 3, blocage technique..."}
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full py-2.5 px-3.5 text-xs sm:text-sm rounded-xl bg-bg border border-line text-ink placeholder:text-muted-faro focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-all"
-            />
-          </div>
-
-          {/* Message Area */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-heading font-semibold text-ink">
-              {isHt ? "Mesaj ou a" : "Votre message"}
-            </label>
-            <textarea
-              required
-              rows={4}
-              placeholder={
-                isHt
-                  ? "Eksplike kesyon w lan klèman. Si fòmatè a pa an liy, asistan IA a oswa yon notifikasyon imèl ap pran relè a."
-                  : "Expliquez précisément votre question. Si le formateur est hors-ligne, son assistant IA ou une alerte e-mail assurera le suivi."
-              }
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="w-full py-2.5 px-3.5 text-xs sm:text-sm rounded-xl bg-bg border border-line text-ink placeholder:text-muted-faro focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-all leading-normal resize-none"
-            />
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isPending}
-              className="px-4 py-2.5 rounded-xl text-xs font-heading font-semibold text-muted-faro hover:text-ink hover:bg-bg transition-colors"
-            >
-              {isHt ? "Anile" : "Annuler"}
-            </button>
-            <button
-              type="submit"
-              disabled={isPending || !subject.trim() || !message.trim()}
-              className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-heading font-semibold text-white transition-all shadow-orange ${
-                isPending || !subject.trim() || !message.trim()
-                  ? "bg-orange/40 cursor-not-allowed"
-                  : "bg-orange hover:bg-orange-strong active:scale-95"
-              }`}
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>{isHt ? "Ap voye..." : "Envoi en cours..."}</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{isHt ? "Voye bay fòmatè a" : "Envoyer au formateur"}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+import {useEffect,useRef,useState,useTransition} from 'react';
+import {useRouter} from 'next/navigation';
+import {useTranslations} from 'next-intl';
+import {X,BookOpen,MessageSquare,GraduationCap,Building2,ArrowLeft,Loader2} from 'lucide-react';
+import {openStaffConversationAction} from '@/app/actions/student-messaging';
+import type {EnrolledCourseOption} from '@/lib/messaging/types';
+interface Props{isOpen:boolean;onClose:()=>void;enrolledCourses:EnrolledCourseOption[];defaultCourseId?:string|null;locale:string}
+export function NewConversationModal({isOpen,onClose,enrolledCourses,locale}:Props){
+ const t=useTranslations('messagingFlow'),router=useRouter();
+ const [step,setStep]=useState<'choose'|'teacher'>('choose'),[error,setError]=useState<string|null>(null),[pending,startTransition]=useTransition();
+ const busy=useRef(false);
+ useEffect(()=>{if(isOpen){setStep('choose');setError(null);}},[isOpen]);
+ if(!isOpen)return null;
+ const open=(courseId:string|null)=>{
+  if(busy.current)return;busy.current=true;setError(null);
+  startTransition(async()=>{try{
+   const result=await openStaffConversationAction(courseId,locale);
+   if(!result.success||!result.data){setError(t('errors.'+(['forbidden','courseUnavailable','recipientUnavailable'].includes(result.error??'')?result.error:'unavailable')));return;}
+   onClose();router.push('/'+locale+'/dashboard/messages/'+encodeURIComponent(result.data.conversationId));router.refresh();
+  }catch{setError(t('errors.unavailable'));}finally{busy.current=false;}});
+ };
+ return <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center compose-backdrop p-4" style={{paddingTop:'max(1rem,env(safe-area-inset-top,0px))',height:'calc(var(--app-height,100dvh) - var(--app-nav-height,0px))'}}>
+  <section role="dialog" aria-modal="true" aria-labelledby="compose-title" className="w-full max-w-lg max-h-full overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-card">
+   <header className="mb-5 flex items-start justify-between gap-3"><div><h2 id="compose-title" className="font-heading text-lg font-bold text-ink">{t(step==='choose'?'write':'chooseCourse')}</h2><p className="mt-1 text-sm text-muted-faro">{t(step==='choose'?'chooseRecipient':'teacherHelp')}</p></div><button type="button" onClick={onClose} disabled={pending} aria-label={t('close')} className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-line text-ink"><X className="h-5 w-5"/></button></header>
+   {error&&<p role="alert" className="mb-4 rounded-xl bg-red-tint p-3 text-sm text-red">{error}</p>}
+   {pending?<p role="status" className="flex items-center justify-center gap-2 p-6 text-muted-faro"><Loader2 className="h-5 w-5 animate-spin"/>{t('opening')}</p>:step==='choose'?<div className="space-y-3">
+    <button type="button" onClick={()=>setStep('teacher')} className="flex w-full items-center gap-4 rounded-xl border border-line bg-bg p-4 text-left text-ink"><GraduationCap className="h-6 w-6 shrink-0 text-orange"/><span><strong className="block">{t('teacher')}</strong><span className="text-sm text-muted-faro">{t('teacherHelp')}</span></span></button>
+    <button type="button" onClick={()=>open(null)} className="flex w-full items-center gap-4 rounded-xl border border-line bg-bg p-4 text-left text-ink"><Building2 className="h-6 w-6 shrink-0 text-orange"/><span><strong className="block">{t('direction')}</strong><span className="text-sm text-muted-faro">{t('directionHelp')}</span></span></button>
+   </div>:<div className="space-y-3"><button type="button" onClick={()=>setStep('choose')} className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-ink"><ArrowLeft className="h-4 w-4"/>{t('back')}</button>
+    {enrolledCourses.length===0?<p className="rounded-xl border border-line p-4 text-sm text-muted-faro">{t('noCourses')}</p>:enrolledCourses.map(course=><button type="button" key={course.id} onClick={()=>open(course.id)} className="flex w-full items-start gap-3 rounded-xl border border-line p-4 text-left text-ink"><BookOpen className="mt-1 h-5 w-5 shrink-0 text-orange"/><span className="min-w-0"><strong className="block break-words">{course.title}</strong><span className="mt-1 block break-words text-sm text-muted-faro">{course.instructorName}</span></span><MessageSquare className="ml-auto h-5 w-5 shrink-0 text-muted-faro"/></button>)}
+   </div>}
+  </section>
+ </div>;
 }

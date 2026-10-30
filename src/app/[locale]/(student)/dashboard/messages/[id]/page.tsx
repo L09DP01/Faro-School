@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { setRequestLocale } from "next-intl/server";
 import {
   getStudentConversations,
+  getStudentSystemNotifications,
   getConversationById,
   getConversationMessages,
   getStudentEnrolledCourses,
@@ -11,7 +12,7 @@ import { StudentStaffChatView } from "@/components/messaging/StudentStaffChatVie
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Discussion avec le formateur | Faro School",
+  title: "Discussion privée | Faro School",
 };
 
 interface StudentConversationPageProps {
@@ -29,12 +30,13 @@ export default async function StudentConversationPage({
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/messages/${id}`);
   }
 
-  const [conversations, activeConversation, initialMessages, enrolledCourses] =
+  const [conversations, activeConversation, initialMessages, enrolledCourses, systemNotifications] =
     await Promise.all([
       getStudentConversations(user.id),
       getConversationById(id, user.id, user.role),
       getConversationMessages(id),
       getStudentEnrolledCourses(user.id),
+      getStudentSystemNotifications(user.id),
     ]);
 
   if (!activeConversation) {
@@ -44,6 +46,7 @@ export default async function StudentConversationPage({
   return (
     <div className="w-full h-full p-2 md:p-4">
       <StudentStaffChatView
+        systemNotifications={systemNotifications}
         conversations={conversations}
         activeConversation={activeConversation}
         initialMessages={initialMessages}
