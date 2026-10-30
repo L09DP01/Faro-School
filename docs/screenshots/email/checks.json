@@ -1,0 +1,23 @@
+{
+  "method": "Real production components in offline fixtures; provider states simulated; codes and URLs masked. No real email sent.",
+  "checks": [
+    "admin-ok",
+    "admin-failed",
+    "verification-fr-valid",
+    "verification-fr-expired",
+    "verification-fr-already_used",
+    "honest-code-fr",
+    "email-verification-fr",
+    "email-reset-fr",
+    "email-payment_confirmed-fr",
+    "email-invitation-fr",
+    "verification-ht-valid",
+    "verification-ht-expired",
+    "verification-ht-already_used",
+    "honest-code-ht",
+    "email-verification-ht",
+    "email-reset-ht",
+    "email-payment_confirmed-ht",
+    "email-invitation-ht"
+  ]
+}

@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations,useLocale } from "next-intl";
 import { forgotPasswordSchema } from "@/lib/validators/auth";
 import { AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
 
 export function ForgotPasswordForm() {
   const t = useTranslations("auth");
+  const locale=useLocale();
 
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export function ForgotPasswordForm() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email,locale }),
       });
 
       const data = await res.json();

@@ -1,3 +1,4 @@
+import {processOutbox} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { KobaraProvider } from "@/lib/payments/kobara";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -191,6 +192,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      const mail=await processOutbox().catch(()=>[]);
+      if(mail.some(r=>r.status!=="accepted"))console.warn("[email] payment_notification_pending");
       return NextResponse.json({
         received: true,
         validated: true,

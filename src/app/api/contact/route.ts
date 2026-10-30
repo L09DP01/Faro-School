@@ -1,3 +1,5 @@
+import {processOutbox} from "@/lib/email/outbox";
+import {createAdminClient} from "@/lib/supabase/admin";
 import { NextRequest, NextResponse } from "next/server";
 import { contactSchema } from "@/lib/validators/contact";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -48,31 +50,17 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Save to database table contact_messages
-    const supabase = await createClient();
-    const { error: dbError } = await supabase.from("contact_messages").insert({
-      name,
-      contact,
-      message,
-    });
-
-    if (dbError) {
-      console.error("Database error inserting contact message:", dbError);
-      // In offline/mock mode, we can still confirm reception so development proceeds
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("example.co") || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-        return NextResponse.json({ success: true, mock: true });
-      }
-
-      return NextResponse.json(
-        { error: "serverError", message: dbError.message },
-        { status: 500 }
-      );
-    }
+    const supabase = createAdminClient();
+    const {data:stored,error:dbError}=await supabase.rpc('store_contact_with_email',{p_name:name,p_contact:contact,p_message:message,p_support:process.env.SUPPORT_EMAIL?.trim()??'',p_locale:body.locale==='ht'?'ht':'fr'});
+    if(dbError||!stored)return NextResponse.json({error:'serverError'},{status:503});
+    const [sent]=await processOutbox(stored.email_id);
+    if(sent&&sent.status!=='accepted')console.warn('[email] contact_notification_pending',{correlationId:sent.correlationId});
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Unexpected error in contact API:", err);
+    console.error("[contact] unavailable");
     return NextResponse.json(
-      { error: "serverError", message: err.message || "Erreur interne" },
+      { error: "serverError", message: "unavailable" },
       { status: 500 }
     );
   }

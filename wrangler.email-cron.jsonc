@@ -1,0 +1,8 @@
+{
+ "$schema":"node_modules/wrangler/config-schema.json",
+ "name":"faro-email-cron",
+ "main":"workers/email-cron.ts",
+ "compatibility_date":"2026-10-30",
+ "triggers":{"crons":["* * * * *"]},
+ "vars":{"APP_URL":"https://faroschool.com"}
+}

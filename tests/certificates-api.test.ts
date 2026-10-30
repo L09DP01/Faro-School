@@ -19,7 +19,7 @@ async function main(){
    b.onResolve({filter:/^@\/lib\/auth\/get-user$/},()=>({path:"auth",namespace:"stub"}));
    b.onResolve({filter:/^@\/lib\/supabase\/admin$/},()=>({path:"db",namespace:"stub"}));
    b.onResolve({filter:/^@\/lib\/certificates\/pdf$/},()=>({path:"pdf",namespace:"stub"}));
-   b.onLoad({filter:/.*/,namespace:"stub"},a=>({contents:a.path==="auth"?"export async function getCurrentUser(){return globalThis.__certificateHttp.user}":a.path==="db"?"export function createAdminClient(){return globalThis.__certificateDb}":a.path==="pdf"?"export async function loadCertificateAssets(){return {}};export async function renderCertificatePdf(){return new Uint8Array([37,80,68,70])}":"export {};",loader:"js"}));
+   b.onLoad({filter:/.*/,namespace:"stub"},a=>({contents:a.path==="auth"?"export async function getCurrentUser(){return globalThis.__certificateHttp.user}":a.path==="db"?"export function createAdminClient(){return globalThis.__certificateDb};export const getAdminSupabase=createAdminClient;":a.path==="pdf"?"export async function loadCertificateAssets(){return {}};export async function renderCertificatePdf(){return new Uint8Array([37,80,68,70])}":"export {};",loader:"js"}));
   }}]});
  }
  const issue=load(resolve("tmp/certificates/api/issue.cjs")),pdf=load(resolve("tmp/certificates/api/pdf.cjs")),admin=load(resolve("tmp/certificates/api/admin.cjs"));

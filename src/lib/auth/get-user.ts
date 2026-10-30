@@ -1,4 +1,5 @@
 import "server-only";
+import {unstable_rethrow} from "next/navigation";
 import { cache } from "react";
 import { auth } from "@/auth";
 import { getAdminSupabase } from "@/lib/supabase/admin";
@@ -27,7 +28,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     let session = null;
     try {
       session = await auth();
-    } catch {
+    } catch(error) {
+      unstable_rethrow(error);
       // Handled outside Next.js request scope (e.g. standalone CLI tests)
       return null;
     }
@@ -55,12 +57,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     }
 
     // 3. Fetch user credentials to verify token_version
-    const { data: creds } = await supabase
+    const { data: creds,error:credentialError } = await supabase
       .from("user_credentials")
       .select("token_version, locked_until")
       .eq("user_id", profile.id)
       .single();
 
+    if(credentialError||!creds)return null;
     if (creds?.locked_until && new Date(creds.locked_until).getTime() > Date.now()) {
       return null;
     }
@@ -89,7 +92,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       tokenVersion: dbTokenVersion,
     };
   } catch (err) {
-    console.error("[getCurrentUser] Error fetching current user:", err);
+    unstable_rethrow(err);
+    console.error("[auth] current_user_unavailable");
     return null;
   }
 });

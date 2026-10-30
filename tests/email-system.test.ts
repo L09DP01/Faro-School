@@ -6,19 +6,37 @@ import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 async function main(){
  const db=new PGlite();await db.exec(`CREATE ROLE anon;CREATE ROLE authenticated;CREATE ROLE service_role BYPASSRLS;
- CREATE TABLE profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),email text UNIQUE,role text DEFAULT 'student',locale text DEFAULT 'fr',email_verified_at timestamptz);
- CREATE TABLE user_credentials(user_id uuid PRIMARY KEY,password_hash text,token_version int DEFAULT 0);
+ CREATE TABLE profiles(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),email text UNIQUE,role text DEFAULT 'student',full_name text DEFAULT 'Fictional Student',locale text DEFAULT 'fr',email_verified_at timestamptz);
+ CREATE TABLE user_credentials(user_id uuid PRIMARY KEY,password_hash text,token_version int DEFAULT 0,failed_count int DEFAULT 0,locked_until timestamptz);
+ CREATE TABLE courses(id uuid PRIMARY KEY,slug text,title_fr text,instructor_id uuid);
+ CREATE TABLE orders(id uuid PRIMARY KEY,user_id uuid,course_id uuid,amount_htg int);
+ CREATE TABLE payments(id uuid PRIMARY KEY,order_id uuid,status text,refunded_at timestamptz);
+ CREATE TABLE enrollments(id uuid PRIMARY KEY,user_id uuid,course_id uuid,revoked_at timestamptz);
+ CREATE TABLE certificates(id uuid PRIMARY KEY,user_id uuid,course_title text,certificate_number text);
+ CREATE TABLE contact_messages(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),name text,contact text,message text);
+ CREATE TABLE instructors(profile_id uuid PRIMARY KEY,escalation_email text);
+ CREATE TABLE conversations(id uuid PRIMARY KEY,student_id uuid,staff_id uuid,course_id uuid,subject text);
+ CREATE TABLE escalations(id uuid PRIMARY KEY,conversation_id uuid,email_status text,trigger_message_id uuid,reason text,deadline_at timestamptz);
+ CREATE TABLE messages(id uuid DEFAULT gen_random_uuid(),conversation_id uuid,sender_type text,sender_id uuid,body text);
  CREATE TABLE auth_attempts(id uuid);CREATE TABLE lessons(id uuid PRIMARY KEY,video_id text,duration_sec int DEFAULT 0);
  CREATE TABLE admin_audit_logs(id uuid DEFAULT gen_random_uuid(),admin_id uuid,action text,note text,metadata jsonb);
  CREATE TABLE email_verification_tokens(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),email text,code_hash text,token_hash text,attempts int DEFAULT 0,expires_at timestamptz,used_at timestamptz,created_at timestamptz DEFAULT now());
  CREATE TABLE password_reset_tokens(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,token_hash text,expires_at timestamptz,used_at timestamptz,created_at timestamptz DEFAULT now());`);
- const files=await readdir('supabase/migrations');for(const suffix of ['_bunny_resend_webhooks.sql','_email_activation_safety.sql','_email_outbox.sql'])await db.exec(await readFile('supabase/migrations/'+files.find(f=>f.endsWith(suffix))!,'utf8'));
+ const files=await readdir('supabase/migrations');for(const suffix of ['_bunny_resend_webhooks.sql','_email_activation_safety.sql','_email_outbox.sql','_email_business_events.sql'])await db.exec(await readFile('supabase/migrations/'+files.find(f=>f.endsWith(suffix))!,'utf8'));
  const state={dbError:false,status:200,calls:0,payloads:[] as any[],headers:[] as any[],timeout:false,network:false};
- const fake={from(table:string){const filters:Record<string,unknown>={};let op='select',values:any,conflict=false;const b:any={select(){return b},eq(k:string,v:unknown){filters[k]=v;return b},limit(){return b},upsert(v:unknown){op='insert';values=v;conflict=true;return b},insert(v:unknown){op='insert';values=v;return b},async single(){return b.run(true)},async maybeSingle(){return b.run(true)},then(ok:any,bad:any){return b.run(false).then(ok,bad)},async run(one:boolean){if(state.dbError)return{data:null,error:{code:'42P01'}};try{if(op==='insert'){const keys=Object.keys(values);await db.query(`INSERT INTO ${table}(${keys.join(',')})VALUES(${keys.map((_,i)=>'$'+(i+1)).join(',')})${conflict?' ON CONFLICT(idempotency_key)DO NOTHING':''}`,Object.values(values).map(v=>typeof v==='object'&&v!==null?JSON.stringify(v):v));return{data:null,error:null}}const keys=Object.keys(filters);const r=await db.query(`SELECT * FROM ${table}${keys.length?' WHERE '+keys.map((k,i)=>k+'=$'+(i+1)).join(' AND '):''}`,Object.values(filters));return{data:one?r.rows[0]??null:r.rows,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};return b;},async rpc(name:string,args:Record<string,unknown>){if(state.dbError)return{data:null,error:{code:'42P01'}};try{const keys=Object.keys(args);const call=name+'('+keys.map((k,i)=>k+'=>'+String.fromCharCode(36)+(i+1)).join(',')+')';const sql=name==='claim_email_outbox'?'SELECT to_jsonb(x) r FROM '+call+' x':'SELECT '+call+' r';const r=await db.query<{r:any}>(sql,Object.values(args));return{data:name==='claim_email_outbox'?r.rows.map(v=>v.r):r.rows[0]?.r,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};
+ const fake={from(table:string){const filters:Record<string,unknown>={};let op='select',values:any,conflict=false;const b:any={select(){return b},eq(k:string,v:unknown){filters[k]=v;return b},limit(){return b},upsert(v:unknown){op='insert';values=v;conflict=true;return b},insert(v:unknown){op='insert';values=v;return b},async single(){return b.run(true)},async maybeSingle(){return b.run(true)},then(ok:any,bad:any){return b.run(false).then(ok,bad)},async run(one:boolean){if(state.dbError)return{data:null,error:{code:'42P01'}};try{if(op==='insert'){const keys=Object.keys(values);await db.query(`INSERT INTO ${table}(${keys.join(',')})VALUES(${keys.map((_,i)=>'$'+(i+1)).join(',')})${conflict?' ON CONFLICT DO NOTHING':''}`,Object.values(values).map(v=>typeof v==='object'&&v!==null?JSON.stringify(v):v));return{data:null,error:null}}const keys=Object.keys(filters);const r=await db.query(`SELECT * FROM ${table}${keys.length?' WHERE '+keys.map((k,i)=>k+'=$'+(i+1)).join(' AND '):''}`,Object.values(filters));return{data:one?r.rows[0]??null:r.rows,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};return b;},async rpc(name:string,args:Record<string,unknown>){if(state.dbError)return{data:null,error:{code:'42P01'}};try{const keys=Object.keys(args);const call=name+'('+keys.map((k,i)=>k+'=>'+String.fromCharCode(36)+(i+1)).join(',')+')';const sql=name==='claim_email_outbox'?'SELECT to_jsonb(x) r FROM '+call+' x':'SELECT '+call+' r';const r=await db.query<{r:any}>(sql,Object.values(args));return{data:name==='claim_email_outbox'?r.rows.map(v=>v.r):r.rows[0]?.r,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};
  (globalThis as any).__emailDb=fake;
- await mkdir('tmp/email-tests',{recursive:true});for(const[name,path]of Object.entries({transport:'src/lib/email/transport.ts',outbox:'src/lib/email/outbox.ts',limits:'src/lib/auth/rate-limit.ts',tokens:'src/lib/auth/tokens.ts',startup:'src/instrumentation.ts',templates:'src/lib/email/templates.ts'}))await build({entryPoints:[path],outfile:'tmp/email-tests/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'stub'}));b.onResolve({filter:/^@\/lib\/supabase\/admin$/},()=>({path:'db',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},a=>({loader:'js',contents:a.path==='db'?'export const createAdminClient=()=>globalThis.__emailDb;export const getAdminSupabase=createAdminClient;':'export {};'}));}}]});
+ await mkdir('tmp/email-tests',{recursive:true});for(const[name,path]of Object.entries({transport:'src/lib/email/transport.ts',outbox:'src/lib/email/outbox.ts',limits:'src/lib/auth/rate-limit.ts',tokens:'src/lib/auth/tokens.ts',startup:'src/instrumentation.ts',templates:'src/lib/email/templates.ts',password:'src/lib/auth/password.ts',auth:'src/auth.ts'}))await build({entryPoints:[path],outfile:'tmp/email-tests/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){
+ if(name==='auth'){
+  b.onResolve({filter:/^next-auth$/},()=>({path:'nextauth',namespace:'authfixture'}));
+  b.onResolve({filter:/^@\/lib\/auth\/rate-limit$/},()=>({path:'limits',namespace:'authfixture'}));
+  b.onLoad({filter:/.*/,namespace:'authfixture'},a=>({loader:'js',contents:a.path==='nextauth'?"export class CredentialsSignin extends Error{};export default function NextAuth(config){globalThis.__emailAuthConfig=config;return{handlers:{},auth:async()=>null,signIn:async()=>null,signOut:async()=>null}}":"export const normalizeEmail=e=>e.trim().toLowerCase();export async function checkLoginRateLimit(){return{allowed:true}};export async function recordFailedLogin(){};export async function clearFailedLogins(){}"}));
+ }
+ b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'stub'}));b.onResolve({filter:/^@\/lib\/supabase\/admin$/},()=>({path:'db',namespace:'stub'}));b.onLoad({filter:/.*/,namespace:'stub'},a=>({loader:'js',contents:a.path==='db'?'export const createAdminClient=()=>globalThis.__emailDb;export const getAdminSupabase=createAdminClient;':'export {};'}));}}]});
  const require=createRequire(resolve('package.json')),transport=require(resolve('tmp/email-tests/transport.cjs')),outbox=require(resolve('tmp/email-tests/outbox.cjs')),limits=require(resolve('tmp/email-tests/limits.cjs')),tokens=require(resolve('tmp/email-tests/tokens.cjs')),startup=require(resolve('tmp/email-tests/startup.cjs')),templates=require(resolve('tmp/email-tests/templates.cjs'));
- const originalFetch=globalThis.fetch;globalThis.fetch=async(_url,init)=>{state.calls++;if(state.timeout)throw new DOMException('','TimeoutError');if(state.network)throw new TypeError('offline');state.payloads.push(JSON.parse(init?.body as string));state.headers.push(init?.headers);return Response.json(state.status===200?{id:'33333333-3333-4333-8333-333333333333'}:{error:'private provider data'},{status:state.status,headers:{'Retry-After':'120'}})};
+ const password=require(resolve('tmp/email-tests/password.cjs'));require(resolve('tmp/email-tests/auth.cjs'));
+ const provider=(globalThis as any).__emailAuthConfig.providers[0];const authorize=provider.options?.authorize??provider.authorize;
+ const originalFetch=globalThis.fetch;globalThis.fetch=async(_url,init)=>{state.calls++;if(state.timeout)throw new DOMException('','TimeoutError');if(state.network)throw new TypeError('offline');state.payloads.push(JSON.parse(init?.body as string));state.headers.push(init?.headers);return Response.json(state.status===200?{id:state.headers.at(-1)?.['Idempotency-Key']==='verification:fixture'?'33333333-3333-4333-8333-333333333333':state.headers.at(-1)?.['Idempotency-Key']==='invitation:fixture'?'55555555-5555-4555-8555-555555555555':crypto.randomUUID()}:{error:'private provider data'},{status:state.status,headers:{'Retry-After':'120'}})};
  const env=process.env as Record<string,string|undefined>;env.NODE_ENV='test';env.APP_ENV='test';env.RESEND_API_KEY='fake-only';env.EMAIL_FROM='Faro <sender@example.test>';env.AUTH_SECRET='test-secret-32-characters-never-production';env.NEXT_PUBLIC_APP_URL='https://example.test';
  const message={to:'fixture@example.test',subject:'Test',html:'<p>Test</p>',text:'Test'};
  state.dbError=true;assert.equal((await transport.sendResendEmail(message)).category,'suppression_lookup_failed');assert.equal(state.calls,0);assert.equal((await limits.checkEmailDispatchLimit(message.to,'ip','verification_email')).allowed,false);await assert.rejects(()=>tokens.createEmailVerificationToken(message.to));state.dbError=false;
@@ -37,10 +55,73 @@ async function main(){
  assert.equal(outbox.nextRetry(1,'provider_validation'),null);assert.equal(outbox.nextRetry(5,'provider_unavailable'),null);
  const injected=templates.renderEmail({kind:'escalation',locale:'fr',detail:'<a href="https://attacker.test">unsafe</a>'});assert(injected.html.includes('&lt;a'));assert(!injected.html.includes('<a href="https://attacker.test"'));
  for(const locale of ['fr','ht'])for(const kind of ['verification','reset','invitation','payment_confirmed']){const t=templates.renderEmail({kind,locale,code:'000000'});assert(!t.subject.includes('000000'));assert(t.text.length>0);}
+ // Transactional business capture and invitation -> reset -> credential verification state.
+ const course='11111111-1111-4111-8111-111111111111',order='22222222-2222-4222-8222-222222222222',payment='44444444-4444-4444-8444-444444444444';
+ await db.query("INSERT INTO courses(id,slug,title_fr) VALUES($1,$2,$3)",[course,"fixture-course","Formation française"]);
+ await db.query('INSERT INTO orders VALUES($1,$2,$3,1250)',[order,profile.id,course]);
+ await db.query("INSERT INTO payments(id,order_id,status)VALUES($1,$2,'pending')",[payment,order]);
+ await db.query("UPDATE payments SET status='validated' WHERE id=$1",[payment]);await db.query("UPDATE payments SET status='validated' WHERE id=$1",[payment]);
+ assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='payment_confirmed'")).rows.length,1);
+ const invite=(await db.query<{id:string}>("INSERT INTO profiles(email,role)VALUES('invite@example.test','instructor')RETURNING id")).rows[0];
+ await db.query("INSERT INTO user_credentials(user_id,password_hash)VALUES($1,'unusable-random')",[invite.id]);
+ // Test token material is generated in memory only and never logged.
+ const invitationResult=await outbox.enqueueEmail({kind:'invitation',to:'invite@example.test',userId:invite.id,locale:'ht',key:'invitation:fixture'});assert.equal(invitationResult.status,'accepted');
+ const invitation=(await db.query<any>("SELECT * FROM email_outbox WHERE kind='invitation'")).rows[0];assert.equal(invitation.status,"accepted");const secrets=await outbox.deriveAuthSecrets(invitation.id);
+ const resetHash=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(secrets.token))).toString('hex');
+ const passwordHash=await password.hashPassword('SyntheticOnly9!');
+ const reset=await db.query<{r:any}>("SELECT reset_password_atomic($1,$2) r",[resetHash,passwordHash]);assert(reset.rows[0].r.success);
+ const cred=(await db.query<any>('SELECT * FROM user_credentials WHERE user_id=$1',[invite.id])).rows[0];assert.equal(cred.token_version,1);assert(await password.verifyPassword('SyntheticOnly9!',cred.password_hash),'Invitation password must actually verify');
+ assert((await db.query<any>('SELECT email_verified_at FROM profiles WHERE id=$1',[invite.id])).rows[0].email_verified_at);
+ const login=await authorize({email:'invite@example.test',password:'SyntheticOnly9!'},new Request('https://example.test'));assert(login?.id===invite.id&&login.role==='instructor'&&login.tokenVersion===1,'Auth.js must accept the completed invitation');
+ assert(await authorize({email:'invite@example.test',password:'WrongSynthetic9!'},new Request('https://example.test'))===null);
+ assert.equal((await db.query<{r:any}>("SELECT reset_password_atomic($1,'other-fixture') r",[resetHash])).rows[0].r.success,false);
+ assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='security'")).rows.length,1);
+ await db.query("INSERT INTO certificates VALUES($1,$2,$3,$4)",[crypto.randomUUID(),profile.id,"Formation","FARO-2026-ABCDEFGH"]);assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='certificate'")).rows.length,1);
+ await db.query('UPDATE payments SET refunded_at=now() WHERE id=$1',[payment]);assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='access_revoked'")).rows.length,1);
+ await db.query("UPDATE profiles SET email_verified_at=now() WHERE id=$1",[profile.id]);
+ await db.query('UPDATE courses SET instructor_id=$1 WHERE id=$2',[invite.id,course]);
+ await db.query('INSERT INTO instructors VALUES($1,$2)',[invite.id,'escalation@example.test']);
+ const conversation=crypto.randomUUID(),studentMessage=crypto.randomUUID(),escalation=crypto.randomUUID();
+ await db.query('INSERT INTO conversations VALUES($1,$2,$3,$4,$5)',[conversation,profile.id,invite.id,course,'Question']);
+ await db.query("INSERT INTO messages(id,conversation_id,sender_type,sender_id,body)VALUES($1,$2,'student',$3,$4)",[studentMessage,conversation,profile.id,'<a href="https://attacker.test">Student text</a>']);
+ const pending=await db.query<{id:string}>('SELECT queue_instructor_escalation($1,$2,$3,$4,$5,NULL) id',[profile.id,conversation,studentMessage,escalation,'Unanswered']);
+ const target=(await db.query<any>("SELECT * FROM email_outbox WHERE kind='escalation'")).rows[0];assert.equal(target.recipient,'escalation@example.test');
+ assert.equal((await db.query("SELECT * FROM messages WHERE sender_type='system'")).rows.length,0);
+ await outbox.processOutbox(pending.rows[0].id);
+ assert(!state.payloads.at(-1).html.includes('<a href="https://attacker.test"'));assert(state.payloads.at(-1).html.includes('&lt;a'));
+ assert.equal((await db.query<any>('SELECT email_status FROM escalations WHERE id=$1',[escalation])).rows[0].email_status,'sent');
+ assert.equal((await db.query("SELECT * FROM messages WHERE sender_type='system'")).rows.length,1);
+ await outbox.processOutbox(pending.rows[0].id);assert.equal((await db.query("SELECT * FROM messages WHERE sender_type='system'")).rows.length,1);
+ await assert.rejects(()=>db.query('SELECT queue_instructor_escalation($1,$2,$3,$4,$5,NULL)',[invite.id,conversation,studentMessage,crypto.randomUUID(),'Forbidden']));
+ const contact=(await db.query<{r:any}>('SELECT store_contact_with_email($1,$2,$3,$4,$5) r',['Fixture','masked','Help','support@example.test','fr'])).rows[0].r;assert(contact.email_id);assert.equal((await db.query('SELECT * FROM contact_messages')).rows.length,1);
+ // Email change is committed only by a valid single-use proof; old address gets one warning.
+ const beforeVersion=(await db.query<any>('SELECT token_version FROM user_credentials WHERE user_id=$1',[invite.id])).rows[0].token_version;
+ await outbox.enqueueEmail({kind:'email_change',to:'new-address@example.test',userId:invite.id,locale:'ht',key:'email-change:fixture'});
+ const change=(await db.query<any>("SELECT * FROM email_outbox WHERE kind='email_change'")).rows[0];
+ const changeSecret=await outbox.deriveAuthSecrets(change.id);
+ assert.equal((await db.query<any>('SELECT email FROM profiles WHERE id=$1',[invite.id])).rows[0].email,'invite@example.test');
+ const ch=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(changeSecret.code))).toString('hex');
+ const results=await Promise.all([db.query<{r:any}>('SELECT consume_verification_token($1,$2,NULL) r',['new-address@example.test',ch]),db.query<{r:any}>('SELECT consume_verification_token($1,$2,NULL) r',['new-address@example.test',ch])]);
+ assert.equal(results.filter(r=>r.rows[0].r.success).length,1);
+ assert.equal((await db.query<any>('SELECT email FROM profiles WHERE id=$1',[invite.id])).rows[0].email,'new-address@example.test');
+ assert.equal((await db.query<any>('SELECT token_version FROM user_credentials WHERE user_id=$1',[invite.id])).rows[0].token_version,beforeVersion+1);
+ const warning=(await db.query<any>("SELECT recipient FROM email_outbox WHERE idempotency_key LIKE 'email-changed:%'")).rows[0];assert.equal(warning.recipient,'invite@example.test');
+ const codeUser=(await db.query<{id:string}>("INSERT INTO profiles(email)VALUES('code@example.test')RETURNING id")).rows[0];
+ await outbox.enqueueEmail({kind:'verification',to:'code@example.test',userId:codeUser.id,key:'code:first'});
+ const older=(await db.query<any>("SELECT * FROM email_outbox WHERE idempotency_key='code:first'")).rows[0];const olderSecrets=await outbox.deriveAuthSecrets(older.id);
+ await outbox.enqueueEmail({kind:'verification',to:'code@example.test',userId:codeUser.id,key:'code:second'});
+ const olderHash=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(olderSecrets.token))).toString('hex');
+ assert.equal((await db.query<{r:any}>('SELECT consume_verification_token(NULL,NULL,$1) r',[olderHash])).rows[0].r.success,true,'A resend must not invalidate an accepted code/link');
+ assert.equal((await db.query<{r:any}>('SELECT consume_verification_token(NULL,NULL,$1) r',[olderHash])).rows[0].r.reason,'already_used');
+ await db.query("SELECT create_verification_token('code@example.test',$1,$2,now()-interval '1 second')",['c'.repeat(64),'d'.repeat(64)]);
+ assert.equal((await db.query<{r:any}>('SELECT consume_verification_token(NULL,NULL,$1) r',['d'.repeat(64)])).rows[0].r.reason,'expired');
+ await db.query("SELECT create_verification_token('code@example.test',$1,$2,now()+interval '10 minutes')",['e'.repeat(64),'f'.repeat(64)]);
+ await Promise.all(Array.from({length:8},()=>db.query("SELECT consume_verification_token('code@example.test',$1,NULL)",['0'.repeat(64)])));
+ assert.equal((await db.query<{r:any}>("SELECT consume_verification_token('code@example.test',$1,NULL) r",['e'.repeat(64)])).rows[0].r.reason,'max_attempts');
  const saved={...env};Object.assign(env,{NODE_ENV:'production',APP_ENV:'production',NEXT_PUBLIC_APP_URL:'https://example.test',NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',NEXT_PUBLIC_SUPABASE_ANON_KEY:'fake',SUPABASE_SERVICE_ROLE_KEY:'fake',SUPABASE_JWT_SECRET:'x'.repeat(32),AUTH_SECRET:'y'.repeat(32),RESEND_API_KEY:'fake',RESEND_WEBHOOK_SECRET:'whsec_fake',EMAIL_FROM:'Faro <sender@example.test>',CRON_SECRET:'fake',KOBARA_MODE:'live',KOBARA_API_KEY:'live-fake',KOBARA_BASE_URL:'https://example.test',KOBARA_WEBHOOK_SECRET:'fake',BUNNY_STREAM_API_KEY:'fake',BUNNY_STREAM_READ_ONLY_API_KEY:'fake',BUNNY_STREAM_LIBRARY_ID:'1',BUNNY_STREAM_TOKEN_AUTH_KEY:'fake'});delete env.NEXT_PHASE;
  for(const key of ['RESEND_API_KEY','EMAIL_FROM','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_JWT_SECRET','AUTH_SECRET','CRON_SECRET']){const value=env[key];delete env[key];assert.throws(()=>startup.register(),new RegExp(key));env[key]=value;}startup.register();
  Object.keys(env).forEach(k=>{if(!(k in saved))delete env[k]});Object.assign(env,saved);
- for(const role of ['anon','authenticated']){await db.exec('SET ROLE '+role);await assert.rejects(()=>db.query('SELECT * FROM email_outbox'),/permission denied/);await assert.rejects(()=>db.query('SELECT claim_email_outbox()'),/permission denied/);await db.exec('RESET ROLE');}
+ for(const role of ['anon','authenticated']){await db.exec('SET ROLE '+role);await assert.rejects(()=>db.query('SELECT * FROM email_outbox'),/permission denied/);await assert.rejects(()=>db.query('SELECT * FROM email_outbox_material'),/permission denied/);await assert.rejects(()=>db.query('SELECT claim_email_outbox()'),/permission denied/);await db.exec('RESET ROLE');}
  globalThis.fetch=originalFetch;await db.close();console.log('PASS email transport, private tracking, fail-closed, retries/idempotency, webhook linkage, templates and actual startup hook; no real sends');
 }
 main().catch(e=>{console.error('FAIL email regression',e instanceof Error?e.message:'unknown');process.exit(1)});

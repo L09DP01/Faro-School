@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { createPasswordResetToken } from "../src/lib/auth/tokens";
+import {queueAuthEmail} from "../src/lib/email/outbox";
+import {maskRecipient} from "../src/lib/email/result";
 
 /**
  * Creates the initial administrator in profiles & user_credentials without hardcoding passwords.
@@ -33,7 +34,7 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  console.log(`Checking if user profile already exists for email: ${email}...`);
+  console.log(`Checking profile: ${maskRecipient(email)}`);
 
   let targetUserId: string | null = null;
 
@@ -48,14 +49,8 @@ async function main() {
     console.log(`Profile already exists with ID: ${existingProfile.id}.`);
     targetUserId = existingProfile.id;
 
-    // Ensure role is admin and email is verified
-    await supabase
-      .from("profiles")
-      .update({
-        role: "admin",
-        email_verified_at: new Date().toISOString(),
-      })
-      .eq("id", targetUserId);
+    if(existingProfile.role!=='admin')throw new Error('Refusing to promote an existing non-admin with the bootstrap script');
+
   } else {
     console.log("Creating new admin profile...");
     const { data: newProfile, error: createError } = await supabase
@@ -65,13 +60,13 @@ async function main() {
         full_name: "Administrateur Faro",
         role: "admin",
         locale: "fr",
-        email_verified_at: new Date().toISOString(),
+        email_verified_at: null,
       })
       .select("id")
       .single();
 
     if (createError || !newProfile) {
-      console.error("Failed to create admin profile:", createError?.message);
+      console.error("admin_profile_creation_failed");
       process.exit(1);
     }
 
@@ -92,25 +87,13 @@ async function main() {
     throw new Error("Failed to resolve or create admin user ID.");
   }
 
-  // 2. Generate secure 48h password setup token
-  console.log("Generating secure password setup token...");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const resetToken = await createPasswordResetToken(targetUserId, 48);
-  const setupUrl = `${appUrl}/fr/reinitialiser-mot-de-passe?token=${resetToken}`;
+  // No token or setup URL is ever printed. The private outbox owns delivery.
+  const result=await queueAuthEmail(email,'invitation','fr','bootstrap:'+targetUserId);
+  console.log({status:result.status,category:result.category,correlationId:result.correlationId,recipient:maskRecipient(email)});
 
-  console.log("==================================================");
-  console.log("ADMIN ACCOUNT CONFIGURED SUCCESSFULLY");
-  console.log("==================================================");
-  console.log(`Email:   ${email}`);
-  console.log(`User ID: ${targetUserId}`);
-  console.log(`Role:    admin`);
-  console.log("");
-  console.log("Initial password setup link (valid for 48 hours):");
-  console.log(setupUrl);
-  console.log("==================================================");
 }
 
 main().catch((err) => {
-  console.error("Fatal error creating admin:", err);
+  console.error("admin_bootstrap_failed");
   process.exit(1);
 });

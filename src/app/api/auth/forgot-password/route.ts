@@ -2,8 +2,6 @@ import {queueAuthEmail} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { forgotPasswordSchema } from "@/lib/validators/auth";
 import { normalizeEmail, checkEmailDispatchLimit, recordEmailDispatched } from "@/lib/auth/rate-limit";
-import { createPasswordResetToken } from "@/lib/auth/tokens";
-import { sendPasswordResetEmail } from "@/lib/email/resend";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";

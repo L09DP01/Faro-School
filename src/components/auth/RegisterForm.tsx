@@ -91,6 +91,7 @@ export function RegisterForm({ nextParam }: RegisterFormProps) {
 
       if (data.requireVerification) {
         setUnverifiedEmail(email);
+        setPassword("");
         return;
       }
 

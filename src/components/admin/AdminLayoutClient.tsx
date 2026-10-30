@@ -163,6 +163,8 @@ export function AdminLayoutClient({
 
   if (!isInstructor) contentNavItems.push({href:"/admin/certificats",exact:false,label:isHt?"Sètifika":"Certificats",icon:<GraduationCap className="w-5 h-5 shrink-0"/>});
 
+  if (!isInstructor) contentNavItems.push({href:"/admin/emails",exact:false,label:isHt?"Imèl":"Emails",icon:<MessageSquare className="w-5 h-5 shrink-0"/>});
+
   const systemNavItems: NavItem[] = isInstructor
     ? []
     : [

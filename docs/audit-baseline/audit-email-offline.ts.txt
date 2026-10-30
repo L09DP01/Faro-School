@@ -1,0 +1,45 @@
+// Diagnostic audit baseline: assertions confirm existing defects, not production readiness.
+import assert from 'node:assert/strict';
+import {build} from 'esbuild';
+import {createRequire} from 'node:module';
+import {resolve} from 'node:path';
+import {mkdir,writeFile,readFile} from 'node:fs/promises';
+async function main(){
+ await mkdir('tmp/email-audit/modules',{recursive:true});
+ const state:any={profile:null,suppressionError:false,suppressed:false,providerStatus:200,apiCalls:0,recorded:0,limits:0,tokenError:false,html:''};
+ (globalThis as any).__emailAudit=state;
+ (globalThis as any).__emailAuditDb={from(table:string){const b:any={select(){return b},eq(){return b},is(){return b},update(){return b},async insert(){return{data:null,error:state.tokenError?{code:'42P01'}:null}},async maybeSingle(){return b.single()},async single(){if(table==='email_suppressions')return{data:state.suppressed?{suppressed:true}:null,error:state.suppressionError?{code:'42P01'}:null};if(table==='auth_attempts')return{data:null,error:{code:'42P01'}};return{data:state.profile,error:null}},then(ok:any){return Promise.resolve({data:null,error:state.tokenError?{code:'42P01'}:null}).then(ok)}};return b},async rpc(){return{data:'11111111-1111-4111-8111-111111111111',error:null}}};
+ const entries={signup:'src/app/api/auth/signup/route.ts',resend:'src/app/api/auth/resend-code/route.ts',forgot:'src/app/api/auth/forgot-password/route.ts',transport:'src/lib/email/transport.ts',tokens:'src/lib/auth/tokens.ts',limits:'src/lib/auth/rate-limit.ts',messaging:'src/lib/messaging/email.ts'};
+ for(const[name,path]of Object.entries(entries))await build({entryPoints:[path],outfile:'tmp/email-audit/modules/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'audit-offline-isolation',setup(b){
+  b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'audit'}));
+  b.onResolve({filter:/^@\/lib\/supabase\/admin$/},()=>({path:'db',namespace:'audit'}));
+  if(['signup','resend','forgot'].includes(name)){
+   b.onResolve({filter:/^@\/lib\/auth\/rate-limit$/},()=>({path:'limits',namespace:'audit'}));
+   b.onResolve({filter:/^@\/lib\/auth\/tokens$/},()=>({path:'tokens',namespace:'audit'}));
+   b.onResolve({filter:/^@\/lib\/auth\/password$/},()=>({path:'password',namespace:'audit'}));
+  }
+  b.onLoad({filter:/.*/,namespace:'audit'},a=>({loader:'js',contents:a.path==='db'?'export const getAdminSupabase=()=>globalThis.__emailAuditDb;export const createAdminClient=getAdminSupabase;':a.path==='limits'?'export const normalizeEmail=s=>s.trim().toLowerCase();export const isDisposableEmail=()=>false;export const isCommonPassword=()=>false;export async function checkEmailDispatchLimit(){globalThis.__emailAudit.limits++;return{allowed:true}};export async function recordEmailDispatched(){globalThis.__emailAudit.recorded++}':a.path==='tokens'?'export async function createEmailVerificationToken(){return {code:"123456",token:"audit-placeholder-token"}};export async function createPasswordResetToken(){return "audit-placeholder-token"}':a.path==='password'?'export async function hashPassword(){return "audit-placeholder-hash"}':'export {};'}));
+ }}]});
+ const require=createRequire(resolve('package.json')),mods:any={};for(const name of Object.keys(entries))mods[name]=require(resolve('tmp/email-audit/modules/'+name+'.cjs'));
+ const fetchOriginal=globalThis.fetch,previous={key:process.env.RESEND_API_KEY,from:process.env.EMAIL_FROM,node:process.env.NODE_ENV,app:process.env.APP_ENV};
+ globalThis.fetch=async(input,init)=>{assert.equal(String(input),'https://api.resend.com/emails');state.apiCalls++;state.html=JSON.parse(String(init?.body)).html;return Response.json(state.providerStatus===200?{id:'22222222-2222-4222-8222-222222222222'}:{name:'validation_error',message:'audit-provider-error'},{status:state.providerStatus})};
+ const results:any[]=[];const record=(name:string,evidence:unknown)=>{results.push({name,evidence});console.log('CONFIRMED '+name)};
+ const reset=()=>{Object.assign(state,{profile:{id:'11111111-1111-4111-8111-111111111111',email:'audit@example.test',email_verified_at:null},suppressionError:false,suppressed:false,providerStatus:200,apiCalls:0,recorded:0,limits:0,tokenError:false,html:''});process.env.RESEND_API_KEY='re_mock_email_audit';process.env.EMAIL_FROM='Faro <noreply@example.test>';(process.env as Record<string,string|undefined>).NODE_ENV='production';process.env.APP_ENV='production'};
+ const req=(path:string,body:any)=>Object.assign(new Request('https://faroschool.com/api/auth/'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),{nextUrl:new URL('https://faroschool.com/api/auth/'+path)});
+ const message={to:'audit@example.test',subject:'Audit',html:'<p>Audit</p>'};
+ try{
+  reset();state.suppressionError=true;const missing=await mods.transport.sendResendEmail(message);assert(!missing.success&&state.apiCalls===0);record('missing_suppression_table_blocks_before_resend',{result:missing,providerCalls:state.apiCalls});
+  reset();state.suppressed=true;const blocked=await mods.transport.sendResendEmail(message);assert(!blocked.success&&state.apiCalls===0);record('suppressed_recipient_blocks_before_resend',{result:blocked,providerCalls:state.apiCalls});
+  reset();delete process.env.RESEND_API_KEY;const noKey=await mods.transport.sendResendEmail(message);assert(!noKey.success&&state.apiCalls===0);record('missing_production_key_blocks_before_resend',{result:noKey,providerCalls:state.apiCalls});
+  reset();delete process.env.RESEND_API_KEY;(process.env as Record<string,string|undefined>).NODE_ENV='development';process.env.APP_ENV='development';const dev=await mods.transport.sendResendEmail(message);assert(dev.success&&state.apiCalls===0);record('development_without_key_reports_success_without_send',{result:dev,providerCalls:state.apiCalls});
+  for(const status of [403,429,500]){reset();state.providerStatus=status;const result=await mods.transport.sendResendEmail(message);assert.equal(result.error,'email_delivery');assert.equal(state.apiCalls,1);record('provider_'+status+'_collapsed_to_generic_error',{result,providerCalls:state.apiCalls,retainedHttpStatus:'absent'});}
+  for(const scenario of ['signup','resend','forgot']){reset();state.suppressionError=true;const body=scenario==='signup'?{fullName:'Audit Example',phone:'+50936123456',email:'audit@example.test',password:'AuditPassword123',acceptTerms:true,locale:'fr'}:{email:'audit@example.test',locale:'fr'};const response=await mods[scenario==='resend'?'resend':scenario].POST(req(scenario,body));const payload=await response.json();assert.equal(response.status,200);assert(payload.success);assert.equal(state.apiCalls,0);assert.equal(state.recorded,1);record(scenario+'_reports_success_and_counts_failed_send',{http:response.status,publicSuccess:payload.success,requireVerification:payload.requireVerification??null,providerCalls:state.apiCalls,recordedDispatches:state.recorded});}
+  reset();state.profile.email_verified_at='2026-10-29';await mods.signup.POST(req('signup',{fullName:'Audit Example',phone:'+50936123456',email:'audit@example.test',password:'AuditPassword123',acceptTerms:true,locale:'fr'}));assert.equal(state.limits,0);assert.equal(state.apiCalls,1);record('existing_verified_signup_alert_bypasses_dispatch_limiter',{limiterCalls:state.limits,providerCalls:state.apiCalls});
+  reset();state.tokenError=true;const token=await mods.tokens.createEmailVerificationToken('audit@example.test');assert(token.code&&token.token);record('token_creation_reports_success_when_insert_fails',{tokenReturned:true,databaseInsertError:true});
+  reset();const limit=await mods.limits.checkEmailDispatchLimit('audit@example.test','127.0.0.1','verification_email');assert(limit.allowed);record('dispatch_limiter_allows_when_queries_return_database_errors',{allowed:limit.allowed});
+  reset();await mods.messaging.sendEscalationEmail({toEmail:'audit@example.test',studentName:'Audit',courseTitle:'Audit',subject:'Audit',question:'<a href="https://example.test">AUDIT_HTML_MARKER</a>',conversationId:'audit-placeholder',locale:'fr'});assert(state.html.includes('<a href="https://example.test">AUDIT_HTML_MARKER</a>'));record('student_message_html_is_embedded_unescaped',{unescapedHtmlConfirmed:true});
+ }finally{globalThis.fetch=fetchOriginal;for(const[k,v]of Object.entries({RESEND_API_KEY:previous.key,EMAIL_FROM:previous.from,NODE_ENV:previous.node,APP_ENV:previous.app})){if(v===undefined)delete process.env[k];else process.env[k]=v}}
+ const previousEvidence=await readFile('docs/EMAIL_AUDIT_EVIDENCE.json','utf8').then(s=>JSON.parse(s)).catch(()=>({}));
+ await writeFile('docs/EMAIL_AUDIT_EVIDENCE.json',JSON.stringify({...previousEvidence,method:'Actual modules and HTTP handlers; database, tokens and provider I/O isolated as described; zero real email and zero remote database calls.',checks:results.length,results},null,2)+'\n');console.log(results.length+' diagnostic reproductions completed.');
+}
+main().catch(e=>{console.error(e);process.exitCode=1});

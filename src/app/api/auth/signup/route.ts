@@ -9,8 +9,6 @@ import {
   recordEmailDispatched,
 } from "@/lib/auth/rate-limit";
 import { hashPassword } from "@/lib/auth/password";
-import { createEmailVerificationToken } from "@/lib/auth/tokens";
-import { sendVerificationEmail, sendSecurityAlertEmail } from "@/lib/email/resend";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
@@ -78,12 +76,13 @@ export async function POST(req: NextRequest) {
     const supabase = getAdminSupabase();
 
     // 3. Check if user profile already exists
-    const { data: existingProfile } = await supabase
+    const { data: existingProfile,error:profileLookupError } = await supabase
       .from("profiles")
       .select("id, email, email_verified_at")
       .eq("email", normEmail)
       .maybeSingle();
 
+    if(profileLookupError)return NextResponse.json({success:true,requireVerification:true});
     const budget = await checkEmailDispatchLimit(normEmail, ip, "verification_email");
     if (!budget.allowed) return NextResponse.json({ success:true, requireVerification:true });
 
@@ -96,8 +95,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           success: true,
           requireVerification: true,
-          email: normEmail,
-          redirectUrl,
         });
       }
 
@@ -111,15 +108,13 @@ export async function POST(req: NextRequest) {
       }
 
       // Refresh code and resend
-    const sent=await queueAuthEmail(normEmail,"verification",locale);
+    const sent=await queueAuthEmail(normEmail,"verification",locale,undefined,redirectUrl);
       if (sent.status !== "accepted") console.warn("[email] verification_pending", {correlationId:sent.correlationId});
       await recordEmailDispatched(normEmail, ip, "verification_email");
 
       return NextResponse.json({
         success: true,
         requireVerification: true,
-        email: normEmail,
-        redirectUrl,
       });
     }
 
@@ -169,8 +164,7 @@ export async function POST(req: NextRequest) {
       if (profileError || !newProfile) {
         console.error("[auth] profile_creation_failed");
         return NextResponse.json(
-          { error: "signupFailed", message: "Impossible de créer le profil." },
-          { status: 500 }
+          { success:true, requireVerification:true }
         );
       }
 
@@ -188,8 +182,7 @@ export async function POST(req: NextRequest) {
         console.error("[auth] credential_creation_failed");
         await supabase.from("profiles").delete().eq("id", userId);
         return NextResponse.json(
-          { error: "signupFailed", message: "Impossible de créer les identifiants de sécurité." },
-          { status: 500 }
+          { success:true, requireVerification:true }
         );
       }
     }
@@ -202,14 +195,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       requireVerification: true,
-      email: normEmail,
-      redirectUrl,
     });
   } catch (err: any) {
     console.error("[auth] signup_unavailable");
     return NextResponse.json(
-      { error: "serverError" },
-      { status: 500 }
+      { success:true, requireVerification:true }
     );
   }
 }

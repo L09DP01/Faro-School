@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';import {build} from 'esbuild';import {mkdir} from 'node:fs/promises';import {createRequire} from 'node:module';import {resolve} from 'node:path';
+async function main(){
+ const state:any={user:null,allowed:true,sends:[],processed:0,audits:0};(globalThis as any).__emailAdmin=state;
+ await mkdir('tmp/email-admin-tests',{recursive:true});
+ for(const[name,path]of Object.entries({admin:'src/app/api/admin/emails/route.ts',cron:'src/app/api/cron/email-outbox/route.ts'}))await build({entryPoints:[path],outfile:'tmp/email-admin-tests/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){b.onResolve({filter:/^server-only$/},()=>({path:'empty',namespace:'fixture'}));b.onResolve({filter:/^@\/lib\/(auth\/get-user|supabase\/admin|auth\/rate-limit|email\/outbox)$/},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},a=>({loader:'js',contents:a.path.endsWith('get-user')?'export async function getCurrentUser(){return globalThis.__emailAdmin.user}':a.path.endsWith('supabase/admin')?`export function createAdminClient(){return{from(){return{async insert(){globalThis.__emailAdmin.audits++;return{error:null}}}},async rpc(){return{error:null}}}}`:a.path.endsWith('rate-limit')?'export async function reserveBudget(){return{allowed:globalThis.__emailAdmin.allowed}}':a.path.endsWith('outbox')?`export async function enqueueEmail(input){globalThis.__emailAdmin.sends.push(input);return{status:'accepted',category:null,correlationId:'fixture'}};export async function processOutbox(){globalThis.__emailAdmin.processed++;return[]}`:'export {};'}));}}]});
+ const require=createRequire(resolve('package.json')),admin=require(resolve('tmp/email-admin-tests/admin.cjs')),cron=require(resolve('tmp/email-admin-tests/cron.cjs'));
+ const request=(body:object)=>new Request('https://example.test/api/admin/emails',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ for(const role of [null,'student','instructor']){state.user=role?{id:'fixture-user',role,emailVerified:'2026-10-30'}:null;const r=await admin.POST(request({action:'test'}));assert(r.status>=400);assert.equal(state.sends.length,0);}
+ state.user={id:'11111111-1111-4111-8111-111111111111',role:'admin',email:'own@example.test',emailVerified:'2026-10-30',locale:'ht'};
+ let r=await admin.POST(request({action:'test',to:'other@example.test'}));assert.equal(r.status,200);assert.equal(state.sends[0].to,state.user.email);assert.equal(state.audits,1);assert(!JSON.stringify(await r.json()).includes('@'));
+ state.allowed=false;r=await admin.POST(request({action:'test'}));assert.equal(r.status,429);assert.equal(state.sends.length,1);
+ process.env.CRON_SECRET='fake-cron-only';assert.equal((await cron.GET(new Request('https://example.test/api/cron/email-outbox'))).status,401);assert.equal(state.processed,0);
+ assert.equal((await cron.GET(new Request('https://example.test/api/cron/email-outbox',{headers:{authorization:'Bearer fake-cron-only'}}))).status,200);assert.equal(state.processed,1);
+ console.log('PASS admin-only, verified own-address test, rate limiting/audit and protected cron HTTP; all sends mocked');
+}
+main().catch(()=>{console.error('FAIL email admin HTTP regression');process.exit(1)});

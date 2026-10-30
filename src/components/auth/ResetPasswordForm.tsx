@@ -37,6 +37,7 @@ export function ResetPasswordForm() {
       }
 
       setToken(urlToken.trim());
+      history.replaceState(null,"",location.pathname);
       setStatus("ready");
     }
   }, []);
@@ -75,8 +76,8 @@ export function ResetPasswordForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || t("errors.serverError"));
-        if (data.error && data.error.includes("expiré")) {
+        setError(t("errors.serverError"));
+        if (data.error === "invalid_or_expired") {
           setStatus("expired");
         }
         return;

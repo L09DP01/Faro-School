@@ -37,6 +37,9 @@ export function sanitizeRedirectUrl(
 ): string {
   if (!next || typeof next !== "string") return fallback;
   const trimmed = next.trim();
+  let decoded=trimmed;
+  try{for(let i=0;i<2;i++)decoded=decodeURIComponent(decoded);}catch{return fallback;}
+  if(/[\u0000-\u001f\u007f\\]/.test(trimmed+decoded)||decoded.startsWith("//"))return fallback;
 
   // Must begin with a single '/' and not contain '://' or backslashes
   if (
@@ -105,8 +108,8 @@ export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export const updatePasswordSchema = z
   .object({
-    password: z.string().min(8, { message: "passwordTooShort" }),
-    confirmPassword: z.string().min(8, { message: "passwordTooShort" }),
+    password: z.string().min(10, { message: "passwordTooShort" }),
+    confirmPassword: z.string().min(10, { message: "passwordTooShort" }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "passwordsDoNotMatch",

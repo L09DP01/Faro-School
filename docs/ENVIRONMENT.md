@@ -54,7 +54,6 @@ Ce document détaille l'ensemble des variables d'environnement utilisées par Fa
 *Variables présentes dans des fichiers de configuration ou scripts anciens mais non requises par le runtime de production :*
 - `KOBARA_PUBLIC_KEY` : L'API Kobara v1 s'authentifie via Bearer secret côté serveur ; la clé publique n'est pas requise.
 - `NEXT_PUBLIC_ENABLE_GOOGLE_AUTH` : Inutilisé car l'authentification MVP repose exclusivement sur e-mail/mot de passe et liens magiques de récupération.
-- `RESEND_API_KEY` : requis ; Auth.js utilise Resend pour les emails transactionnels.
 - `ENABLE_NOTIFICATION_DISPATCH` : Reste d'un flag expérimental de notifications.
 
 ### Variables Dupliquées (`DUPLICATED`)
@@ -98,3 +97,10 @@ npx wrangler secret put BUNNY_STORAGE_TOKEN_KEY
 | `RESEND_WEBHOOK_SECRET` | Resend → Webhooks → Signing secret (`whsec_…`) | Vérification Svix sur le corps brut |
 
 Obligatoires en production, jamais `NEXT_PUBLIC_`. Déployer la migration locale avant le transport email commun. URL, événements et procédure complète : [WEBHOOKS.md](WEBHOOKS.md). Ne pas remplacer la clé Read-Only par la clé API écriture, le secret Token Authentication ou une clé Storage.
+
+## Emails Auth.js — requis au runtime
+- `RESEND_API_KEY` et `EMAIL_FROM` : envois transactionnels via Resend, jamais Supabase Auth.
+- `RESEND_WEBHOOK_SECRET` : validation des callbacks.
+- `SUPPORT_EMAIL` : Reply-To et notifications de contact.
+- `INSTRUCTOR_ESCALATION_EMAIL` : secours uniquement si le formateur n’a aucune adresse.
+- Appliquer les trois migrations email et configurer le cron avant activation ; voir EMAIL_FIX_NOTES.md.

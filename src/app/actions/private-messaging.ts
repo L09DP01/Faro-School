@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
+import {createAdminClient} from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/config";
 import { isStaffOnline, recordStaffHeartbeat, setStaffAvailability } from "@/lib/messaging/presence";
 import { callAiAssistant } from "@/lib/messaging/ai-assistant";
-import { sendEscalationEmail } from "@/lib/messaging/email";
+import {processOutbox} from "@/lib/email/outbox";
 import {
   getMockConversationsStore,
   getMockMessagesStore,
@@ -466,7 +467,7 @@ export async function sendPrivateMessageAction(
     const senderType = isStudent ? "student" : "staff";
 
     // Create user message
-    const messageId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const messageId = crypto.randomUUID();
     const studentMessage: PrivateMessage = {
       id: messageId,
       conversationId,
@@ -652,11 +653,11 @@ export async function sendPrivateMessageAction(
     // Post system message informing the student
     const systemNoticeText =
       user.locale === "ht"
-        ? `Mesaj ou a transmèt bay ${conv.staffName}. Kòm li pa an liy pou kounye a, li resevwa yon notifikasyon sou imèl li pou l reponn ou rapidman.`
-        : `Votre question a été transmise à ${conv.staffName}. Comme le formateur n'est pas en ligne actuellement, une notification urgente lui a été envoyée.`;
+        ? `Mesaj ou a transmèt bay ${conv.staffName}. Demann notifikasyon an ap trete.`
+        : `Votre question a été transmise à ${conv.staffName}. La demande de notification est en cours de traitement.`;
 
     const systemMsg: PrivateMessage = {
-      id: `msg-sys-${Date.now()}`,
+      id: crypto.randomUUID(),
       conversationId,
       senderType: "system",
       senderName: "Faro School",
@@ -668,7 +669,7 @@ export async function sendPrivateMessageAction(
 
     // Record escalation
     const escalation: EscalationRecord = {
-      id: `esc-${Date.now()}`,
+      id: crypto.randomUUID(),
       conversationId,
       triggerMessageId: messageId,
       reason: aiResult.escalate_reason || "Formateur hors ligne & question hors périmètre IA",
@@ -698,40 +699,12 @@ export async function sendPrivateMessageAction(
         .update({ status: "waiting_staff", last_message_at: systemMsg.createdAt })
         .eq("id", conversationId);
 
-      await supabase.from("escalations").insert({
-        id: escalation.id,
-        conversation_id: conversationId,
-        trigger_message_id: messageId,
-        reason: escalation.reason,
-        email_status: "pending",
-        deadline_at: deadlineAt,
-        created_at: nowIso,
-      });
     } catch {}
 
-    // Send escalation e-mail to staff
-    const staffEmail = process.env.INSTRUCTOR_ESCALATION_EMAIL || "instructor@faroschool.com";
-    const emailRes = await sendEscalationEmail({
-      toEmail: staffEmail,
-      studentName: conv.studentName,
-      courseTitle: conv.courseTitle || "Formation Faro School",
-      subject: conv.subject,
-      question: trimmedBody,
-      conversationId,
-      locale: user.locale || "fr",
-      recentMessagesSnippet: existingMsgs.slice(-4).map((m) => `${m.senderName}: ${m.body}`).join("\n"),
-    });
-
-    if (emailRes.success) {
-      escalation.emailStatus = "sent";
-      try {
-        const supabase = await createClient();
-        await supabase
-          .from("escalations")
-          .update({ email_status: "sent" })
-          .eq("id", escalation.id);
-      } catch {}
-    }
+    // The database confirms participation, the persisted message and the course instructor.
+    const {data:emailId,error:emailQueueError}=await createAdminClient().rpc('queue_instructor_escalation',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_escalation:escalation.id,p_reason:escalation.reason,p_fallback:process.env.INSTRUCTOR_ESCALATION_EMAIL?.trim()??null});
+    if(emailQueueError)console.error('[email] escalation_queue_unavailable');
+    if(emailId){const [emailResult]=await processOutbox(emailId);if(emailResult?.status==='accepted')escalation.emailStatus='sent';}
 
     try {
       revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");

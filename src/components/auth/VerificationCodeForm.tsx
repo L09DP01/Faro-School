@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslations, useLocale } from "next-intl";
 import { Loader2, AlertCircle, CheckCircle2, RefreshCw } from "lucide-react";
 import { sanitizeRedirectUrl } from "@/lib/validators/auth";
-import { signIn } from "next-auth/react";
+
 
 interface VerificationCodeFormProps {
   email: string;
@@ -62,28 +62,15 @@ export function VerificationCodeForm({
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error || "Code invalide.");
+        const errors:Record<string,[string,string]>={expired:['Ce code a expiré. Demandez un nouveau code.','Kòd sa a ekspire. Mande yon lòt kòd.'],already_used:['Ce code a déjà été utilisé.','Kòd sa a deja itilize.'],max_attempts:['Cinq essais atteints. Demandez un nouveau code.','Ou rive nan senk esè. Mande yon lòt kòd.']};
+        setError((errors[data.reason]??['Code invalide ou service indisponible.','Kòd envalid oswa sèvis la pa disponib.'])[locale==='ht'?1:0]);
         setLoading(false);
         return;
       }
 
-      // If password is available (from immediate sign-up flow), sign in automatically
-      if (password) {
-        const signInRes = await signIn("credentials", {
-          email,
-          password,
-          redirect: false,
-        });
+      // The verification API creates the Auth.js session only after the atomic proof.
+      window.location.href=sanitizeRedirectUrl(nextParam,'/'+locale+'/dashboard');
 
-        if (signInRes?.ok) {
-          const dest = sanitizeRedirectUrl(nextParam, `/${locale}/dashboard`);
-          window.location.href = dest;
-          return;
-        }
-      }
-
-      // Otherwise redirect to connexion with success message
-      window.location.href = `/${locale}/connexion?verified=true`;
     } catch {
       setError(
         locale === "ht"
@@ -110,7 +97,7 @@ export function VerificationCodeForm({
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Impossible d'envoyer le code.");
+        setError(locale==="ht"?"Demann lan pa disponib. Eseye ankò.":"Demande indisponible. Réessayez.");
         if (data.retryAfterSeconds) {
           setCooldown(data.retryAfterSeconds);
         }
@@ -119,7 +106,7 @@ export function VerificationCodeForm({
         setCooldown(60);
       }
     } catch {
-      setError("Erreur de connexion.");
+      setError(locale==="ht"?"Koneksyon pa disponib.":"Connexion indisponible.");
     } finally {
       setResending(false);
     }

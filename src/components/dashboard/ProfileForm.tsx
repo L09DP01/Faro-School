@@ -1,5 +1,6 @@
 "use client";
 
+import {ChangeEmailForm} from "./ChangeEmailForm";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
   const [personalError, setPersonalError] = useState<string | null>(null);
 
   // Password State
+  const [currentPassword,setCurrentPassword]=useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -69,11 +71,11 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      setPasswordError("Les mots de passe ne correspondent pas");
+      setPasswordError(currentLocale==="ht"?"Modpas yo pa menm":"Les mots de passe ne correspondent pas");
       return;
     }
-    if (newPassword.length < 8) {
-      setPasswordError("Le mot de passe doit comporter au moins 8 caractères");
+    if (newPassword.length < 10) {
+      setPasswordError(currentLocale==="ht"?"Modpas la dwe gen omwen 10 karaktè":"Le mot de passe doit comporter au moins 10 caractères");
       return;
     }
 
@@ -87,15 +89,17 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           newPassword,
+          currentPassword,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Erreur de modification du mot de passe");
+        throw new Error(data.error === "current_password_invalid" ? (currentLocale === "ht" ? "Modpas aktyèl la pa kòrèk." : "Le mot de passe actuel est incorrect.") : (currentLocale === "ht" ? "Chanjman an pa disponib." : "Modification indisponible."));
       }
 
       setPasswordSuccess(true);
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 4000);
@@ -182,7 +186,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
             className="w-full h-11 px-4 rounded-xl border border-line bg-bg text-muted-faro text-sm cursor-not-allowed"
           />
           <span className="text-[11px] text-muted-faro font-sans mt-1 block">
-            L&apos;adresse email ne peut pas être modifiée directement.
+            {currentLocale==='ht'?'Chanjman adrès mande yon verifikasyon.':'Le changement d’adresse nécessite une vérification.'}
           </span>
         </div>
 
@@ -213,7 +217,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           {personalLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Enregistrement...</span>
+              <span>{currentLocale === "ht" ? "Anrejistreman…" : "Enregistrement…"}</span>
             </>
           ) : (
             <span>{t("savePersonal")}</span>
@@ -221,6 +225,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
         </button>
       </form>
 
+      <ChangeEmailForm locale={currentLocale}/>
       {/* 2. Password Change Form */}
       <form
         onSubmit={handleUpdatePassword}
@@ -230,6 +235,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           {t("securitySection")}
         </h2>
 
+        <label className="block text-sm text-ink">{currentLocale==='ht'?'Modpas aktyèl':'Mot de passe actuel'}<input required autoComplete="current-password" type="password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} className="mt-2 block w-full rounded-xl border border-line bg-surface p-3"/></label>
         {passwordSuccess && (
           <div className="p-3.5 rounded-xl bg-ok-tint border border-ok/20 text-ok text-xs font-heading font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -257,7 +263,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             disabled={passwordLoading}
-            placeholder="•••••••• (8 caractères min)"
+            placeholder={currentLocale === "ht" ? "•••••••• (10 karaktè min)" : "•••••••• (10 caractères min)"}
             className="w-full h-11 px-4 rounded-xl border-[1.5px] border-line bg-surface text-ink text-sm focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 transition-all disabled:opacity-50"
             required
           />
@@ -290,7 +296,7 @@ export function ProfileForm({ user, currentLocale }: ProfileFormProps) {
           {passwordLoading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Modification...</span>
+              <span>{currentLocale === "ht" ? "Chanjman…" : "Modification…"}</span>
             </>
           ) : (
             <span>{t("savePassword")}</span>

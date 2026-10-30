@@ -116,7 +116,7 @@ async function runStepS1DTests() {
       "Must not call legacy admin user creation method"
     );
     assert.ok(
-      adminInstContent.includes("createPasswordResetToken") && adminInstContent.includes("user_credentials"),
+      adminInstContent.includes("queueAuthEmail") && adminInstContent.includes("invitation") && adminInstContent.includes("user_credentials"),
       "Must create profile with user_credentials and invitation token"
     );
     assert.ok(

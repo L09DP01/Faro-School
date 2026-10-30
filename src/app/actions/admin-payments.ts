@@ -1,5 +1,6 @@
 "use server";
 
+import {processOutbox} from "@/lib/email/outbox";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-user";
@@ -21,10 +22,8 @@ async function assertAdmin() {
  * Optional notification dispatch stub.
  * Sends email or SMS behind an env flag without breaking if unconfigured.
  */
-async function notifyStudent(studentPhone: string, studentEmail: string, message: string) {
-  if (process.env.ENABLE_NOTIFICATION_DISPATCH === "true") {
-    console.log(`[Notification Hook] Dispatching alert to ${studentPhone || studentEmail}: ${message}`);
-  }
+async function notifyStudent(_phone:string,_email:string,_message:string){
+ const results=await processOutbox();if(results.some(r=>r.status!=='accepted'))console.warn('[email] payment_notification_pending');
 }
 
 /**

@@ -67,12 +67,13 @@ export async function checkLoginRateLimit(email: string, ip: string): Promise<Ra
   try {
     const supabase = getAdminSupabase();
     // Check lockouts on email or IP
-    const { data: records } = await supabase
+    const { data: records,error } = await supabase
       .from("auth_attempts")
       .select("identifier, locked_until, attempts")
       .in("identifier", [normEmail, ip])
       .eq("attempt_type", "login");
 
+    if(error)return{allowed:false,reason:"unavailable",retryAfterSeconds:60};
     if (records) {
       for (const rec of records) {
         if (rec.locked_until) {
@@ -93,8 +94,8 @@ export async function checkLoginRateLimit(email: string, ip: string): Promise<Ra
 
     return { allowed: true };
   } catch (err) {
-    console.error("[RateLimit] Error checking login limit:", err);
-    return { allowed: true };
+    console.error("[auth] login_limit_unavailable");
+    return { allowed: false,reason:"unavailable",retryAfterSeconds:60 };
   }
 }
 

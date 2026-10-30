@@ -1,7 +1,8 @@
+import {sha256} from "@/lib/webhooks/security";
+import {processOutbox} from "@/lib/email/outbox";
 import { NextRequest, NextResponse } from "next/server";
 import { resetPasswordSchema } from "@/lib/validators/auth";
 import { isCommonPassword } from "@/lib/auth/rate-limit";
-import { verifyAndConsumePasswordResetToken } from "@/lib/auth/tokens";
 import { hashPassword } from "@/lib/auth/password";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
@@ -35,51 +36,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify and consume token
-    const tokenResult = await verifyAndConsumePasswordResetToken(token);
-    if (!tokenResult.success || !tokenResult.userId) {
-      return NextResponse.json(
-        { error: tokenResult.reason || "Jeton de réinitialisation invalide ou expiré." },
-        { status: 400 }
-      );
-    }
-
-    const userId = tokenResult.userId;
-    const passwordHash = await hashPassword(password);
-    const supabase = getAdminSupabase();
-
-    // 1. Fetch current token_version
-    const { data: creds } = await supabase
-      .from("user_credentials")
-      .select("token_version")
-      .eq("user_id", userId)
-      .single();
-
-    const nextTokenVersion = (creds?.token_version ?? 0) + 1;
-
-    // 2. Update credentials, increment token_version to invalidate all existing sessions
-    await supabase
-      .from("user_credentials")
-      .update({
-        password_hash: passwordHash,
-        token_version: nextTokenVersion,
-        failed_count: 0,
-        locked_until: null,
-      })
-      .eq("user_id", userId);
-
-    // 3. Ensure profile is marked verified
-    await supabase
-      .from("profiles")
-      .update({
-        email_verified_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-      .is("email_verified_at", null);
-
+    const passwordHash=await hashPassword(password);
+    const{data,error}=await getAdminSupabase().rpc('reset_password_atomic',{p_hash:await sha256(token),p_password_hash:passwordHash});
+    if(error)return NextResponse.json({error:'unavailable'},{status:503});
+    if(!data?.success)return NextResponse.json({error:'invalid_or_expired'},{status:400});
+    // The credential trigger queues the security warning in the same transaction.
+    await processOutbox().catch(()=>console.error('[email] security_notification_pending'));
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error("Reset password error:", err);
+    console.error("[auth] reset_unavailable");
     return NextResponse.json({ error: "Erreur serveur lors de la réinitialisation." }, { status: 500 });
   }
 }

@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 import { validateAndFormatHaitianPhone, passwordStrengthSchema } from "@/lib/validators/auth";
 import { isCommonPassword } from "@/lib/auth/rate-limit";
-import { hashPassword } from "@/lib/auth/password";
+import {processOutbox} from "@/lib/email/outbox";
+import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
 export const runtime = "nodejs";
 
@@ -13,6 +14,7 @@ const updateProfileSchema = z.object({
   fullName: z.string().min(2, "Le nom doit comporter au moins 2 caractères").optional(),
   phone: z.string().optional(),
   locale: z.enum(["fr", "ht"]).optional(),
+  currentPassword: z.string().optional(),
   newPassword: z.string().optional().or(z.literal("")),
 });
 
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { fullName, phone, locale, newPassword } = result.data;
+    const { fullName, phone, locale, newPassword, currentPassword } = result.data;
     const supabase = await createClient();
 
     // 1. Format phone if provided
@@ -90,31 +92,12 @@ export async function POST(request: NextRequest) {
       }
 
       const adminSupabase = getAdminSupabase();
-      const passwordHash = await hashPassword(newPassword);
+      const {data:creds,error:lookup}=await adminSupabase.from('user_credentials').select('password_hash,token_version').eq('user_id',user.id).single();
+      if(lookup||!creds||!currentPassword||!await verifyPassword(currentPassword,creds.password_hash))return NextResponse.json({error:'current_password_invalid'},{status:400});
+      const {data:changed,error}=await adminSupabase.rpc('change_password_atomic',{p_user:user.id,p_version:creds.token_version,p_old_hash:creds.password_hash,p_new_hash:await hashPassword(newPassword)});
+      if(error||!changed)return NextResponse.json({error:'password_change_unavailable'},{status:409});
+      await processOutbox().catch(()=>console.error('[email] security_notification_pending'));
 
-      // Fetch current token_version
-      const { data: creds } = await adminSupabase
-        .from("user_credentials")
-        .select("token_version")
-        .eq("user_id", user.id)
-        .single();
-
-      const nextTokenVersion = (creds?.token_version ?? 0) + 1;
-
-      const { error: credsError } = await adminSupabase
-        .from("user_credentials")
-        .update({
-          password_hash: passwordHash,
-          token_version: nextTokenVersion,
-        })
-        .eq("user_id", user.id);
-
-      if (credsError) {
-        return NextResponse.json(
-          { error: "Erreur lors de la modification du mot de passe", details: credsError.message },
-          { status: 500 }
-        );
-      }
     }
 
     return NextResponse.json({

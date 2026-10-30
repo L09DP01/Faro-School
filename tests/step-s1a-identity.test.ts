@@ -40,10 +40,10 @@ async function runStepS1ATests() {
   const loginRes = await loginPost(fakeAdminReq);
   const loginBody = await loginRes.json();
   assert(
-    loginRes.status === 400 || loginRes.status === 401,
+    loginRes.status === 400 || loginRes.status === 401 || loginRes.status === 429,
     `Fixed demo credentials must be rejected (got status ${loginRes.status})`
   );
-  assert.strictEqual(loginBody.error, "invalidCredentials", "Fixed password returns invalidCredentials");
+  assert(["invalidCredentials","rateLimit"].includes(loginBody.error), "Demo login must fail, including when the shared database limiter is unavailable");
   assert.strictEqual(loginRes.cookies.get("faro_session"), undefined, "No faro_session cookie is set");
   console.log("   [PASS] Demo credentials rejected without password bypass.\n");
 

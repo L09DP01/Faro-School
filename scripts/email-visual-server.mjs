@@ -1,0 +1,12 @@
+import {createServer} from 'node:http';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {resolve,extname} from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {build} from 'esbuild';
+await mkdir('tmp/email-visual',{recursive:true});
+await writeFile('tmp/email-visual/input.css',(await readFile('src/styles/globals.css','utf8')).replace(/^@import[^\r\n]*[\r\n]*/gm,''));
+execFileSync(process.execPath,['node_modules/tailwindcss/lib/cli.js','-i','tmp/email-visual/input.css','-o','tmp/email-visual/app.css','--content','tests/email-visual.tsx,src/components/admin/EmailAdminPanel.tsx,src/components/auth/VerificationLink.tsx,src/components/auth/VerificationCodeForm.tsx'],{stdio:'inherit',windowsHide:true});
+await build({entryPoints:['tests/email-visual.tsx'],outfile:'tmp/email-visual/app.js',bundle:true,platform:'browser',format:'iife',jsx:'automatic',define:{"process.env":"{}",'process.env.NODE_ENV':'"development"'}});
+if(process.argv.includes('--build-only'))process.exit(0);
+const html='<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css"><body class="bg-bg"><div id="root"></div><script src="/app.js"></script></body></html>';
+createServer(async(req,res)=>{const url=new URL(req.url,'http://localhost');const name=url.pathname;if(name==='/'){res.setHeader('Content-Type','text/html;charset=utf-8');return res.end(html);}const allowed={'/app.js':'tmp/email-visual/app.js','/app.css':'tmp/email-visual/app.css','/tokens.css':'src/styles/tokens.css'};const path=allowed[name];if(!path)return res.writeHead(404).end();res.setHeader('Content-Type',extname(path)==='.js'?'application/javascript':'text/css');res.end(await readFile(resolve(path)));}).listen(4183,'127.0.0.1',()=>console.log('Email component fixtures ready at localhost:4183; no sending capability'));

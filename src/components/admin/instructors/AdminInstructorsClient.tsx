@@ -97,6 +97,7 @@ export function AdminInstructorsClient({
     setCreateError(null);
     startTransition(async () => {
       const res = await createInstructorAction({
+        locale: locale === "ht" ? "ht" : "fr",
         fullName: newFullName,
         email: newEmail,
         title: newTitle,

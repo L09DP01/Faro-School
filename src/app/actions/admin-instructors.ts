@@ -1,11 +1,13 @@
 "use server";
 
+import {createClient} from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { can } from "@/lib/permissions";
 import { revalidatePath } from "next/cache";
-import { createPasswordResetToken } from "@/lib/auth/tokens";
-import { sendInstructorInvitationEmail } from "@/lib/email/resend";
+import {hashPassword} from "@/lib/auth/password";
+import {queueAuthEmail} from "@/lib/email/outbox";
+import {randomToken} from "@/lib/auth/tokens";
 
 async function assertAdmin() {
   const user = await getCurrentUser();
@@ -21,6 +23,7 @@ export interface CreateInstructorInput {
   title: string;
   bio: string;
   escalationEmail?: string;
+  locale?: "fr"|"ht";
 }
 
 /**
@@ -57,7 +60,7 @@ export async function createInstructorAction(
     // 1. Check if user already exists in profiles
     const { data: existingProfile } = await adminDb
       .from("profiles")
-      .select("id, role")
+      .select("id, role, locale")
       .eq("email", email)
       .maybeSingle();
 
@@ -71,7 +74,7 @@ export async function createInstructorAction(
           email,
           full_name: name,
           role: "instructor",
-          locale: "fr",
+          locale: input.locale === "ht" ? "ht" : "fr",
           email_verified_at: null, // Verified upon setting initial password
         })
         .select("id")
@@ -80,20 +83,17 @@ export async function createInstructorAction(
       if (profileErr || !newProfile) {
         return {
           success: false,
-          error: `Échec de création du profil : ${profileErr?.message || "Erreur inconnue"}`,
+          error: "profile_creation_unavailable",
         };
       }
       createdId = newProfile.id;
     }
 
-    // 2. Assign instructor role via transactional set_user_role RPC (or verify role)
-    try {
-      await adminDb.rpc("set_user_role", {
-        target_user_id: createdId,
-        new_role: "instructor",
-      });
-    } catch (rpcErr) {
-      console.warn("[Instructors] set_user_role RPC fallback:", rpcErr);
+    if(existingProfile?.role==='admin')return{success:false,error:'cannot_invite_admin'};
+    if(existingProfile&&existingProfile.role!=='instructor'){
+      const scoped=await createClient();
+      const {error}=await scoped.rpc('set_user_role',{target_user_id:createdId,new_role:'instructor'});
+      if(error)return{success:false,error:'role_assignment_unavailable'};
     }
 
     // 3. Upsert instructor details into instructors table
@@ -111,35 +111,29 @@ export async function createInstructorAction(
     if (instErr) {
       return {
         success: false,
-        error: `Échec d'enregistrement du profil formateur : ${instErr.message}`,
+        error: 'instructor_profile_unavailable',
       };
     }
 
-    // 4. Send invitation email with 48h set-password link
-    try {
-      const inviteToken = await createPasswordResetToken(createdId, 48);
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://faroschool.com";
-      const inviteUrl = `${appUrl}/fr/reinitialiser-mot-de-passe?token=${inviteToken}`;
-      await sendInstructorInvitationEmail(email, inviteUrl, name, "fr");
-    } catch (inviteErr) {
-      console.error("[Instructors] Invitation email error:", inviteErr);
-    }
+    // New accounts receive an unusable random credential until the invitation is consumed.
+    const {error:credentialError}=await adminDb.from('user_credentials').upsert({user_id:createdId,password_hash:await hashPassword(randomToken()),token_version:0},{onConflict:'user_id',ignoreDuplicates:true});
+    if(credentialError)return{success:false,error:'credentials_unavailable'};
+    const invitation=await queueAuthEmail(email,'invitation',existingProfile?.locale??input.locale??'fr',createdId);
+    if(invitation.status!=='accepted')return{success:false,instructorId:createdId,error:'invitation_pending:'+invitation.correlationId};
 
     // 5. Record audit log entry
     const { error: auditErr } = await adminDb.from("admin_audit_logs").insert({
       admin_id: admin.id,
       action: "instructor_created",
-      note: `Création du formateur ${name} (${email})`,
+      note: "Création du formateur",
       metadata: {
         instructor_id: createdId,
-        email,
         title,
-        escalation_email: escalationEmail,
       },
     });
 
     if (auditErr) {
-      console.error("[Instructors] Audit log insertion error:", auditErr);
+      console.error("[email] invitation_audit_unavailable");
     }
 
     revalidatePath("/admin/formateurs");
