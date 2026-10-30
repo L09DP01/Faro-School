@@ -2,7 +2,7 @@
 
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { checkAndIssueCertificate } from "@/lib/certificates";
+import { eligibility } from "@/lib/certificates/service";
 import { terminateOtherSessions, registerOrHeartbeatSession } from "@/lib/video/session";
 import { headers } from "next/headers";
 
@@ -17,6 +17,7 @@ export async function saveLessonProgressAction(
 ): Promise<{
   success: boolean;
   completed: boolean;
+  certificateAvailable?: boolean;
   certificateIssued?: boolean;
   certificateCode?: string;
   error?: string;
@@ -62,7 +63,7 @@ export async function saveLessonProgressAction(
     }
 
     // 3. If marked complete, check 100% course completion and issue certificate
-    let certResult: { issued: boolean; code?: string; alreadyHad?: boolean } = {
+    let certResult: { issued: boolean; code?: string; alreadyHad?: boolean; available?:boolean } = {
       issued: false,
       code: undefined,
     };
@@ -75,14 +76,15 @@ export async function saveLessonProgressAction(
 
       const courseId = (lesson?.modules as any)?.course_id;
       if (courseId) {
-        certResult = await checkAndIssueCertificate(supabase, user.id, courseId);
+        certResult = await eligibility(user.id, courseId).then(e=>({issued:false,code:undefined,available:e.eligible && !e.certificate}));
       }
     }
 
     return {
       success: true,
       completed: Boolean(finalCompletedAt),
-      certificateIssued: certResult.issued,
+      certificateAvailable: certResult.available??false,
+      certificateIssued: false,
       certificateCode: certResult.code,
     };
   } catch (err: any) {

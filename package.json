@@ -15,11 +15,15 @@
     "test": "npx tsx tests/run-all-tests.ts",
     "secret-scan": "npx tsx scripts/secret-scan.ts",
     "verify": "npm run typecheck && npm run secret-scan && npm test",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:certificates": "tsx tests/certificates.test.ts",
+    "test:certificates:api": "tsx tests/certificates-api.test.ts",
+    "test:webhooks": "tsx tests/webhooks.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@opennextjs/cloudflare": "^1.20.13",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/supabase-js": "^2.49.1",
     "clsx": "^2.1.1",
     "jose": "^6.2.13",
@@ -28,6 +32,7 @@
     "next-auth": "5.0.0-beta.32",
     "next-intl": "^4.14.9",
     "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
@@ -36,16 +41,23 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.13",
     "@types/node": "^22.13.4",
+    "@types/pngjs": "^6.0.5",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.25.0",
     "eslint": "^9.20.1",
     "eslint-config-next": "15.5.28",
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0",
     "postcss": "^8.5.2",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3",
     "wrangler": "^4.152.0"
-  }
+  },
+  "packageManager": "pnpm@9.10.0"
 }

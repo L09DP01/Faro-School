@@ -3,7 +3,7 @@ import { contactSchema } from "@/lib/validators/contact";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

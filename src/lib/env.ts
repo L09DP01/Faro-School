@@ -27,6 +27,7 @@ export const serverEnvSchema = z.object({
 
   // Email Dispatch (Resend)
   RESEND_API_KEY: z.string().optional(),
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   EMAIL_FROM: z.string().optional(),
 
   // Kobara Payment Gateway
@@ -49,6 +50,7 @@ export const serverEnvSchema = z.object({
 
   // Bunny Stream Video Protection
   BUNNY_STREAM_API_KEY: z.string().optional(),
+  BUNNY_STREAM_READ_ONLY_API_KEY: z.string().optional(),
   BUNNY_STREAM_LIBRARY_ID: z.string().optional(),
   BUNNY_STREAM_TOKEN_AUTH_KEY: z.string().optional(),
   BUNNY_STREAM_HOSTNAME: z.string().default("video.faroschool.com"),
@@ -105,6 +107,12 @@ export function validateEnvironment(customEnv?: Record<string, string | undefine
     }
     if (!serverEnv.RESEND_API_KEY) {
       missing.push("RESEND_API_KEY (for verification, password reset, and invitation emails)");
+    }
+    if (!serverEnv.RESEND_WEBHOOK_SECRET?.startsWith("whsec_")) {
+      missing.push("RESEND_WEBHOOK_SECRET (Svix signing secret)");
+    }
+    if (!serverEnv.BUNNY_STREAM_READ_ONLY_API_KEY) {
+      missing.push("BUNNY_STREAM_READ_ONLY_API_KEY (Bunny webhook signing key)");
     }
     if (!serverEnv.EMAIL_FROM) {
       missing.push("EMAIL_FROM (e.g. Faro School <noreply@faroschool.com>)");

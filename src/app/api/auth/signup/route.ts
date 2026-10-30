@@ -12,7 +12,7 @@ import { createEmailVerificationToken } from "@/lib/auth/tokens";
 import { sendVerificationEmail, sendSecurityAlertEmail } from "@/lib/email/resend";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

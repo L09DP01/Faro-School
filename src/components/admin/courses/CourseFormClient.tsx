@@ -91,8 +91,10 @@ export function CourseFormClient({
   );
   const [coverUrl, setCoverUrl] = useState(initialCourse?.coverUrl || "");
 
+  const tc = useTranslations("certificates");
+  const [certificateMinProgress,setCertificateMinProgress] = useState(initialCourse?.certificateMinProgress??100);
   // Options
-  const [certificate, setCertificate] = useState(initialCourse?.options?.certificate ?? true);
+  const [certificate, setCertificate] = useState(initialCourse?.certificateEnabled ?? initialCourse?.options?.certificate ?? true);
   const [lifetimeAccess, setLifetimeAccess] = useState(
     initialCourse?.options?.lifetimeAccess ?? true
   );
@@ -383,6 +385,8 @@ export function CourseFormClient({
       coverUrl: coverUrl.trim(),
       status: publish ? "published" : "draft",
       instructorId: isInstructorRole ? currentUserId : (selectedInstructorId || null),
+      certificateEnabled: certificate,
+      certificateMinProgress,
       options: {
         certificate,
         lifetimeAccess,
@@ -1263,15 +1267,18 @@ export function CourseFormClient({
               <div className="flex items-center justify-between p-3 rounded-xl border border-line bg-bg/50">
                 <div className="space-y-0.5 pr-3">
                   <span className="font-semibold text-ink block">{t("optionCert")}</span>
-                  <span className="text-[11px] text-muted-faro block">Génération automatique de certificat PDF avec QR code</span>
+                  <span className="text-[11px] text-muted-faro block">{tc("optionHelp")}</span>
                 </div>
                 <ToggleSwitch
+                  disabled={userRole!=="admin"}
                   id="toggle-cert"
                   label={t("optionCert")}
                   checked={certificate}
                   onChange={setCertificate}
                 />
               </div>
+
+              <label className="block text-sm text-ink">{tc("minProgress")}<input type="number" min="1" max="100" disabled={userRole!=="admin"} value={certificateMinProgress} onChange={e=>setCertificateMinProgress(Number(e.target.value))} className="mt-2 w-full rounded-xl border border-line bg-surface p-3" /></label>
 
               {/* Option 2: Accès illimité à vie */}
               <div className="flex items-center justify-between p-3 rounded-xl border border-line bg-bg/50">

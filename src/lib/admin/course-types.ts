@@ -69,6 +69,8 @@ export interface AdminCourseFormData {
   category: string;
   coverUrl: string;
   status: "draft" | "published";
+  certificateEnabled?: boolean;
+  certificateMinProgress?: number;
   options: AdminCourseOptions;
   modules: AdminModuleForm[];
   instructorId?: string | null;
@@ -91,6 +93,8 @@ export const adminCourseZodSchema = z.object({
   category: z.string().default("general"),
   coverUrl: z.string().optional().default(""),
   status: z.enum(["draft", "published"]).default("draft"),
+  certificateEnabled: z.boolean().default(true),
+  certificateMinProgress: z.coerce.number().min(1).max(100).default(100),
   options: z.object({
     certificate: z.boolean().default(true),
     lifetimeAccess: z.boolean().default(true),

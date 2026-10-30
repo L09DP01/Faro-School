@@ -3,7 +3,7 @@ import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 function sanitizePdfText(str: string): string {
   if (!str) return "";

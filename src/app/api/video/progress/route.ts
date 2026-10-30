@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { checkAndIssueCertificate } from "@/lib/certificates";
+import { eligibility } from "@/lib/certificates/service";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. If marked complete, check if the whole course is complete and issue certificate
-    let certResult: { issued: boolean; code?: string } = { issued: false, code: undefined };
+    let certResult: { issued: boolean; code?: string; available?:boolean } = { issued: false, code: undefined };
     if (finalCompletedAt) {
       const { data: lesson } = await supabase
         .from("lessons")
@@ -70,14 +70,15 @@ export async function POST(req: NextRequest) {
 
       const courseId = (lesson?.modules as any)?.course_id;
       if (courseId) {
-        certResult = await checkAndIssueCertificate(supabase, user.id, courseId);
+        certResult = await eligibility(user.id, courseId).then(e=>({issued:false,code:undefined,available:e.eligible && !e.certificate}));
       }
     }
 
     return NextResponse.json({
       success: true,
       completed: Boolean(finalCompletedAt),
-      certificateIssued: certResult.issued,
+      certificateAvailable: certResult.available??false,
+      certificateIssued: false,
       certificateCode: certResult.code,
     });
   } catch (err: any) {

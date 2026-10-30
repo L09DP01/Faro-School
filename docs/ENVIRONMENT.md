@@ -89,3 +89,12 @@ npx wrangler secret put BUNNY_STREAM_TOKEN_AUTH_KEY
 npx wrangler secret put BUNNY_STORAGE_API_KEY
 npx wrangler secret put BUNNY_STORAGE_TOKEN_KEY
 ```
+
+## Secrets des webhooks Bunny et Resend
+
+| Variable serveur | Origine | Utilisation |
+| --- | --- | --- |
+| `BUNNY_STREAM_READ_ONLY_API_KEY` | Bibliothèque Bunny Stream → Read-Only API key | Signature HMAC du webhook et lecture de la durée vidéo |
+| `RESEND_WEBHOOK_SECRET` | Resend → Webhooks → Signing secret (`whsec_…`) | Vérification Svix sur le corps brut |
+
+Obligatoires en production, jamais `NEXT_PUBLIC_`. Déployer la migration locale avant le transport email commun. URL, événements et procédure complète : [WEBHOOKS.md](WEBHOOKS.md). Ne pas remplacer la clé Read-Only par la clé API écriture, le secret Token Authentication ou une clé Storage.

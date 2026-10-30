@@ -1,3 +1,4 @@
+import { sendResendEmail } from "./transport";
 /**
  * Edge-compatible Email Dispatch via Resend API (fetch-based).
  * Supports French (FR) and Haitian Creole (KR/HT).
@@ -9,45 +10,8 @@ interface SendEmailParams {
   html: string;
 }
 
-export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<{ success: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.EMAIL_FROM || "Faro School <contact@faroschool.com>";
-
-  if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("[Email] RESEND_API_KEY is missing in production. Delivery rejected.");
-      return { success: false, error: "Configuration email manquante en production" };
-    }
-    console.log(`[Email Mock (Dev)] To: ${to} | Subject: ${subject}`);
-    return { success: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [to],
-        subject,
-        html,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[Resend API Error]:", errText);
-      return { success: false, error: errText };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error("[Email] Failed to send email:", err);
-    return { success: false, error: (err as Error).message };
-  }
+export async function sendEmail(message:SendEmailParams):Promise<{success:boolean;error?:string}>{
+  return sendResendEmail(message);
 }
 
 /**

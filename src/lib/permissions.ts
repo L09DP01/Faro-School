@@ -15,7 +15,9 @@ export type PermissionAction =
   | "instructors.manage"
   | "community.moderate"
   | "community.pin"
-  | "ai.configure";
+  | "ai.configure"
+  | "certificates.read"
+  | "certificates.manage";
 
 export interface PermissionUser {
   id: string;
@@ -62,6 +64,10 @@ export function can(
   // Instructor permissions
   if (user.role === "instructor") {
     switch (action) {
+      case "certificates.read":
+        return Boolean(resource && resource.instructor_id === user.id);
+      case "certificates.manage":
+        return false;
       case "course.manage":
       case "course.publish":
         // If a specific course resource is supplied, check instructor ownership

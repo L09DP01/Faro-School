@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { signSupabaseToken } from "@/lib/auth/supabase-jwt";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET() {
   const session = await auth();

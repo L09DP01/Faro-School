@@ -1,3 +1,4 @@
+import { sendEmail } from "@/lib/email/resend";
 interface SendEscalationEmailParams {
   toEmail: string;
   studentName: string;
@@ -19,8 +20,6 @@ export async function sendEscalationEmail({
   locale = "fr",
   recentMessagesSnippet,
 }: SendEscalationEmailParams): Promise<{ success: boolean; error?: string }> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.MAIL_FROM || "Faro School <notifications@faroschool.com>";
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const conversationUrl = `${baseUrl}/${locale}/admin/messages/${conversationId}`;
 
@@ -89,35 +88,5 @@ export async function sendEscalationEmail({
 </html>
   `;
 
-  if (!apiKey) {
-    console.info(`[EMAIL SIMULATION] RESEND_API_KEY not configured. Escalation email simulated for ${toEmail}: ${emailSubject}`);
-    return { success: true };
-  }
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [toEmail],
-        subject: emailSubject,
-        html,
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("[RESEND ERROR]", errText);
-      return { success: false, error: errText };
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    console.error("[RESEND FETCH ERROR]", err);
-    return { success: false, error: err.message };
-  }
+  return sendEmail({to:toEmail,subject:emailSubject,html});
 }

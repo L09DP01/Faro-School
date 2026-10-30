@@ -5,6 +5,9 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Bunny and Resend: signatures, transactions and HTTP",cmd:"npx tsx tests/webhooks.test.ts"},
+  {name:"Certificates: PostgreSQL rules and RLS",cmd:"npx tsx tests/certificates.test.ts"},
+  {name:"Certificates: protected HTTP handlers",cmd:"npx tsx tests/certificates-api.test.ts"},
   { name: "Step S1-B: Database Roles & RLS", cmd: "npx tsx tests/db-roles-and-rls.test.ts" },
   { name: "Step S1-A: Identity & Sessions", cmd: "npx tsx --require ./tests/setup-test-env.js tests/step-s1a-identity.test.ts" },
   { name: "Step S1-C: Payment Integrity & Webhooks", cmd: "npx tsx --require ./tests/setup-test-env.js tests/step-s1c-payments.test.ts" },

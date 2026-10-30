@@ -10,6 +10,7 @@ import type { CurrentUser } from "@/lib/auth";
 import type { ReactNode } from "react";
 import {
   LayoutDashboard,
+  GraduationCap,
   BookOpen,
   Users,
   CreditCard,
@@ -101,6 +102,12 @@ export function AdminLayoutClient({
   const contentNavItems: NavItem[] = isInstructor
     ? [
         {
+          href: "/admin/certificats",
+          exact: false,
+          label: isHt ? "Sètifika" : "Certificats",
+          icon: <GraduationCap className="w-5 h-5 shrink-0" />,
+        },
+        {
           href: "/admin/communaute",
           exact: false,
           label: isHt ? "Kominote" : "Communauté",
@@ -153,6 +160,8 @@ export function AdminLayoutClient({
           icon: <MessageSquare className="w-5 h-5 shrink-0" />,
         },
       ];
+
+  if (!isInstructor) contentNavItems.push({href:"/admin/certificats",exact:false,label:isHt?"Sètifika":"Certificats",icon:<GraduationCap className="w-5 h-5 shrink-0"/>});
 
   const systemNavItems: NavItem[] = isInstructor
     ? []

@@ -5,7 +5,7 @@ import { createEmailVerificationToken } from "@/lib/auth/tokens";
 import { sendVerificationEmail } from "@/lib/email/resend";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const resendSchema = z.object({
   email: z.string().email(),

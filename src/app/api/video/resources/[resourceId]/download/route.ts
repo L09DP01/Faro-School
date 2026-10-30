@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { BunnyStorage } from "@/lib/video/bunny-storage";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(
   req: NextRequest,

@@ -93,6 +93,10 @@ export async function saveCourseAction(
       finalInstructorId = user.id;
     }
 
+    // Certificate thresholds are an administrator decision. Preserve them for instructors.
+    let certificateFields: Record<string, unknown> = {};
+    if (can(user, "certificates.manage")) certificateFields={certificate_enabled:data.certificateEnabled,certificate_min_progress:data.certificateMinProgress};
+
     // 1. Upsert Course
     if (courseId) {
       // Update
@@ -111,6 +115,7 @@ export async function saveCourseAction(
           cover_url: data.coverUrl || null,
           status: data.status,
           options: data.options,
+          ...certificateFields,
           instructor_id: finalInstructorId,
         })
         .eq("id", courseId);
@@ -138,6 +143,7 @@ export async function saveCourseAction(
           cover_url: data.coverUrl || null,
           status: data.status,
           options: data.options,
+          ...certificateFields,
           instructor_id: finalInstructorId,
         })
         .select("id")

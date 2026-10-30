@@ -38,3 +38,9 @@ pnpm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local certificate test harness and temporary font tooling
+/tmp/
+
+# Supabase CLI local version cache
+/supabase/.temp/

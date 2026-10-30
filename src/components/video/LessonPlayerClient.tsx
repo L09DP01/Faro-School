@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { CertificateCelebration } from "@/components/certificates/StudentCertificates";
 import { Link } from "@/i18n/navigation";
 import {
   saveLessonProgressAction,
@@ -290,8 +291,8 @@ export function LessonPlayerClient({
     async (posSec: number, markCompleted: boolean = false) => {
       try {
         const res = await saveLessonProgressAction(lessonId, posSec, markCompleted);
-        if (res.certificateIssued && res.certificateCode) {
-          setCourseCompletedCertCode(res.certificateCode);
+        if (res.certificateAvailable) {
+          setCourseCompletedCertCode("available");
         }
       } catch {
         // Silently catch network blips
@@ -862,29 +863,7 @@ export function LessonPlayerClient({
           </div>
 
           {/* COURSE COMPLETION BANNER (when user finishes last lesson) */}
-          {courseCompletedCertCode && (
-            <div className="p-5 rounded-[18px] bg-ok-tint border border-ok/20 text-ink flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-subtle">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-ok text-white flex items-center justify-center shrink-0">
-                  <Check className="w-5 h-5 stroke-[2.5]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-heading font-bold text-navy-deep">
-                    {t("courseCompleted.title")}
-                  </h3>
-                  <p className="text-xs text-muted-faro font-sans mt-0.5">
-                    {t("courseCompleted.subtitle")}
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/dashboard/certificats"
-                className="px-5 py-2.5 rounded-xl bg-orange hover:bg-orange-strong text-white text-xs font-heading font-bold transition-all shadow-orange shrink-0"
-              >
-                {t("courseCompleted.viewCertificate")} →
-              </Link>
-            </div>
-          )}
+          {courseCompletedCertCode && (<CertificateCelebration onGet={()=>router.push(`/${locale}/certificats`)}/>)}
 
           {/* ======================================================= */}
           {/* UNDER THE VIDEO: 30px Title, Muted Module, Action Buttons */}
@@ -936,7 +915,7 @@ export function LessonPlayerClient({
                 </Link>
               ) : (
                 <Link
-                  href="/dashboard/certificats"
+                  href="/certificats"
                   className="px-5 py-2.5 rounded-xl bg-orange hover:bg-orange-strong text-white font-heading font-bold text-xs sm:text-sm transition-all shadow-orange flex items-center gap-2"
                 >
                   <span>Voir mon certificat</span>

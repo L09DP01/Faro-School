@@ -3,7 +3,7 @@ import { z } from "zod";
 import { verifyEmailCode, verifyEmailLinkToken } from "@/lib/auth/tokens";
 import { normalizeEmail } from "@/lib/auth/rate-limit";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const verifyCodeSchema = z.object({
   email: z.string().email(),

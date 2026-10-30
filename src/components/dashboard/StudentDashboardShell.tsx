@@ -112,7 +112,7 @@ export function StudentDashboardShell({
       badge: 1,
     },
     {
-      href: "/dashboard/certificats" as const,
+      href: "/certificats" as const,
       exact: false,
       label: tNav("certificates") || "Certificats",
       icon: <Award className="w-5 h-5 shrink-0" />,

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getFallbackCoupon } from "@/lib/admin/promotions";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

@@ -173,3 +173,15 @@ pnpm preview
 # Déploiement sur Cloudflare Workers
 pnpm deploy
 ```
+
+### Webhooks Bunny Stream et Resend
+
+Les endpoints `POST /api/webhooks/bunny` et `POST /api/webhooks/resend` sont implémentés avec signatures, validation Zod, déduplication transactionnelle et reprise sur erreur. Appliquer manuellement `supabase/migrations/20261030001418_bunny_resend_webhooks.sql` avant le déploiement ; configurer `BUNNY_STREAM_READ_ONLY_API_KEY` et `RESEND_WEBHOOK_SECRET` côté serveur. Les événements, URL et essais sont détaillés dans [docs/WEBHOOKS.md](docs/WEBHOOKS.md).
+
+### Installation Cloudflare / pnpm 9
+
+Le dépôt fixe `packageManager: pnpm@9.10.0` et déclare explicitement le package racine dans `pnpm-workspace.yaml` (`packages: ["."]`). Sans cette section, pnpm 9.10.0 échoue avant toute compilation avec `packages field missing or empty`. La commande `pnpm install --frozen-lockfile` a été vérifiée avec cette version dans une installation isolée complète, scripts de dépendances inclus, sans régénérer le lockfile.
+
+Les route handlers utilisent le runtime Next.js `nodejs` pour OpenNext Cloudflare ; la cryptographie reste fondée sur Web Crypto. Le middleware conserve sa configuration distincte. Voir https://opennext.js.org/cloudflare#supported-nextjs-runtimes .
+
+Validation avant push : installation complète pnpm 9.10.0 à lockfile gelé réussie ; build OpenNext complet réussi depuis l’installation propre ; 12 suites locales, typage, lint et contrôle de secrets réussis. L’installation de contrôle ne copie aucun secret réel et n’applique aucune migration distante.

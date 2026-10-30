@@ -3,7 +3,7 @@ import { z } from "zod";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const newsletterSchema = z.object({
   email: z.string().trim().email("Adresse email invalide").toLowerCase(),

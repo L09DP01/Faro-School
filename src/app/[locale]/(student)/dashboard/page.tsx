@@ -1,6 +1,7 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Image from "next/image";
+import { CertificateCourseBadge } from "@/components/certificates/CertificateCourseBadge";
 import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -524,6 +525,7 @@ export default async function StudentDashboardPage({
                       <h3 className="text-sm font-heading font-bold text-navy-deep line-clamp-2 leading-snug group-hover:text-blue transition-colors">
                         {course.title}
                       </h3>
+                  <CertificateCourseBadge courseId={course.id} locale={locale}/>
 
                       {/* Blue Progress Bar */}
                       <div className="space-y-1.5">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 async function isAuthorizedCron(req: Request): Promise<boolean> {
   const authHeader = req.headers.get("authorization");

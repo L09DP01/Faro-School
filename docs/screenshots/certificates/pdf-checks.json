@@ -1,0 +1,37 @@
+[
+  {
+    "case": "standard",
+    "french": true,
+    "embedded_fonts": 13,
+    "pages": 1,
+    "accents": true
+  },
+  {
+    "case": "kr",
+    "french": true,
+    "embedded_fonts": 14,
+    "pages": 1,
+    "accents": true
+  },
+  {
+    "case": "long-name",
+    "french": true,
+    "embedded_fonts": 13,
+    "pages": 1,
+    "accents": true
+  },
+  {
+    "case": "long-title",
+    "french": true,
+    "embedded_fonts": 14,
+    "pages": 1,
+    "accents": true
+  },
+  {
+    "case": "apostrophe",
+    "french": true,
+    "embedded_fonts": 13,
+    "pages": 1,
+    "accents": true
+  }
+]

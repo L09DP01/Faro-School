@@ -14,3 +14,10 @@
     min-height: 100vh;
   }
 }
+
+/* Certificate fonts are bundled, including Latin-extended accents. */
+@font-face{font-family:FaroCertificateHeading;src:url('/fonts/certificates/Tinos-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:FaroCertificateItalic;src:url('/fonts/certificates/Tinos-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic;font-display:swap}
+@font-face{font-family:FaroCertificateBody;src:url('/fonts/certificates/Inter-Regular.ttf') format('truetype');font-weight:100 900;font-display:swap}
+
+@font-face{font-family:FaroCertificateBodyBold;src:url('/fonts/certificates/Inter-Bold.ttf') format('truetype');font-weight:700;font-display:swap}

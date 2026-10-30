@@ -160,3 +160,7 @@ Toutes les combinaisons de couleurs ont été mesurées et validées conforméme
 
 Une page de démonstration interactive de tous les composants et jetons est disponible en environnement de développement à l'adresse suivante :
 `/[locale]/design-system` (désactivée en production via `process.env.NODE_ENV === "production"`).
+
+## Certificat de réussite — modèle fourni par l’utilisateur
+
+Le certificat PDF et son aperçu SVG suivent le modèle ornemental approuvé, conservé dans `docs/screenshots/certificates/reference-approved.png` : cadre double marine/orange, coins géométriques, lauriers et toque en filigrane, médaillon central et titres à empattements. Exception limitée au document : Tinos Bold / Bold Italic pour titre, nom et formation ; Inter pour les autres textes. Les pages de l’application conservent Poppins / Inter et leurs tokens habituels. Le fond vide commun est `public/brand/certificates/ornate-template.png` ; les positions PDF/SVG sont centralisées dans `src/lib/certificates/layout.ts`. Les noms, le QR, les données de formation, le signataire et le pied juridique restent rendus dynamiquement.

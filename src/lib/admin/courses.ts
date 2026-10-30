@@ -147,6 +147,8 @@ export async function getAdminCourseById(id: string): Promise<AdminCourseFormDat
         cover_url,
         status,
         options,
+        certificate_enabled,
+        certificate_min_progress,
         instructor_id,
         modules (
           id,
@@ -218,6 +220,8 @@ export async function getAdminCourseById(id: string): Promise<AdminCourseFormDat
       category: course.category || "general",
       coverUrl: course.cover_url || "",
       status: (course.status as "draft" | "published") || "draft",
+      certificateEnabled: course.certificate_enabled,
+      certificateMinProgress: Number(course.certificate_min_progress??100),
       options: course.options || {
         certificate: true,
         lifetimeAccess: true,

@@ -5,7 +5,7 @@ import { verifyAndConsumePasswordResetToken } from "@/lib/auth/tokens";
 import { hashPassword } from "@/lib/auth/password";
 import { getAdminSupabase } from "@/lib/supabase/admin";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {

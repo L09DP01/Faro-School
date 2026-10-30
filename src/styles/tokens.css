@@ -1,5 +1,8 @@
 :root {
   /* Faro School Brand Design Tokens */
+  /* Print-only certificate palette, matching the approved ornate reference. */
+  --certificate-orange: #FF750A;
+  --certificate-muted: #5B6478;
   --navy-deep: #031047;
   --navy: #0B1F4B;
   --navy-hero: #13306F;

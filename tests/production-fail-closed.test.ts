@@ -97,6 +97,8 @@ const envWithoutAi = validateEnvironment({
   BUNNY_STREAM_TOKEN_AUTH_KEY: "bunny_token",
   AUTH_SECRET: "mock-auth-secret-min-32-chars-long-for-testing",
   SUPABASE_JWT_SECRET: "mock-supabase-jwt-secret-min-32-chars-for-test",
+  RESEND_WEBHOOK_SECRET: "whsec_bW9jay13ZWJob29rLXNlY3JldC0zMmJ5dGVzLXRlc3Q=",
+  BUNNY_STREAM_READ_ONLY_API_KEY: "mock-bunny-read-only-signing-key",
   RESEND_API_KEY: "re_mock_api_key",
   EMAIL_FROM: "Faro School <contact@faroschool.com>",
   // No ANTHROPIC_API_KEY or GEMINI_API_KEY

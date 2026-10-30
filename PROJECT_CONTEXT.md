@@ -520,3 +520,20 @@
     - **Récupération de Compte, Anti-Abus & Cron (S1-F)** : Page de réinitialisation de mot de passe `/[locale]/reinitialiser-mot-de-passe` avec échange de session de récupération, validation Zod avec confirmation de mot de passe, et gestion de l'expiration/invalidité du lien (bilingue FR/KR). Route cron `/api/cron/escalations` protégée par `CRON_SECRET` avec vérification `crypto.timingSafeEqual`. Limitation de débit appliquée sur les routes d'authentification, de contact, de checkout et de coupons. Pipeline d'audit unifié `pnpm verify` (typecheck, base de données, 66 assertions d'audit et tests unitaires avec 100% de succès).
 
 
+
+
+## Certificates — built (29 octobre 2026)
+
+Course completion certificates reuse the existing enrollments, lesson_progress and certificates tables and can() permissions. Verified students confirm their printed name before transactional, idempotent issuance. Public verification returns an explicit field allowlist; PDFs are generated on demand with pdf-lib/fontkit, embedded Poppins/Inter and a server-generated QR, owner/admin only, with no-store. No PDF is uploaded to Bunny.
+
+Routes: /[locale]/certificats, /[locale]/verification/[certificateNumber], /[locale]/admin/certificats. Student navigation keeps five mobile tabs. Admins control signatures, revocation/reissue and course thresholds; instructors read only certificates for their own courses. The historical auto-issue trigger and public certificate-table access are removed by the migration. Only one valid certificate per student/course is permitted; revoked/reissued historical rows remain.
+
+Manual migration (not applied remotely): supabase/migrations/20261029000000_certificates.sql. Implementation, screenshot inventory, test scope and required signer/legal inputs: docs/CERTIFICATES.md. Screenshots: docs/screenshots/certificates/. Physical Android/iPhone/PWA downloads and live Resend/Bunny/Supabase integration still require deployment validation.
+
+Certificate visual reference: the user-approved ornate model is shared by PDF and SVG (local empty template, Tinos serif title/name and Inter body; app typography unchanged). See `docs/CERTIFICATES.md`.
+
+## Webhooks Bunny Stream et Resend — built
+
+Routes `/api/webhooks/bunny` et `/api/webhooks/resend`, compatibles Workers avec Web Crypto. Bunny synchronise les états et durées vidéo ; Resend suit les livraisons et suppressions, partagées par tous les envois email. Les reçus et effets sont atomiques et dédupliqués ; les nouvelles tables sont privées, RLS activée, service_role uniquement. Une livraison email ne vérifie jamais un compte. Migration locale `20261030001418_bunny_resend_webhooks.sql` à appliquer manuellement ; configuration des comptes prestataires et validation distante à effectuer par le propriétaire. Guide : `docs/WEBHOOKS.md`.
+
+Cloudflare build fix: `pnpm-workspace.yaml` explicitly lists the root package; `packageManager` pins pnpm 9.10.0. API route handlers use the Next.js nodejs runtime required by OpenNext; middleware remains separate. Clean frozen installation and complete OpenNext Worker build verified locally. Temporary validation projects are excluded from TypeScript.

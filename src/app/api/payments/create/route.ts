@@ -7,7 +7,7 @@ import { maskSensitiveData } from "@/lib/payments/mask";
 import { validateAndFormatHaitianPhone } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/security/rate-limit";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const createPaymentSchema = z.object({
   courseId: z.string().uuid("Identifiant de formation invalide"),

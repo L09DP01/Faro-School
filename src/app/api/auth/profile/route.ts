@@ -7,7 +7,7 @@ import { validateAndFormatHaitianPhone, passwordStrengthSchema } from "@/lib/val
 import { isCommonPassword } from "@/lib/auth/rate-limit";
 import { hashPassword } from "@/lib/auth/password";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const updateProfileSchema = z.object({
   fullName: z.string().min(2, "Le nom doit comporter au moins 2 caractères").optional(),

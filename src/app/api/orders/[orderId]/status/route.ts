@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function GET(
   request: NextRequest,
