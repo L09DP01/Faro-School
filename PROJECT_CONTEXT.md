@@ -4,6 +4,12 @@
 
 ## 2. Stack
 
+Auth session cookie invariant: `auth.config.ts` sets `useSecureCookies` once;
+middleware `getToken` must use that same value. Production uses the
+`__Secure-authjs.session-token` cookie name and JWE salt. Omitting it sends a
+valid session between dashboard and login indefinitely. Do not add cookie-name
+fallbacks that accept unsigned cookies or bypass the server database checks.
+
 Email auth orchestration: `src/lib/email/auth-requests.ts` is the only public
 signup/resend/recovery pipeline. Reserve the atomic email budget once per request.
 Account creation must call the existing `create_user_with_credentials` RPC with

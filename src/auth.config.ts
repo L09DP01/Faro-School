@@ -5,6 +5,8 @@ import type { NextAuthConfig } from "next-auth";
  * Contains ZERO database calls, zero Node-only crypto, and zero native bcrypt.
  */
 export const authConfig: NextAuthConfig = {
+  // Shared with middleware's getToken: the cookie name is also the JWE salt.
+  useSecureCookies: process.env.NODE_ENV === "production",
   providers: [], // Added in auth.ts
   session: {
     strategy: "jwt",

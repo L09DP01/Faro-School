@@ -5,6 +5,7 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Auth.js middleware cookie compatibility",cmd:"npx tsx tests/auth-middleware-session.test.ts"},
   {name:"Email Cloudflare scheduler",cmd:"npx tsx tests/email-scheduler.test.ts"},
   {name:"Email admin and cron HTTP",cmd:"npx tsx tests/email-admin-api.test.ts"},
   {name:"Email neutral HTTP handlers",cmd:"npx tsx tests/email-http.test.ts"},

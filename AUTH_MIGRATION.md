@@ -1,5 +1,25 @@
 # Faro School — migration Supabase Auth vers Auth.js v5
 
+## Correctif du 30 octobre 2026 — boucle après confirmation email
+
+La session créée après vérification utilisait le cookie HTTPS
+`__Secure-authjs.session-token`. Le middleware appelait `getToken` sans
+`secureCookie`, dont la valeur par défaut dans la version installée est false.
+Il cherchait donc `authjs.session-token` et refusait le tableau de bord. La page
+de connexion lisait correctement la session via Auth.js puis redirigeait vers
+le tableau de bord : `ERR_TOO_MANY_REDIRECTS`.
+
+Le mode de cookie est maintenant déclaré dans `auth.config.ts` et partagé avec
+le décodeur du middleware. Le nom sert aussi de sel au chiffrement JWE : les deux
+côtés doivent rester cohérents. Aucun changement des autorisations côté serveur,
+du rôle relu en base, de la validation email ou de token_version.
+
+La régression utilise le vrai chiffrement Auth.js et le vrai middleware, sans
+base distante : production HTTPS et développement HTTP, FR/KR, cookie découpé,
+sessions expirées/falsifiées, refus étudiant dans admin et accès admin légitime.
+Aucune migration SQL ni nouvelle variable nécessaire. Les cookies sécurisés
+existants restent valides ; après déploiement, rouvrir le tableau de bord.
+
 Date : 29 octobre 2026.
 Branche de travail : `auth-migration`.
 Statut : **Migration terminée avec succès — 100% des tests validés**.

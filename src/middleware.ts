@@ -78,10 +78,11 @@ export async function middleware(request: NextRequest) {
   if (isDashboardRoute || isAdminRoute) {
     // Auth.js Edge-safe session verification via encrypted JWT cookie.
     // Zero database queries in Edge middleware.
-    const secret = process.env.AUTH_SECRET || "dev-auth-secret-min-32-chars-long-placeholder";
+    const secret = process.env.AUTH_SECRET;
     const token = await getToken({
       req: request,
       secret,
+      secureCookie: authConfig.useSecureCookies,
     });
 
     if (!token || !token.id) {
