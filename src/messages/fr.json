@@ -1222,5 +1222,10 @@
     "confirmRevoke": "Confirmer la révocation",
     "confirmReissue": "Confirmer la réémission",
     "chooseSignature": "Choisir une signature"
-  }
+  },
+  "communityAccess": {
+  "title": "La communauté est réservée aux élèves inscrits",
+  "description": "Inscrivez-vous à une formation pour échanger avec les autres élèves.",
+  "browse": "Découvrir les formations"
+}
 }

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import {sanitizeRedirectUrl} from '@/lib/validators/auth';
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const user = await getCurrentUser();
   const searchParams = request.nextUrl.searchParams;
-  const nextParam = searchParams.get("next");
+  const nextParam = sanitizeRedirectUrl(searchParams.get("next"), '');
 
   // Determine locale: saved preference cookie -> browser language -> fr
   let locale = "fr";

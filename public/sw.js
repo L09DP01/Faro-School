@@ -3,7 +3,7 @@
  * Compatible with Next.js 15 and Cloudflare Workers (OpenNext)
  */
 
-const CACHE_NAME = "faro-pwa-v1";
+const CACHE_NAME = "faro-pwa-v2-dashboard";
 
 const PRECACHE_ASSETS = [
   "/offline",
@@ -46,7 +46,6 @@ self.addEventListener("install", (event) => {
     caches
       .open(CACHE_NAME)
       .then((cache) => cache.addAll(PRECACHE_ASSETS))
-      .then(() => self.skipWaiting())
       .catch((err) => {
         console.warn("[SW] Pre-cache warning:", err);
       })
@@ -60,7 +59,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => key.startsWith("faro-pwa-") && key !== CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )

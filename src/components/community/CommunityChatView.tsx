@@ -201,8 +201,9 @@ export function CommunityChatView({
         const supabase = await initAuthenticatedRealtimeClient();
         if (isCancelled) return;
 
-        channel = supabase.channel("community-global-room", {
+        channel = supabase.channel("community-enrolled-room", {
           config: {
+            private: true,
             presence: {
               key: currentUser.id,
             },
@@ -314,7 +315,7 @@ export function CommunityChatView({
         .on("presence", { event: "sync" }, () => {
           const state = channel.presenceState();
           const count = Object.keys(state).length;
-          setOnlineCount(Math.max(count, 142)); // blend mock + real presence
+          setOnlineCount(count);
         })
         .subscribe((status: string) => {
           if (status === "SUBSCRIBED") {
@@ -961,7 +962,7 @@ export function CommunityChatView({
         {/* Message Stream */}
         <div
           ref={chatScrollContainerRef}
-          className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 focus-visible:outline-none bg-chat-bg bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:20px_20px]"
+          className="flex-1 min-h-0 overflow-y-auto p-3 sm:p-4 md:p-6 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]"
         >
           {/* Messages list */}
           {displayedMessages.map((msg, idx) => {

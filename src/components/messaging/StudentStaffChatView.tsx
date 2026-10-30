@@ -277,7 +277,7 @@ export function StudentStaffChatView({
 
   return (
     <>
-      <div className="relative flex h-[calc(100dvh-5.5rem)] w-full gap-4 md:gap-5 overflow-hidden bg-transparent">
+      <div className="relative flex h-full min-h-0 flex-1 w-full gap-4 md:gap-5 overflow-hidden bg-transparent">
         {/* ========================================================================= */}
         {/* 1. LEFT PANEL: CONVERSATIONS INBOX                                       */}
         {/* ========================================================================= */}
@@ -326,7 +326,7 @@ export function StudentStaffChatView({
             </div>
 
             {/* Conversation Items List */}
-            <div className="flex-1 overflow-y-auto py-3 space-y-2 focus-visible:outline-none">
+            <div className="flex-1 min-h-0 overflow-y-auto py-3 space-y-2 focus-visible:outline-none">
               {filteredConversations.length === 0 ? (
                 <div className="py-12 text-center text-muted-faro space-y-2">
                   <div className="w-14 h-14 rounded-full bg-blue-tint text-navy-deep flex items-center justify-center mx-auto mb-2 shadow-2xs">
@@ -478,7 +478,7 @@ export function StudentStaffChatView({
               </header>
 
               {/* Message Stream */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg bg-[radial-gradient(#E2E8F0_1px,transparent_1px)] [background-size:20px_20px]">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]">
                 {/* Subject Header Banner */}
                 <div className="p-3.5 rounded-2xl bg-white border border-line/60 shadow-2xs flex items-center justify-between text-xs">
                   <div>

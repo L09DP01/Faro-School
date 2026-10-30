@@ -4,6 +4,7 @@ import { getCurrentUser, type CurrentUser } from "@/lib/auth/get-user";
 export type Role = "student" | "instructor" | "admin";
 
 export type PermissionAction =
+  | "community.access"
   | "course.manage"
   | "course.publish"
   | "course.change_instructor"
@@ -59,12 +60,15 @@ export function can(
 
   // Student permissions (standard student role has no elevated admin/instructor actions)
   if (user.role === "student") {
+    if(action === "community.access")return resource?.hasActiveEnrollment === true;
     return false;
   }
 
   // Instructor permissions
   if (user.role === "instructor") {
     switch (action) {
+      case "community.access":
+        return true;
       case "certificates.read":
         return Boolean(resource && resource.instructor_id === user.id);
       case "certificates.manage":

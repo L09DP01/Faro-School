@@ -1,3 +1,4 @@
+import {requireCommunityAccess} from "./access";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/config";
 import type {
@@ -44,6 +45,7 @@ export function getMockCommunityRulesAcceptedStore(): Set<string> {
 }
 
 export async function getPinnedMessage(): Promise<CommunityMessage | null> {
+  await requireCommunityAccess();
   try {
     const supabase = await createClient();
     const { data: row, error } = await supabase
@@ -145,6 +147,7 @@ export async function getCommunityMessages(
   limit: number = 50,
   beforeCreatedAt?: string
 ): Promise<{ messages: CommunityMessage[]; hasMore: boolean }> {
+  await requireCommunityAccess();
   try {
     const supabase = await createClient();
 
@@ -248,6 +251,7 @@ export async function getCommunityMessages(
  * No artificial floor of 142 online or +2500 fake members.
  */
 export async function getCommunityGroupInfo(userId: string): Promise<CommunityGroupInfo> {
+  await requireCommunityAccess();
   let totalMembers = 0;
   let onlineCount = 0;
   let lastMsgSnippet = "Bienvenue dans la communauté";
@@ -360,6 +364,7 @@ export async function getCommunityGroupInfo(userId: string): Promise<CommunityGr
  * Returns whether the user has accepted community rules.
  */
 export async function hasAcceptedCommunityRules(userId: string): Promise<boolean> {
+  await requireCommunityAccess();
   try {
     const supabase = await createClient();
     const { data } = await supabase
@@ -380,6 +385,7 @@ export async function hasAcceptedCommunityRules(userId: string): Promise<boolean
  * Returns 0 when no new messages exist (never returns a fake badge of 12 in production).
  */
 export async function getUnreadCommunityCount(userId: string): Promise<number> {
+  await requireCommunityAccess();
   try {
     const supabase = await createClient();
     const { data: readData } = await supabase
@@ -393,6 +399,7 @@ export async function getUnreadCommunityCount(userId: string): Promise<number> {
         .from("community_messages")
         .select("id", { count: "exact", head: true })
         .gt("created_at", readData.last_read_at)
+        .neq("author_id",userId)
         .is("deleted_at", null);
       return count || 0;
     }
@@ -401,6 +408,7 @@ export async function getUnreadCommunityCount(userId: string): Promise<number> {
     const { count: allCount } = await supabase
       .from("community_messages")
       .select("id", { count: "exact", head: true })
+      .neq("author_id",userId)
       .is("deleted_at", null);
 
     return allCount || 0;
@@ -415,6 +423,7 @@ export async function getUnreadCommunityCount(userId: string): Promise<number> {
  * Returns a list of members for @mentions autocomplete (never exposes emails or phones!).
  */
 export async function getCommunityMembers(): Promise<CommunityMember[]> {
+  await requireCommunityAccess();
   try {
     const supabase = await createClient();
     const { data } = await supabase

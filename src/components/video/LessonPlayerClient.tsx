@@ -526,7 +526,7 @@ export function LessonPlayerClient({
   const watermarkText = `${user.name || "Étudiant Faro"} • ${user.phone || ""}`.trim();
 
   return (
-    <div className="min-h-screen bg-bg flex flex-col font-sans">
+    <div className="pwa-lesson-shell min-h-screen bg-bg flex flex-col font-sans">
       {/* ========================================================= */}
       {/* 1. SLIM WHITE TOP BAR                                     */}
       {/* ========================================================= */}

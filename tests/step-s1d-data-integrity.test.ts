@@ -47,15 +47,10 @@ async function runStepS1DTests() {
     const unreadMsgCount = await getUnreadPrivateMessagesCount("00000000-0000-0000-0000-000000000001");
     assert.strictEqual(unreadMsgCount, 0, "Production unread messages count must be 0, not 1");
 
-    // Community must return real 0 online count, not artificial 142
-    const groupInfo = await getCommunityGroupInfo("00000000-0000-0000-0000-000000000001");
-    assert.strictEqual(groupInfo.onlineCount, 0, "Community online count must be 0 when offline, not artificial 142");
-
-    const communityMsgs = await getCommunityMessages("00000000-0000-0000-0000-000000000001");
-    assert.deepStrictEqual(communityMsgs.messages, [], "Community messages must be empty array in production");
-
-    const unreadCommCount = await getUnreadCommunityCount("00000000-0000-0000-0000-000000000001");
-    assert.strictEqual(unreadCommCount, 0, "Community unread count must be 0, not fake 12");
+    // Community data now requires a verified account with an active enrollment.
+    for(const read of [getCommunityGroupInfo,getCommunityMessages,getUnreadCommunityCount]){
+      await assert.rejects(()=>read("00000000-0000-0000-0000-000000000001"),/community_access_required/);
+    }
 
     // Instructors list must return empty array, not mock instructors
     const instructors = await getAdminInstructorsList();

@@ -1221,5 +1221,10 @@
     "confirmRevoke": "Konfime revokasyon an",
     "confirmReissue": "Konfime nouvo vèsyon an",
     "chooseSignature": "Chwazi yon siyati"
-  }
+  },
+  "communityAccess": {
+  "title": "Kominote a rezève pou elèv ki enskri",
+  "description": "Enskri nan yon fòmasyon pou pale ak lòt elèv yo.",
+  "browse": "Dekouvri fòmasyon yo"
+}
 }

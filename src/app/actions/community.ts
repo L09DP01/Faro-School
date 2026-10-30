@@ -1,5 +1,6 @@
 "use server";
 
+import {hasCommunityAccess} from "@/lib/community/access";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
@@ -62,7 +63,7 @@ export async function postMessageAction(
 ): Promise<CommunityActionResult<CommunityMessage>> {
   try {
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || !await hasCommunityAccess(user)) {
       return { success: false, error: "Vous devez être connecté pour participer à la communauté." };
     }
 
@@ -347,7 +348,7 @@ export async function toggleReactionAction(
 ): Promise<CommunityActionResult> {
   try {
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || !await hasCommunityAccess(user)) {
       return { success: false, error: "Vous devez être connecté pour réagir." };
     }
 
@@ -465,7 +466,7 @@ export async function pinMessageAction(
 export async function deleteMessageAction(messageId: string): Promise<CommunityActionResult> {
   try {
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || !await hasCommunityAccess(user)) {
       return { success: false, error: "Vous devez être connecté." };
     }
 
@@ -544,7 +545,7 @@ export async function reportMessageAction(
 ): Promise<CommunityActionResult> {
   try {
     const user = await getCurrentUser();
-    if (!user) {
+    if (!user || !await hasCommunityAccess(user)) {
       return { success: false, error: "Vous devez être connecté pour signaler un message." };
     }
 
@@ -636,7 +637,7 @@ export async function moderateUserAction(
 export async function markCommunityReadAction(): Promise<CommunityActionResult> {
   try {
     const user = await getCurrentUser();
-    if (!user) return { success: false };
+    if (!user || !await hasCommunityAccess(user)) return { success: false };
 
     const now = new Date().toISOString();
 
@@ -666,7 +667,7 @@ export async function markCommunityReadAction(): Promise<CommunityActionResult> 
 export async function acceptCommunityRulesAction(): Promise<CommunityActionResult> {
   try {
     const user = await getCurrentUser();
-    if (!user) return { success: false, error: "Non connecté." };
+    if (!user || !await hasCommunityAccess(user)) return { success: false, error: "Non connecté." };
 
     try {
       const supabase = await createClient();

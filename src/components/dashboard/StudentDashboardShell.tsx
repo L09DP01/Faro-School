@@ -42,6 +42,20 @@ export function StudentDashboardShell({
 }: StudentDashboardShellProps) {
   const pathname = usePathname();
   const tNav = useTranslations("dashboard.nav");
+  const [unread,setUnread]=useState({community:0,messages:0,notifications:0});
+  useEffect(()=>{
+    const controller=new AbortController();
+    const refresh=async()=>{if(document.hidden)return;try{
+      const response=await fetch('/api/dashboard/unread',{cache:'no-store',signal:controller.signal});
+      if(!response.ok){setUnread({community:0,messages:0,notifications:0});return;}
+      const data=await response.json(),count=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)?Math.max(0,Math.floor(value)):0;
+      if(!controller.signal.aborted)setUnread({community:count(data.community),messages:count(data.messages),notifications:count(data.notifications)});
+    }catch{/* Keep the last confirmed counts on transient disconnection. */}};
+    void refresh();const timer=window.setInterval(refresh,30000);
+    window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);
+    return()=>{controller.abort();window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+  },[pathname]);
+
 
   // Track virtual keyboard visibility on mobile
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
@@ -56,6 +70,7 @@ export function StudentDashboardShell({
       setIsKeyboardOpen(keyboardOpen);
     };
 
+    handleViewportChange();
     window.visualViewport.addEventListener("resize", handleViewportChange);
     return () => {
       window.visualViewport?.removeEventListener("resize", handleViewportChange);
@@ -102,14 +117,14 @@ export function StudentDashboardShell({
       exact: false,
       label: "Communauté",
       icon: <Users className="w-5 h-5 shrink-0" />,
-      badge: 12,
+      badge: pathname.includes("/communaute")?0:unread.community,
     },
     {
       href: "/dashboard/messages" as const,
       exact: false,
       label: "Messages du formateur",
       icon: <MessageSquare className="w-5 h-5 shrink-0" />,
-      badge: 1,
+      badge: unread.messages,
     },
     {
       href: "/certificats" as const,
@@ -180,14 +195,14 @@ export function StudentDashboardShell({
       exact: false,
       label: locale === "ht" ? "Kominote" : "Communauté",
       icon: <Users className="w-6 h-6 shrink-0" />,
-      badge: 12,
+      badge: pathname.includes("/communaute")?0:unread.community,
     },
     {
       href: "/dashboard/messages" as const,
       exact: false,
       label: locale === "ht" ? "Mesaj" : "Messages",
       icon: <MessageSquare className="w-6 h-6 shrink-0" />,
-      badge: 1,
+      badge: unread.messages,
     },
     {
       href: "/dashboard/profil" as const,
@@ -336,9 +351,9 @@ export function StudentDashboardShell({
       {/* ========================================================= */}
       {/* 2. MAIN CONTENT AREA WITH STICKY TOP BAR                   */}
       {/* ========================================================= */}
-      <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 h-full min-h-0 flex flex-col overflow-hidden">
         {/* Top Bar: On mobile shows only notification bell and one avatar */}
-        <header className="pwa-app-header shrink-0 h-14 md:h-16 px-4 md:px-8 bg-transparent flex items-center justify-end md:justify-between z-20">
+        <header className="pwa-app-header shrink-0 h-14 md:h-16 px-4 md:px-8 bg-bg flex items-center justify-end md:justify-between z-20">
           {/* Left area: Hidden on mobile so greeting only appears in page title */}
           <div className="hidden md:flex items-center gap-2">
             <span className="text-xs font-heading font-semibold uppercase tracking-wider text-muted-faro">
@@ -365,7 +380,7 @@ export function StudentDashboardShell({
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4 text-ink" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange ring-2 ring-white" />
+              {unread.notifications>0&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange ring-2 ring-white" />}
             </Link>
 
             {/* User chip with single standardized Avatar */}
@@ -396,8 +411,8 @@ export function StudentDashboardShell({
           }`}
         >
           <div
-            className={`w-full h-full mx-auto flex-1 min-h-0 flex flex-col ${
-              isFullHeightPage ? "max-w-[1560px]" : "max-w-7xl"
+            className={`w-full mx-auto min-h-0 flex flex-col ${
+              isFullHeightPage ? "h-full flex-1 max-w-[1560px]" : "shrink-0 max-w-7xl"
             }`}
           >
             {children}

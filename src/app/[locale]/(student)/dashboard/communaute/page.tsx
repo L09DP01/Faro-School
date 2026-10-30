@@ -1,3 +1,6 @@
+import {hasCommunityAccess} from "@/lib/community/access";
+import {Link} from "@/i18n/navigation";
+import {getTranslations} from "next-intl/server";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { setRequestLocale } from "next-intl/server";
@@ -27,6 +30,11 @@ export default async function StudentCommunityPage({ params }: CommunityPageProp
   const user = await getCurrentUser();
   if (!user) {
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/communaute`);
+  }
+
+  if(!await hasCommunityAccess(user)){
+    const t=await getTranslations({locale,namespace:'communityAccess'});
+    return <section className="m-auto max-w-md space-y-4 rounded-2xl border border-line bg-surface p-6 text-center"><h1 className="font-heading text-xl font-bold text-ink">{t('title')}</h1><p className="text-muted-faro">{t('description')}</p><Link href="/formations" className="inline-flex rounded-xl bg-orange px-5 py-3 font-semibold text-white">{t('browse')}</Link></section>;
   }
 
   const [

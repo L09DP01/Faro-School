@@ -4,6 +4,14 @@
 
 ## 2. Stack
 
+PWA is the primary app. Shared shell scroll/safe-area changes must cover dashboard,
+messages, community, profile, certificates, admin and player; landing is excluded.
+Community requires an active enrollment (or verified staff role), enforced by
+`src/lib/community/access.ts`, existing `can()` and restrictive database policies.
+Dashboard indicators come from `/api/dashboard/unread`, never fixture numbers.
+See `docs/PWA_DASHBOARD_FIXES.md`; verification mail jobs stop after confirmation
+or ten minutes from request creation.
+
 Auth session cookie invariant: `auth.config.ts` sets `useSecureCookies` once;
 middleware `getToken` must use that same value. Production uses the
 `__Secure-authjs.session-token` cookie name and JWE salt. Omitting it sends a

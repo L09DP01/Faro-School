@@ -8,6 +8,7 @@ export function PwaViewport(){
   const root=document.documentElement;
   const landing=/^\/(?:fr|ht)?\/?$/.test(pathname);
   root.dataset.appRoute=String(!landing);
+  root.dataset.appShell=String(/^\/(?:fr|ht)\/(?:dashboard|admin|certificats)(?:\/|$)/.test(pathname));
   const media=window.matchMedia('(display-mode: standalone)');
   const update=()=>{
    const standalone=media.matches||(navigator as Navigator&{standalone?:boolean}).standalone===true;
@@ -20,7 +21,7 @@ export function PwaViewport(){
    }
   };
   update();media.addEventListener('change',update);window.addEventListener('resize',update);window.visualViewport?.addEventListener('resize',update);
-  return()=>{media.removeEventListener('change',update);window.removeEventListener('resize',update);window.visualViewport?.removeEventListener('resize',update);delete root.dataset.appRoute;delete root.dataset.appStandalone;root.style.removeProperty('--app-height');};
+  return()=>{media.removeEventListener('change',update);window.removeEventListener('resize',update);window.visualViewport?.removeEventListener('resize',update);delete root.dataset.appRoute;delete root.dataset.appShell;delete root.dataset.appStandalone;root.style.removeProperty('--app-height');};
  },[pathname]);
  return null;
 }
