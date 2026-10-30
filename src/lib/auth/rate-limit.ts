@@ -47,7 +47,7 @@ export function isCommonPassword(password: string): boolean {
  * - Max 5 emails per hour per email and per IP
  */
 export async function reserveBudget(address:string,ip:string,kind:string,max=5,window=3600,cooldown=60):Promise<RateLimitCheckResult>{
- try{const{data,error}=await getAdminSupabase().rpc('reserve_email_budget',{p_address:address.trim().toLowerCase(),p_ip:ip,p_kind:kind,p_max:max,p_window:window,p_cooldown:cooldown});
+ try{const{data,error}=await getAdminSupabase({timeoutMs:10000}).rpc('reserve_email_budget',{p_address:address.trim().toLowerCase(),p_ip:ip,p_kind:kind,p_max:max,p_window:window,p_cooldown:cooldown});
  if(error||!data){console.error('[email] rate_limit_unavailable');return{allowed:false,reason:'unavailable',retryAfterSeconds:60};}return data;
  }catch{console.error('[email] rate_limit_unavailable');return{allowed:false,reason:'unavailable',retryAfterSeconds:60};}
 }

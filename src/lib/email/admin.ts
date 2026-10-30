@@ -6,7 +6,7 @@ import {maskRecipient} from './result';
 import {validEmailFrom} from './transport';
 export async function emailAdmin(){const user=await getCurrentUser();if(!user?.emailVerified||!can(user,'emails.manage'))throw new Error('forbidden');return user;}
 export async function emailHealth(){
- const db=createAdminClient(),since=new Date(Date.now()-86400000).toISOString();
+ const db=createAdminClient({timeoutMs:10000}),since=new Date(Date.now()-86400000).toISOString();
  const[suppress,outbox,attempts,summary]=await Promise.all([
  db.from('email_suppressions').select('recipient_hash',{head:true,count:'exact'}).limit(1),
  db.from('email_outbox').select('id,kind,recipient,status,attempts,last_error_category,provider_http_status,correlation_id,updated_at,created_at').gte('created_at',since).in('status',['failed_temporary','failed_permanent','suppressed','bounced','complained']).order('updated_at',{ascending:false}).limit(100),

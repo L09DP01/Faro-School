@@ -421,6 +421,8 @@
       "invalidEmail": "Tanpri mete yon bon adrès imèl ki valab.",
       "passwordTooShort": "Modpas la dwe genyen omwen 10 karaktè.",
       "passwordsDoNotMatch": "De modpas yo pa koresponn.",
+      "disposableEmail": "Adrès imèl tanporè pa aksepte.",
+      "passwordTooCommon": "Modpas sa a twò komen. Chwazi yon modpas ki pi solid.",
       "recoverySessionExpired": "Sesyon reyajisteman an ekspire oswa li pa valab. Tanpri mande yon nouvo lyen.",
       "acceptTermsRequired": "Ou dwe aksepte kondisyon itilizasyon yo ak règleman sou vi prive a pou w ka kreye yon kont.",
       "rateLimit": "Gen twòp tantativ. Tanpri tann 15 minit anvan ou eseye ankò.",

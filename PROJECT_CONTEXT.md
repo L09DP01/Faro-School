@@ -3,6 +3,13 @@
 ## 1. Project Summary**Faro School** is a high-performance, mobile-first online education platform engineered specifically for Haiti. It allows an independent instructor to sell structured video courses to Haitian students with low-bandwidth, mobile-friendly optimizations and native local payment integration (MonCash and NatCash in Haitian Gourdes - HTG). The platform is completely bilingual: French (`fr`, default) and Haitian Creole (`ht`, rendered with language tag `KR`).
 
 ## 2. Stack
+
+Email auth orchestration: `src/lib/email/auth-requests.ts` is the only public
+signup/resend/recovery pipeline. Reserve the atomic email budget once per request.
+Account creation must call the existing `create_user_with_credentials` RPC with
+`p_id` and read its JSON `user_id`; never fall back to separate credential/profile
+inserts. See `docs/EMAIL_REBUILD.md` for operations and verification limits.
+
 - **Framework**: Next.js 15 (App Router) + TypeScript (strict mode) + pnpm
 - **Styling**: Tailwind CSS + shadcn/ui design tokens (via `src/styles/tokens.css`)
 - **Database & Auth**: Supabase PostgreSQL + Auth.js v5 (NextAuth, edge-safe JWT sessions, Web Crypto PBKDF2-SHA256, Resend verification emails) + Row Level Security (RLS) on all tables via short-lived signed Supabase tokens

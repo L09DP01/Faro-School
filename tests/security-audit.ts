@@ -263,8 +263,9 @@ function testRateLimits() {
 
   const forgotPath = path.resolve("src/app/api/auth/forgot-password/route.ts");
   const forgotCode = fs.readFileSync(forgotPath, "utf-8");
+  const authEmailCode = fs.readFileSync(path.resolve("src/lib/email/auth-requests.ts"), "utf-8");
   assert(
-    forgotCode.includes("checkRateLimit") || forgotCode.includes("checkEmailDispatchLimit"),
+    forgotCode.includes("requestAccountEmail") && authEmailCode.includes("checkEmailDispatchLimit"),
     "Rate limit exists on forgot-password API"
   );
 

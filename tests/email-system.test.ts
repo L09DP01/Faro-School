@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {NextRequest} from 'next/server';
 import {PGlite} from '@electric-sql/pglite';
 import {readFile,readdir,mkdir} from 'node:fs/promises';
 import {build} from 'esbuild';
@@ -22,11 +23,15 @@ async function main(){
  CREATE TABLE admin_audit_logs(id uuid DEFAULT gen_random_uuid(),admin_id uuid,action text,note text,metadata jsonb);
  CREATE TABLE email_verification_tokens(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),email text,code_hash text,token_hash text,attempts int DEFAULT 0,expires_at timestamptz,used_at timestamptz,created_at timestamptz DEFAULT now());
  CREATE TABLE password_reset_tokens(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id uuid,token_hash text,expires_at timestamptz,used_at timestamptz,created_at timestamptz DEFAULT now());`);
+ // Reuse the exact production account-creation function, not a permissive RPC mock.
+ await db.exec('ALTER TABLE profiles ADD COLUMN phone text, ADD COLUMN created_at timestamptz DEFAULT now(), ADD COLUMN updated_at timestamptz DEFAULT now(); ALTER TABLE user_credentials ADD COLUMN created_at timestamptz DEFAULT now(), ADD COLUMN updated_at timestamptz DEFAULT now()');
+ const authSql=await readFile('supabase/migrations/20250121000000_authjs_migration.sql','utf8');
+ await db.exec(authSql.slice(authSql.indexOf('CREATE OR REPLACE FUNCTION public.create_user_with_credentials('),authSql.indexOf('-- Revoke public execution on internal RPC')));
  const files=await readdir('supabase/migrations');for(const suffix of ['_bunny_resend_webhooks.sql','_email_activation_safety.sql','_email_outbox.sql','_email_business_events.sql'])await db.exec(await readFile('supabase/migrations/'+files.find(f=>f.endsWith(suffix))!,'utf8'));
  const state={dbError:false,status:200,errorName:undefined as string|undefined,calls:0,payloads:[] as any[],headers:[] as any[],timeout:false,network:false};
  const fake={from(table:string){const filters:Record<string,unknown>={};let op='select',values:any,conflict=false;const b:any={select(){return b},eq(k:string,v:unknown){filters[k]=v;return b},limit(){return b},upsert(v:unknown){op='insert';values=v;conflict=true;return b},insert(v:unknown){op='insert';values=v;return b},async single(){return b.run(true)},async maybeSingle(){return b.run(true)},then(ok:any,bad:any){return b.run(false).then(ok,bad)},async run(one:boolean){if(state.dbError)return{data:null,error:{code:'42P01'}};try{if(op==='insert'){const keys=Object.keys(values);await db.query(`INSERT INTO ${table}(${keys.join(',')})VALUES(${keys.map((_,i)=>'$'+(i+1)).join(',')})${conflict?' ON CONFLICT DO NOTHING':''}`,Object.values(values).map(v=>typeof v==='object'&&v!==null?JSON.stringify(v):v));return{data:null,error:null}}const keys=Object.keys(filters);const r=await db.query(`SELECT * FROM ${table}${keys.length?' WHERE '+keys.map((k,i)=>k+'=$'+(i+1)).join(' AND '):''}`,Object.values(filters));return{data:one?r.rows[0]??null:r.rows,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};return b;},async rpc(name:string,args:Record<string,unknown>){if(state.dbError)return{data:null,error:{code:'42P01'}};try{const keys=Object.keys(args);const call=name+'('+keys.map((k,i)=>k+'=>'+String.fromCharCode(36)+(i+1)).join(',')+')';const sql=name==='claim_email_outbox'?'SELECT to_jsonb(x) r FROM '+call+' x':'SELECT '+call+' r';const r=await db.query<{r:any}>(sql,Object.values(args));return{data:name==='claim_email_outbox'?r.rows.map(v=>v.r):r.rows[0]?.r,error:null};}catch{return{data:null,error:{code:'db_error'}}}}};
  (globalThis as any).__emailDb=fake;
- await mkdir('tmp/email-tests',{recursive:true});for(const[name,path]of Object.entries({transport:'src/lib/email/transport.ts',outbox:'src/lib/email/outbox.ts',limits:'src/lib/auth/rate-limit.ts',tokens:'src/lib/auth/tokens.ts',startup:'src/instrumentation.ts',templates:'src/lib/email/templates.ts',password:'src/lib/auth/password.ts',auth:'src/auth.ts'}))await build({entryPoints:[path],outfile:'tmp/email-tests/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){
+ await mkdir('tmp/email-tests',{recursive:true});for(const[name,path]of Object.entries({signup:'src/app/api/auth/signup/route.ts',resend:'src/app/api/auth/resend-code/route.ts',recovery:'src/app/api/auth/forgot-password/route.ts',transport:'src/lib/email/transport.ts',outbox:'src/lib/email/outbox.ts',limits:'src/lib/auth/rate-limit.ts',tokens:'src/lib/auth/tokens.ts',startup:'src/instrumentation.ts',templates:'src/lib/email/templates.ts',password:'src/lib/auth/password.ts',auth:'src/auth.ts'}))await build({entryPoints:[path],outfile:'tmp/email-tests/'+name+'.cjs',bundle:true,platform:'node',format:'cjs',packages:'external',plugins:[{name:'offline',setup(b){
  if(name==='auth'){
   b.onResolve({filter:/^next-auth$/},()=>({path:'nextauth',namespace:'authfixture'}));
   b.onResolve({filter:/^@\/lib\/auth\/rate-limit$/},()=>({path:'limits',namespace:'authfixture'}));
@@ -120,6 +125,27 @@ async function main(){
  await db.query("SELECT create_verification_token('code@example.test',$1,$2,now()+interval '10 minutes')",['e'.repeat(64),'f'.repeat(64)]);
  await Promise.all(Array.from({length:8},()=>db.query("SELECT consume_verification_token('code@example.test',$1,NULL)",['0'.repeat(64)])));
  assert.equal((await db.query<{r:any}>("SELECT consume_verification_token('code@example.test',$1,NULL) r",['e'.repeat(64)])).rows[0].r.reason,'max_attempts');
+ // Full pipeline: actual HTTP -> atomic limiter -> PBKDF2 -> exact SQL RPC ->
+ // private outbox/material -> token preparation -> mocked Resend -> proof -> login.
+ for(const locale of ['fr','ht']){
+  const email=locale+'-registration@example.test',pass='UniqueRegistration73%Words';
+  const body={fullName:'Fictional Student',phone:'+50936123456',email,password:pass,acceptTerms:true,locale,next:'/'+locale+'/dashboard'};
+  const signup=require(resolve('tmp/email-tests/signup.cjs')),resend=require(resolve('tmp/email-tests/resend.cjs'));
+  const before:number=state.calls;state.status=200;
+  const response=await signup.POST(new NextRequest('https://example.test/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json','cf-connecting-ip':'offline-'+locale},body:JSON.stringify(body)}));
+  assert.equal(response.status,200);assert.equal(response.headers.get('set-cookie'),null);assert.equal(state.calls,before+1,'Real new registration must reach Resend once');
+  const user=(await db.query<any>('SELECT * FROM profiles WHERE email=$1',[email])).rows[0];assert(user);assert.equal(user.email_verified_at,null);assert.equal(user.role,'student');
+  const credential=(await db.query<any>('SELECT * FROM user_credentials WHERE user_id=$1',[user.id])).rows[0];assert(await password.verifyPassword(pass,credential.password_hash));
+  await assert.rejects(()=>authorize({email,password:pass},new Request('https://example.test/login')),(e:any)=>e.code==='EMAIL_NOT_VERIFIED','No login before proof');
+  const payload=state.payloads.at(-1);const code=payload.text.match(/\b[0-9]{6}\b/)?.[0];assert(code);assert(payload.text.includes('/'+locale+'/verification-email?token='));
+  assert.equal(payload.subject,templates.renderEmail({kind:'verification',locale}).subject);
+  const out=(await db.query<any>("SELECT * FROM email_outbox WHERE user_id=$1 AND kind='verification'",[user.id])).rows[0];assert.equal(out.status,'accepted');assert(!JSON.stringify(out.data).includes(code));
+  // Atomic cooldown rejects both a repeated signup and a resend, without duplicate mail.
+  await signup.POST(new NextRequest('https://example.test/api/auth/signup',{method:'POST',headers:{'cf-connecting-ip':'offline-'+locale},body:JSON.stringify(body)}));
+  await resend.POST(new NextRequest('https://example.test/api/auth/resend-code',{method:'POST',headers:{'cf-connecting-ip':'offline-'+locale},body:JSON.stringify({email,locale})}));assert.equal(state.calls,before+1);
+  const proof=await tokens.verifyEmailCode(email,code);assert.equal(proof.success,true);assert.equal(proof.userId,user.id);assert.equal((await tokens.verifyEmailCode(email,code)).success,false);
+  assert.equal((await authorize({email,password:pass},new Request('https://example.test/login')))?.id,user.id,'Verified registration can log in');
+ }
  const saved={...env};Object.assign(env,{NODE_ENV:'production',APP_ENV:'production',NEXT_PUBLIC_APP_URL:'https://example.test',NEXT_PUBLIC_SUPABASE_URL:'https://example.supabase.co',NEXT_PUBLIC_SUPABASE_ANON_KEY:'fake',SUPABASE_SERVICE_ROLE_KEY:'fake',SUPABASE_JWT_SECRET:'x'.repeat(32),AUTH_SECRET:'y'.repeat(32),RESEND_API_KEY:'fake',RESEND_WEBHOOK_SECRET:'whsec_fake',EMAIL_FROM:'Faro <sender@example.test>',CRON_SECRET:'fake',KOBARA_MODE:'live',KOBARA_API_KEY:'live-fake',KOBARA_BASE_URL:'https://example.test',KOBARA_WEBHOOK_SECRET:'fake',BUNNY_STREAM_API_KEY:'fake',BUNNY_STREAM_READ_ONLY_API_KEY:'fake',BUNNY_STREAM_LIBRARY_ID:'1',BUNNY_STREAM_TOKEN_AUTH_KEY:'fake'});delete env.NEXT_PHASE;
  for(const key of ['RESEND_API_KEY','EMAIL_FROM','SUPABASE_SERVICE_ROLE_KEY','SUPABASE_JWT_SECRET','AUTH_SECRET','CRON_SECRET']){const value=env[key];delete env[key];assert.throws(()=>startup.register(),new RegExp(key));env[key]=value;}startup.register();
  Object.keys(env).forEach(k=>{if(!(k in saved))delete env[k]});Object.assign(env,saved);

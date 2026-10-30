@@ -34,7 +34,7 @@ export async function sendResendEmail(message: EmailMessage): Promise<EmailResul
   else if(!z.string().email().max(320).safeParse(message.to.trim()).success)outcome=fail("provider_validation");
   else {
    const to=message.to.trim().toLowerCase();let suppression;
-   try{suppression=await createAdminClient().from("email_suppressions").select("suppressed").eq("recipient_hash",await recipientHash(to)).maybeSingle();}
+   try{suppression=await createAdminClient({timeoutMs:10000}).from("email_suppressions").select("suppressed").eq("recipient_hash",await recipientHash(to)).maybeSingle();}
    catch{suppression={error:true,data:null};}
    if(suppression.error)outcome=fail("suppression_lookup_failed");
    else if(suppression.data?.suppressed)outcome=fail("suppressed");
@@ -51,7 +51,7 @@ export async function sendResendEmail(message: EmailMessage): Promise<EmailResul
   }
  }catch(error){outcome=fail(error instanceof Error&&["TimeoutError","AbortError"].includes(error.name)?"timeout":"network");}
  if(outcome.status==="failed")console.error("[email] send_failed",{correlationId,category:outcome.category,httpStatus:outcome.httpStatus,...(providerCode?{providerCode}:{})});
- try{const{error}=await createAdminClient().from("email_send_attempts").insert({kind:message.kind??"legacy",status:outcome.status,category:outcome.category,http_status:outcome.httpStatus,provider_message_id:outcome.messageId,correlation_id:correlationId});if(error)console.error("[email] tracking_unavailable",{correlationId,category:outcome.category});}
+ try{const{error}=await createAdminClient({timeoutMs:10000}).from("email_send_attempts").insert({kind:message.kind??"legacy",status:outcome.status,category:outcome.category,http_status:outcome.httpStatus,provider_message_id:outcome.messageId,correlation_id:correlationId});if(error)console.error("[email] tracking_unavailable",{correlationId,category:outcome.category});}
  catch{console.error("[email] tracking_unavailable",{correlationId,category:outcome.category});}
  return outcome;
 }

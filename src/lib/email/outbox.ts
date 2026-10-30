@@ -5,6 +5,7 @@ import {sha256} from '@/lib/webhooks/security';
 import {sendResendEmail,type EmailMessage} from './transport';
 import {type EmailResult,type EmailCategory} from './result';
 import {renderEmail,EMAIL_TIMES,type TemplateInput} from './templates';
+import {logEmailFailure} from './diagnostics';
 export interface OutboxRow {id:string;kind:string;user_id:string|null;recipient:string;locale:string;idempotency_key:string;status:string;attempts:number;correlation_id:string;data:Record<string,string>;created_at:string;prepared_at:string|null;provider_message_id:string|null;last_error_category:EmailCategory|null;provider_http_status:number|null}
 export const BACKOFF_SECONDS=[60,300,1800,7200,21600];
 export const transient=(category:EmailCategory|null)=>['provider_rate_limited','provider_unavailable','timeout','network','suppression_lookup_failed','unknown'].includes(category??'');
@@ -13,9 +14,9 @@ function queued(correlationId=crypto.randomUUID()):EmailResult{return{status:'qu
 export async function deriveAuthSecrets(id:string):Promise<{code:string;token:string}>{
  const secret=process.env.AUTH_SECRET?.trim();if(!secret)throw new Error('config_missing');
  const key=await crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',new TextEncoder().encode('email-material:v1:'+secret)),{name:'AES-GCM'},false,['encrypt','decrypt']);
- const db=createAdminClient();
+ const db=createAdminClient({timeoutMs:10000});
  const {data:stored,error:lookup}=await db.from('email_outbox_material').select('nonce,ciphertext').eq('outbox_id',id).maybeSingle();
- if(lookup)throw new Error('email_material_unavailable');
+ if(lookup){logEmailFailure('material_lookup',lookup);throw new Error('email_material_unavailable');}
  const hex=(bytes:Uint8Array)=>Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
  const unhex=(text:string)=>Uint8Array.from(text.match(/../g)??[],v=>parseInt(v,16));
  let material=stored;
@@ -23,15 +24,15 @@ export async function deriveAuthSecrets(id:string):Promise<{code:string;token:st
   const code=randomCode(),token=randomToken(),nonce=crypto.getRandomValues(new Uint8Array(12));
   const cipher=await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce,additionalData:new TextEncoder().encode(id)},key,new TextEncoder().encode(JSON.stringify({code,token})));
   const {error}=await db.from('email_outbox_material').upsert({outbox_id:id,nonce:hex(nonce),ciphertext:hex(new Uint8Array(cipher))},{onConflict:'outbox_id',ignoreDuplicates:true});
-  if(error)throw new Error('email_material_unavailable');
+  if(error){logEmailFailure('material_insert',error);throw new Error('email_material_unavailable');}
   const {data,error:read}=await db.from('email_outbox_material').select('nonce,ciphertext').eq('outbox_id',id).single();
-  if(read||!data)throw new Error('email_material_unavailable');material=data;
+  if(read||!data){logEmailFailure('material_read',read);throw new Error('email_material_unavailable');}material=data;
  }
  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:unhex(material.nonce),additionalData:new TextEncoder().encode(id)},key,unhex(material.ciphertext));
  return JSON.parse(new TextDecoder().decode(plain));
 }
 async function messageFor(row:OutboxRow):Promise<EmailMessage>{
- const db=createAdminClient(),base=process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/,'');if(!base)throw new Error('config_missing');
+ const db=createAdminClient({timeoutMs:10000}),base=process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/,'');if(!base)throw new Error('config_missing');
  let input:TemplateInput={kind:row.kind,locale:row.locale,...row.data};
  if(row.data.course_slug)input.url=base+'/'+row.locale+'/formations/'+encodeURIComponent(row.data.course_slug);
  if(row.kind==='payment_confirmed'&&row.data.order_id)input.receiptUrl=base+'/api/orders/'+encodeURIComponent(row.data.order_id)+'/receipt';
@@ -43,7 +44,7 @@ async function messageFor(row:OutboxRow):Promise<EmailMessage>{
   const {code,token}=await deriveAuthSecrets(row.id);
   const minutes=['verification','email_change'].includes(row.kind)?EMAIL_TIMES.verificationMinutes:row.kind==='invitation'?EMAIL_TIMES.invitationHours*60:EMAIL_TIMES.resetHours*60;
   const {error}=await db.rpc('prepare_outbox_token',{p_id:row.id,p_code_hash:await sha256(code),p_token_hash:await sha256(token),p_expires:new Date(Date.now()+minutes*60000).toISOString()});
-  if(error)throw new Error('token_preparation_failed');
+  if(error){logEmailFailure('token_preparation',error,row.correlation_id);throw new Error('token_preparation_failed');}
   const verify=['verification','email_change'].includes(row.kind);
   input={kind:row.kind,locale:row.locale,code:verify?code:undefined,url:`${base}/${row.locale}/${verify?'verification-email':'reinitialiser-mot-de-passe'}?token=${token}${row.data.next?'&next='+encodeURIComponent(row.data.next):''}`};
  }
@@ -56,22 +57,22 @@ export async function processClaimed(row:OutboxRow):Promise<EmailResult>{
  catch(e){const stage=e instanceof Error&&['config_missing','email_material_unavailable','token_preparation_failed'].includes(e.message)?e.message:'message_preparation_failed';console.error('[email] preparation_failed',{correlationId:row.correlation_id,stage});const category=stage==='config_missing'?'config_missing':'unknown';result={...queued(row.correlation_id),status:'failed',category,error:category};}
  const next=nextRetry(row.attempts,result.category,result.retryAfterSeconds);
  const status=result.status==='accepted'?'accepted':result.category==='suppressed'?'suppressed':next?'failed_temporary':'failed_permanent';
- const {error}=await createAdminClient().rpc('finish_email_outbox',{p_id:row.id,p_attempt:row.attempts,p_status:status,p_category:result.category,p_http:result.httpStatus,p_message:result.messageId,p_next:next});
+ const {error}=await createAdminClient({timeoutMs:10000}).rpc('finish_email_outbox',{p_id:row.id,p_attempt:row.attempts,p_status:status,p_category:result.category,p_http:result.httpStatus,p_message:result.messageId,p_next:next});
  if(error)console.error('[email] outbox_finish_unavailable',{correlationId:row.correlation_id,category:result.category});
  return result;
 }
 export async function processOutbox(id?:string){
- const{data,error}=await createAdminClient().rpc('claim_email_outbox',{p_id:id??null,p_limit:id?1:5});
- if(error)throw new Error('outbox_claim_unavailable');
+ const{data,error}=await createAdminClient({timeoutMs:10000}).rpc('claim_email_outbox',{p_id:id??null,p_limit:id?1:5});
+ if(error){logEmailFailure('outbox_claim',error);throw new Error('outbox_claim_unavailable');}
  const results:EmailResult[]=[];for(const row of (data??[]) as OutboxRow[])results.push(await processClaimed(row));return results;
 }
 export async function enqueueEmail(input:{kind:string;to:string;locale?:string;userId?:string|null;key:string;data?:Record<string,string>}):Promise<EmailResult>{
- const db=createAdminClient(),correlationId=crypto.randomUUID();
+ const db=createAdminClient({timeoutMs:10000}),correlationId=crypto.randomUUID();
  try{
   const{error}=await db.from('email_outbox').upsert({kind:input.kind,recipient:input.to.trim().toLowerCase(),locale:input.locale==='ht'?'ht':'fr',user_id:input.userId??null,idempotency_key:input.key,data:input.data??{},correlation_id:correlationId},{onConflict:'idempotency_key',ignoreDuplicates:true});
-  if(error)throw new Error('outbox_enqueue_unavailable');
+  if(error){logEmailFailure('outbox_insert',error,correlationId);throw new Error('outbox_enqueue_unavailable');}
   const{data:row,error:lookup}=await db.from('email_outbox').select('id,status,correlation_id,provider_message_id,last_error_category,provider_http_status').eq('idempotency_key',input.key).single();
-  if(lookup||!row)throw new Error('outbox_enqueue_unavailable');
+  if(lookup||!row){logEmailFailure('outbox_lookup',lookup,correlationId);throw new Error('outbox_enqueue_unavailable');}
   if(['accepted','delivered'].includes(row.status))return{...queued(row.correlation_id),status:'accepted',category:null,messageId:row.provider_message_id,success:true};
   const [result]=await processOutbox(row.id);return result??queued(row.correlation_id);
  }catch{
@@ -83,8 +84,8 @@ export async function enqueueEmail(input:{kind:string;to:string;locale?:string;u
  }
 }
 export async function queueAuthEmail(to:string,kind:'verification'|'reset'|'invitation'|'registration_alert',locale:string,key=crypto.randomUUID(),next?:string){
- const{data,error}=await createAdminClient().from('profiles').select('id,locale').eq('email',to.trim().toLowerCase()).maybeSingle();
+ const{data,error}=await createAdminClient({timeoutMs:10000}).from('profiles').select('id,locale').eq('email',to.trim().toLowerCase()).maybeSingle();
  if(error){const correlationId=crypto.randomUUID();console.error('[email] profile_lookup_unavailable',{correlationId});return{...queued(correlationId),status:'failed' as const,category:'unknown' as const};}
- if(!data)return queued();
+ if(!data){logEmailFailure('dispatch_profile_missing');return{...queued(),status:'failed' as const,category:'unknown' as const};}
  return enqueueEmail({kind,to,userId:data.id,locale:data.locale??locale,key:kind+':'+key,data:next?{next}:{}});
 }

@@ -421,6 +421,8 @@
       "invalidEmail": "Veuillez entrer une adresse email valide.",
       "passwordTooShort": "Le mot de passe doit comporter au moins 10 caractères.",
       "passwordsDoNotMatch": "Les deux mots de passe ne correspondent pas.",
+      "disposableEmail": "Les adresses e-mail temporaires ne sont pas acceptées.",
+      "passwordTooCommon": "Ce mot de passe est trop courant. Choisissez un mot de passe plus robuste.",
       "recoverySessionExpired": "Votre session de récupération a expiré ou est invalide. Veuillez redemander un lien.",
       "acceptTermsRequired": "Vous devez accepter les conditions d'utilisation et la politique de confidentialité pour créer un compte.",
       "rateLimit": "Trop de tentatives de connexion infructueuses. Veuillez patienter 15 minutes avant de réessayer.",

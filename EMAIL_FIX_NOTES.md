@@ -1,5 +1,8 @@
 # Corrections du systÃ¨me email
 
+La refonte suivante des parcours inscription/renvoi/rÃ©cupÃ©ration, les causes
+confirmÃ©es et les vÃ©rifications sont documentÃ©es dans [docs/EMAIL_REBUILD.md](docs/EMAIL_REBUILD.md).
+
 Branche : **email-fix**, crÃ©Ã©e depuis **auth-migration**. Aucun changement sur Supabase distant, aucun secret affichÃ©, aucun email rÃ©el envoyÃ©. Newsletter marketing volontairement hors pÃ©rimÃ¨tre.
 
 ## Revalidation initiale avant modification
@@ -91,11 +94,11 @@ Typecheck et lint rÃ©ussis ; **16/16 suites** rÃ©ussies, plus la derniÃ¨re rÃ©gr
 Les 18 captures finales et leur galerie sont dans docs/screenshots/email/README.md. Le bootstrap administrateur nâ€™affiche dÃ©sormais plus dâ€™adresse complÃ¨te ni de lien de configuration secret ; il utilise la file dâ€™invitation et nâ€™est pas exÃ©cutÃ© pendant ce travail. Les durÃ©es rÃ©elles sont calculÃ©es Ã  partir de EMAIL_TIMES, la mÃªme source que les templates.
 
 
-## 30 octobre 2026 — diagnostic Resend et inscription
-- Domaine faroschool.com observé « verified » dans Resend. Les logs du compte consulté montrent seulement un ancien POST /emails 200 (Hello World), et un GET /domains 401 ; aucune tentative récente de l’application. Cela ne prouve pas que la clé de production correspond au même compte.
-- Cause certaine dans le code : signup appelait deux fois checkEmailDispatchLimit, qui réserve réellement un quota atomique. Pour un nouvel utilisateur, la seconde réservation touchait immédiatement le cooldown, avant création du profil et avant Resend. Une seule réservation est maintenant utilisée. Le test HTTP refuse désormais une seconde réservation et exige que les nouvelles inscriptions atteignent la file.
-- Selon https://resend.com/docs/api-reference/errors, les conflits 409 concurrent_idempotent_requests et resource_locked sont temporaires : ils déclenchent maintenant une reprise. invalid_idempotent_request reste permanent.
-- Logs Worker ajoutés pour send_failed et preparation_failed avec corrélation, catégorie, statut et identifiant d’erreur documenté seulement. Aucun corps fournisseur, adresse, code ou jeton n’est journalisé.
-- Le format POST /emails existant est conforme à https://resend.com/docs/api-reference/emails/send-email. Une clé Sending access suffit ; le GET /domains 401 restricted_api_key ne prouve pas que l’envoi est interdit.
-- Vérifications locales sans aucun envoi réel ; aucune modification de Supabase distant. Aucune migration SQL supplémentaire.
-- Après déploiement, reproduire une inscription puis vérifier POST /emails et la livraison dans Resend. Le succès en production reste à confirmer ; les anciens utilisateurs dont le profil n’a jamais été créé doivent recommencer l’inscription.
+## 30 octobre 2026 â€” diagnostic Resend et inscription
+- Domaine faroschool.com observÃ© Â« verified Â» dans Resend. Les logs du compte consultÃ© montrent seulement un ancien POST /emails 200 (Hello World), et un GET /domains 401 ; aucune tentative rÃ©cente de lâ€™application. Cela ne prouve pas que la clÃ© de production correspond au mÃªme compte.
+- Cause certaine dans le code : signup appelait deux fois checkEmailDispatchLimit, qui rÃ©serve rÃ©ellement un quota atomique. Pour un nouvel utilisateur, la seconde rÃ©servation touchait immÃ©diatement le cooldown, avant crÃ©ation du profil et avant Resend. Une seule rÃ©servation est maintenant utilisÃ©e. Le test HTTP refuse dÃ©sormais une seconde rÃ©servation et exige que les nouvelles inscriptions atteignent la file.
+- Selon https://resend.com/docs/api-reference/errors, les conflits 409 concurrent_idempotent_requests et resource_locked sont temporaires : ils dÃ©clenchent maintenant une reprise. invalid_idempotent_request reste permanent.
+- Logs Worker ajoutÃ©s pour send_failed et preparation_failed avec corrÃ©lation, catÃ©gorie, statut et identifiant dâ€™erreur documentÃ© seulement. Aucun corps fournisseur, adresse, code ou jeton nâ€™est journalisÃ©.
+- Le format POST /emails existant est conforme Ã  https://resend.com/docs/api-reference/emails/send-email. Une clÃ© Sending access suffit ; le GET /domains 401 restricted_api_key ne prouve pas que lâ€™envoi est interdit.
+- VÃ©rifications locales sans aucun envoi rÃ©el ; aucune modification de Supabase distant. Aucune migration SQL supplÃ©mentaire.
+- AprÃ¨s dÃ©ploiement, reproduire une inscription puis vÃ©rifier POST /emails et la livraison dans Resend. Le succÃ¨s en production reste Ã  confirmer ; les anciens utilisateurs dont le profil nâ€™a jamais Ã©tÃ© crÃ©Ã© doivent recommencer lâ€™inscription.
