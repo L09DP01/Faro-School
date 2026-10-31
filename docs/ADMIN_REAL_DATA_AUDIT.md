@@ -56,3 +56,5 @@ Tests locaux dédiés : admin-real-data.test.ts, admin-real-messaging.test.ts et
 
 Résultat final local : 33/33 suites passent, 66/66 assertions de sécurité passent ; typecheck et lint sans erreur ni avertissement ; build de production OpenNext terminé ; scan de secrets propre. Les 374 fichiers src/public du build isolé ont été comparés aux sources, sans différence.
 Migration finale SHA-256 : 95742AB6764CCBE93B4CF9B5D5712EE6ADCC94A9DD4B11324D5DA3FFC19CF190.
+
+Contrôle après le premier déploiement : site public HTTP 200, pages Messages/Compte anonymes redirigées vers la connexion. L’API admin certificats classait à tort les visiteurs anonymes en 503 ; correction complémentaire : 401/no-store pour l’authentification, 503 uniquement pour une vraie indisponibilité, y compris l’échec de lecture des réglages de signature. Tests HTTP ciblés étendus à la signature et aux réglages, puis typecheck. Aucune donnée distante consultée.

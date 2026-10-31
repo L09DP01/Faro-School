@@ -1,3 +1,4 @@
+import {certificateAdminError} from "@/lib/certificates/http";
 import { certificateUser,issueCertificate } from "@/lib/certificates/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { can } from "@/lib/permissions";
@@ -19,9 +20,10 @@ export async function GET(req:Request) {
   const url=new URL(req.url);const term=(url.searchParams.get("q")??"").toLocaleLowerCase();const status=url.searchParams.get("status");
   const filtered=certificates.filter(c=>(!term||`${c.certificate_number} ${c.student_name} ${c.course_title}`.toLocaleLowerCase().includes(term))&&(!status||(status==="revoked"?!!c.revoked_at:!c.revoked_at)));
   if(url.searchParams.get("format")==="csv")return new Response("\uFEFF"+["number,student,course,issued_at,revoked_at",...filtered.map(c=>[c.certificate_number,c.student_name,c.course_title,c.issued_at,c.revoked_at].map(csvCell).join(","))].join("\r\n"),{headers:{"Cache-Control":"no-store","Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename=certificats-faro.csv"}});
-  const {data:settings}=can(user,"certificates.manage")?await db.from("certificate_settings").select("signature_name,signature_title,signature_image_path").eq("id",true).single():{data:null};
+  const {data:settings,error:settingsError}=can(user,"certificates.manage")?await db.from("certificate_settings").select("signature_name,signature_title,signature_image_path").eq("id",true).single():{data:null,error:null};
+  if(settingsError)throw new Error("unavailable");
   return Response.json({certificates:filtered,settings,canManage:can(user,"certificates.manage")},{headers:{"Cache-Control":"no-store"}});
- }catch{return Response.json({error:"unavailable"},{status:503});}
+ }catch(error){return certificateAdminError(error);}
 }
 export async function POST(req:Request) {
  try {
@@ -37,5 +39,5 @@ export async function POST(req:Request) {
   const result=body.action==="revoke"?await db.rpc("revoke_course_certificate",{p_actor:user.id,p_id:body.id,p_reason:body.reason}):await db.from("certificate_settings").update({signature_name:body.signature_name,signature_title:body.signature_title,updated_at:new Date().toISOString()}).eq("id",true);
   if(result.error)throw result.error;
   return Response.json({success:true},{headers:{"Cache-Control":"no-store"}});
- }catch(e){return Response.json({error:e instanceof z.ZodError?"invalid_input":"unavailable"},{status:e instanceof z.ZodError?400:503});}
+ }catch(error){return certificateAdminError(error);}
 }

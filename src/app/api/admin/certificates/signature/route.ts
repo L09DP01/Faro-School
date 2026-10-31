@@ -1,3 +1,4 @@
+import {certificateAdminError} from "@/lib/certificates/http";
 import { certificateUser } from "@/lib/certificates/service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { can } from "@/lib/permissions";
@@ -22,5 +23,5 @@ export async function POST(req:Request) {
   const {error}=await createAdminClient().from("certificate_settings").update({signature_image_path:path,updated_at:new Date().toISOString()}).eq("id",true);
   if(error)throw error;
   return Response.json({path},{headers:{"Cache-Control":"no-store"}});
- }catch{return Response.json({error:"unavailable"},{status:503});}
+ }catch(error){return certificateAdminError(error);}
 }
