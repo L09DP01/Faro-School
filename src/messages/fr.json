@@ -605,6 +605,8 @@
       "downloadReceipt": "Télécharger le reçu (PDF)"
     },
     "profile": {
+      "reconnect": "Se reconnecter avec le nouveau mot de passe",
+      "errors": {"invalidData": "Vérifiez les informations saisies : le nom doit contenir entre 2 et 60 caractères.", "invalidPhone": "Saisissez un numéro haïtien valide, ou laissez le champ vide pour supprimer le numéro.", "unauthorized": "Votre session a expiré. Reconnectez-vous.", "weakPassword": "Utilisez au moins 10 caractères, une majuscule, une minuscule et un chiffre.", "commonPassword": "Ce mot de passe est trop courant. Choisissez-en un autre.", "currentPassword": "Le mot de passe actuel est incorrect.", "unavailable": "Modification indisponible. Réessayez dans un instant."},
       "settingsTitle": "Paramètres & Sécurité",
       "settingsSubtitle": "Gérez votre langue d’affichage, votre adresse e-mail et votre mot de passe.",
       "preferencesSection": "Préférences",
@@ -622,7 +624,7 @@
       "newPassword": "Nouveau mot de passe",
       "confirmPassword": "Confirmer le nouveau mot de passe",
       "savePassword": "Mettre à jour le mot de passe",
-      "passwordSuccess": "Votre mot de passe a été modifié avec succès !"
+      "passwordSuccess": "Votre mot de passe a été modifié. Les anciennes sessions sont invalidées ; reconnectez-vous pour continuer."
     }
   },
   "player": {

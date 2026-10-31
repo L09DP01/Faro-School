@@ -6,11 +6,11 @@
   "id": "/app",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#031047",
-  "background_color": "#FFFFFF",
+  "theme_color": "#F8FAFC",
+  "background_color": "#F8FAFC",
   "lang": "fr",
   "categories": ["education"],
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icons/icon-192.png",

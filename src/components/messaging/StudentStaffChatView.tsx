@@ -649,7 +649,7 @@ export function StudentStaffChatView({
               )}
 
               {/* Composer */}
-              <footer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
+              <footer data-chat-composer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-2 sm:gap-2.5 w-full">
                   <div className="flex-1 min-w-0 bg-slate-panel rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 flex items-center gap-2 border border-transparent focus-within:border-orange/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange/20 transition-all">
                     <input

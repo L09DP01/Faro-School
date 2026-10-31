@@ -1,10 +1,13 @@
 "use client";
 
+import {supportContact} from "@/lib/support-contact";
+
 import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import {PwaBottomNavPortal} from "@/components/pwa/PwaBottomNavPortal";
 import { Logo } from "@/components/brand/Logo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
@@ -128,29 +131,27 @@ export function StudentDashboardShell({
       : []),
   ];
 
-  const whatsappNumber =
-    process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "+509 36 00 00 00";
-  const cleanWhatsapp = whatsappNumber.replace(/[^0-9]/g, "");
-  const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(
-    `Bonjour Faro School, je vous contacte depuis mon espace apprenant (${user.email || user.fullName}).`
-  )}`;
+  const support = supportContact(locale);
 
   const accountNavItems = [
     {
       href: "/dashboard/profil" as const,
       exact: true,
       label: locale === "ht" ? "Pwofil" : "Profil",
+      isSupport: false,
       icon: <User className="w-5 h-5 shrink-0" />,
     },
     {
       href: "/dashboard/profil/parametres" as const,
       exact: false,
       label: locale === "ht" ? "Paramèt" : "Paramètres",
+      isSupport: false,
       icon: <Settings className="w-5 h-5 shrink-0" />,
     },
     {
-      href: whatsappUrl,
-      isExternal: true,
+      href: support.href,
+      isExternal: support.external,
+      isSupport: true,
       label: locale === "ht" ? "Èd" : "Aide",
       icon: <HelpCircle className="w-5 h-5 shrink-0" />,
     },
@@ -211,7 +212,7 @@ export function StudentDashboardShell({
   const firstName = user.fullName.split(" ")[0] || "Apprenant";
 
   return (
-    <div className="pwa-app-shell h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-bg flex flex-col md:flex-row">
+    <div className="pwa-app-shell w-full overflow-hidden bg-bg flex flex-col md:flex-row">
       {/* ========================================================= */}
       {/* 1. DESKTOP SIDEBAR (285px Fixed Navy-Deep Sidebar)        */}
       {/* ========================================================= */}
@@ -287,7 +288,7 @@ export function StudentDashboardShell({
                     </a>
                   );
                 }
-                const active = checkIsActive(item.href, item.exact);
+                const active = !item.isSupport && checkIsActive(item.href, item.exact);
                 return (
                   <Link
                     key={idx}
@@ -387,7 +388,8 @@ export function StudentDashboardShell({
 
         {/* Inner Content Area */}
         <main
-          className={`flex-1 min-w-0 min-h-0 overflow-hidden flex flex-col ${
+          data-chat={isFullHeightPage}
+          className={`pwa-app-main flex-1 min-w-0 min-h-0 flex flex-col ${
             isFullHeightPage
               ? "p-1 sm:p-2 md:p-6 md:pt-1"
               : "overflow-y-auto px-4 py-4 sm:p-6 lg:p-8 pb-10"
@@ -409,7 +411,7 @@ export function StudentDashboardShell({
         {/* indicator bar, orange-tint bg, red unread circle badge.  */}
         {/* ========================================================= */}
         {(
-          <nav
+          <PwaBottomNavPortal><nav
             aria-label="Barre d'onglets mobile"
             className="pwa-bottom-nav md:hidden shrink-0 h-[64px] pb-[env(safe-area-inset-bottom)] bg-white border-t border-line/80 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] flex items-center justify-around z-40 select-none"
           >
@@ -455,7 +457,7 @@ export function StudentDashboardShell({
                 </Link>
               );
             })}
-          </nav>
+          </nav></PwaBottomNavPortal>
         )}
       </div>
     </div>

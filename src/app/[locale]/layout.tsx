@@ -8,11 +8,13 @@ import type { Metadata, Viewport } from "next";
 import { PwaClientRoot } from "@/components/pwa/PwaClientRoot";
 
 export const viewport: Viewport = {
-  themeColor: "#031047",
+  themeColor: "#F8FAFC",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  colorScheme: "light",
 };
 
 export const metadata: Metadata = {
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Faro School",
   },
   icons: {
@@ -70,7 +72,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body className="min-h-screen flex flex-col bg-bg text-ink font-sans antialiased">
+      <body className="flex flex-col bg-bg text-ink font-sans antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <PwaClientRoot locale={locale}>
             {children}

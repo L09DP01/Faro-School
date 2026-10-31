@@ -1,3 +1,4 @@
+import {greetingName} from "@/lib/pwa/display-name";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -266,7 +267,7 @@ export default async function StudentDashboardPage({
   const { data: recommendedCourses } = await recommendedCourseQuery.limit(1);
   const recommendedCourse = recommendedCourses?.[0] || null;
 
-  const firstName = user.fullName ? user.fullName.split(" ")[0] : "Étudiant";
+  const firstName = greetingName(user.fullName || "", locale);
   const initials = user.fullName
     ? user.fullName
         .split(" ")
@@ -289,9 +290,7 @@ export default async function StudentDashboardPage({
           {t("greeting", { name: firstName })}
         </h1>
         <p className="text-xs sm:text-sm text-muted-faro font-sans mt-0.5">
-          {locale === "ht"
-            ? "Byenveni sou espas aprantisaj ou. Kontinye avanse !"
-            : "Byenveni sou espas aprantisaj ou — Continue de bâtir ton avenir."}
+          {t("subtitle")}
         </p>
       </div>
 

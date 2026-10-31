@@ -1,3 +1,5 @@
+> Actualisation layout : les choix de hauteur et safe areas ci-dessous sont remplacés par PWA_IPHONE_NOTES.md. Aucun calcul JavaScript ne dimensionne désormais le shell ; les correctifs d’authentification et d’installation restent applicables.
+
 # PWA installation, screen frame and login
 
 - Full app height uses CSS 100dvh; VisualViewport overrides it only for a focused control with a keyboard-sized reduction. Safe areas are contained in the app, not subtracted again. Root background matches the app below the home indicator; only the status overlay is navy. Landing remains excluded.

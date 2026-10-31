@@ -5,6 +5,9 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Profile language and security feedback",cmd:"npx tsx tests/profile-feedback.test.ts"},
+  {name:"PWA iPhone metadata and presentation invariants",cmd:"npx tsx tests/pwa-iphone-invariants.test.ts"},
+  {name:"Profile audit API corrections",cmd:"npx tsx tests/profile-audit-corrections.test.ts"},
   {name:"Profile/settings separation and exclusive navigation",cmd:"npx tsx tests/profile-settings-navigation.test.ts"},
   {name:"Login security error feedback",cmd:"npx tsx tests/login-error-feedback.test.ts"},
   {name:"Reset password FR/KR rendered states",cmd:"npx tsx tests/reset-password-copy.test.ts"},

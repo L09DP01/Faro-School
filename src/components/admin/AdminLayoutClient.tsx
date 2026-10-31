@@ -233,7 +233,7 @@ export function AdminLayoutClient({
   );
 
   return (
-    <div className="pwa-admin-shell min-h-screen md:h-screen md:h-[100dvh] md:overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
+    <div className="pwa-admin-shell md:overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
       {/* ========================================================= */}
       {/* 1. PERSISTENT 260px NAVY SIDEBAR (Fixed 100dvh on Desktop)*/}
       {/* ========================================================= */}

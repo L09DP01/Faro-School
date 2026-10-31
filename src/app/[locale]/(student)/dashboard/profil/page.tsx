@@ -1,3 +1,4 @@
+import {supportContact} from "@/lib/support-contact";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
@@ -40,12 +41,7 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
 
   if (!user) return null;
 
-  const whatsappNumber =
-    process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "+509 36 00 00 00";
-  const cleanWhatsapp = whatsappNumber.replace(/[^0-9]/g, "");
-  const whatsappUrl = `https://wa.me/${cleanWhatsapp}?text=${encodeURIComponent(
-    `Bonjour Faro School, je vous contacte depuis mon espace apprenant (${user.email || user.fullName}).`
-  )}`;
+  const support = supportContact(locale);
 
   const quickLinks = [
     {
@@ -67,10 +63,10 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
       icon: <Settings className="w-5 h-5 text-orange" />,
     },
     {
-      href: whatsappUrl,
-      isExternal: true,
-      label: locale === "ht" ? "Èd & Sipò WhatsApp" : "Aide & Support WhatsApp",
-      description: locale === "ht" ? "Nou la pou ede w 7j/7" : "Notre équipe d'assistance répond à vos questions",
+      href: support.href,
+      isExternal: support.external,
+      label: locale === "ht" ? "Èd & Sipò" : "Aide & Support",
+      description: locale === "ht" ? "Kontakte ekip Faro School la" : "Contacter l’équipe Faro School",
       icon: <HelpCircle className="w-5 h-5 text-orange" />,
     },
   ];

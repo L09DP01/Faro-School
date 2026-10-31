@@ -1294,7 +1294,7 @@ export function CommunityChatView({
         {/* ========================================================================= */}
         {/* 3. COMPOSER BAR (Mockup Polish)                                           */}
         {/* ========================================================================= */}
-        <footer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 relative">
+        <footer data-chat-composer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 relative">
           {/* Replying Banner */}
           {replyingTo && (
             <div className="mb-2 p-2 rounded-xl bg-orange-tint/70 border border-orange/30 flex items-center justify-between text-xs">

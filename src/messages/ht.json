@@ -605,6 +605,8 @@
       "downloadReceipt": "Telechaje resi a (PDF)"
     },
     "profile": {
+      "reconnect": "Rekonekte ak nouvo modpas la",
+      "errors": {"invalidData": "Verifye enfòmasyon yo : non an dwe gen ant 2 ak 60 karaktè.", "invalidPhone": "Antre yon nimewo ayisyen ki valab, oswa kite chan an vid pou efase nimewo a.", "unauthorized": "Sesyon ou ekspire. Rekonekte.", "weakPassword": "Itilize omwen 10 karaktè, yon majiskil, yon miniskil ak yon chif.", "commonPassword": "Modpas sa a twò komen. Chwazi yon lòt.", "currentPassword": "Modpas aktyèl la pa kòrèk.", "unavailable": "Chanjman an pa disponib. Eseye ankò pita."},
       "settingsTitle": "Paramèt & Sekirite",
       "settingsSubtitle": "Jere lang afichaj ou, adrès imèl ou ak modpas ou.",
       "preferencesSection": "Preferans",
@@ -622,7 +624,7 @@
       "newPassword": "Nouvo modpas",
       "confirmPassword": "Konfime nouvo modpas la",
       "savePassword": "Mete modpas la ajou",
-      "passwordSuccess": "Modpas ou chanje avèk siksè !"
+      "passwordSuccess": "Modpas ou chanje. Ansyen sesyon yo pa valab ankò ; rekonekte pou kontinye."
     }
   },
   "player": {

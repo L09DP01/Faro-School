@@ -45,3 +45,10 @@ API réservée au compte connecté vérifié ; mises à jour limitées à son pr
 ## Validation du correctif
 
 Le rendu réel du menu est testé en FR/KR sur Profil, son URL avec slash final et Paramètres : une seule entrée active dans Menu compte. Le rendu réel des formulaires confirme que Profil contient l’identité sans champs mot de passe/langue, et que Paramètres contient langue et sécurité sans édition du nom/téléphone. Les titres, métadonnées et routes restent privés dans le dashboard existant.
+
+
+## Corrections appliquées après cet audit
+
+Les écarts 1 à 7 ci-dessus décrivent l’état antérieur. Ils ont été traités : nom nettoyé avant validation (2–60), téléphone vide enregistré null, préférence FR/KR synchronisée avec route et cookies, action explicite de reconnexion après modification du mot de passe, codes d’erreur publics traduits sans détails internes, rafraîchissement et écran terminé après vérification du nouvel e-mail. Le contact WhatsApp fictif et la promesse 7j/7 sont retirés ; sans vrai numéro configuré, l’aide ouvre la messagerie existante. Le message WhatsApp ne préremplit plus d’adresse e-mail ou d’identité.
+
+Aucun nouveau mécanisme de stockage, règle d’accès ou table n’a été ajouté. Les évolutions du point 8 restent des propositions hors du chantier de mise en page : avatar, préférences de notification, registre d’appareils et fermeture autonome du compte. Configurer NEXT_PUBLIC_SUPPORT_WHATSAPP avec un vrai contact est le seul complément de configuration de cet audit ; la messagerie reste accessible sans ce numéro.

@@ -1,3 +1,5 @@
+> Mise à jour : les choix de hauteur/position décrits dans ce document historique sont remplacés par PWA_IPHONE_NOTES.md (CSS dvh, navigation fixed dans un portal body, aucune hauteur JavaScript).
+
 # Correctifs prioritaires — PWA et dashboard, 30 octobre 2026
 
 ## A — Emails répétés (déployé en premier : f46e4a1)

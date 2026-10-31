@@ -1,0 +1,304 @@
+{
+  "engine": "Playwright WebKit",
+  "realIPhone": false,
+  "keyboard": {
+    "native": false,
+    "focusAndViewportResizeSimulated": true,
+    "visibleViewport": [
+      393,
+      500
+    ],
+    "navHidden": true,
+    "restoredNavBottom": 852
+  },
+  "cases": [
+    {
+      "case": "home",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "formations",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "community-empty",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "community-messages",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "messages",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "message-thread",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "profile",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "settings",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "lesson",
+      "width": 393,
+      "height": 852,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "home",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "formations",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "community-empty",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "community-messages",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "messages",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "message-thread",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "profile",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "settings",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "lesson",
+      "width": 430,
+      "height": 932,
+      "sat": 59,
+      "sab": 34,
+      "passed": true
+    },
+    {
+      "case": "home",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "formations",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "community-empty",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "community-messages",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "messages",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "message-thread",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "profile",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "settings",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "lesson",
+      "width": 375,
+      "height": 667,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "home",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "formations",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "community-empty",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "community-messages",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "messages",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "message-thread",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "profile",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "settings",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    },
+    {
+      "case": "lesson",
+      "width": 320,
+      "height": 568,
+      "sat": 0,
+      "sab": 0,
+      "passed": true
+    }
+  ]
+}

@@ -3,8 +3,11 @@
 import {ChangeEmailForm} from "./ChangeEmailForm";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import {Link} from "@/i18n/navigation";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+
+class PublicProfileError extends Error {}
 
 interface ProfileFormProps {
   user: {
@@ -20,6 +23,8 @@ interface ProfileFormProps {
 export function ProfileForm({ user, currentLocale, section = "profile" }: ProfileFormProps) {
   const t = useTranslations("dashboard.profile");
   const router = useRouter();
+  const pathname = usePathname();
+  const publicError=(code: string)=>t(({invalid_data:"errors.invalidData",invalid_phone:"errors.invalidPhone",unauthorized:"errors.unauthorized",weak_password:"errors.weakPassword",password_too_common:"errors.commonPassword",current_password_invalid:"errors.currentPassword"} as Record<string,string>)[code] || "errors.unavailable");
 
   // Personal Info State
   const [fullName, setFullName] = useState(user.fullName || "");
@@ -52,14 +57,19 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || "Erreur de mise à jour");
+        throw new PublicProfileError(publicError(data.error));
       }
 
       setPersonalSuccess(true);
+      if(section === "settings" && localePref !== currentLocale){
+        const suffix=window.location.protocol==="https:"?"; Secure":"";
+        for(const key of ["NEXT_LOCALE","faro_locale"])document.cookie=key+"="+localePref+"; Path=/; Max-Age=31536000; SameSite=Lax"+suffix;
+        router.replace(pathname.replace(/^\/(fr|ht)(?=\/|$)/,"/"+localePref)+window.location.search+window.location.hash);
+      }
       router.refresh();
       setTimeout(() => setPersonalSuccess(false), 4000);
     } catch (err: any) {
-      setPersonalError(err.message || "Impossible de mettre à jour le profil");
+      setPersonalError(err instanceof PublicProfileError ? err.message : t("errors.unavailable"));
     } finally {
       setPersonalLoading(false);
     }
@@ -92,7 +102,7 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error === "current_password_invalid" ? (currentLocale === "ht" ? "Modpas aktyèl la pa kòrèk." : "Le mot de passe actuel est incorrect.") : (currentLocale === "ht" ? "Chanjman an pa disponib." : "Modification indisponible."));
+        throw new PublicProfileError(publicError(data.error));
       }
 
       setPasswordSuccess(true);
@@ -101,7 +111,7 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(false), 4000);
     } catch (err: any) {
-      setPasswordError(err.message || "Échec du changement de mot de passe");
+      setPasswordError(err instanceof PublicProfileError ? err.message : t("errors.unavailable"));
     } finally {
       setPasswordLoading(false);
     }
@@ -142,6 +152,9 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
           </label>
           <input
             id="profile-name"
+            minLength={2}
+            maxLength={60}
+            autoComplete="name"
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -243,7 +256,7 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
         {passwordSuccess && (
           <div className="p-3.5 rounded-xl bg-ok-tint border border-ok/20 text-ok text-xs font-heading font-semibold flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{t("passwordSuccess")}</span>
+            <div><p>{t("passwordSuccess")}</p><Link href="/connexion" className="mt-2 inline-flex min-h-11 items-center underline">{t("reconnect")}</Link></div>
           </div>
         )}
 

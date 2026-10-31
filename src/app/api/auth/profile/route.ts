@@ -11,7 +11,7 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 export const runtime = "nodejs";
 
 const updateProfileSchema = z.object({
-  fullName: z.string().min(2, "Le nom doit comporter au moins 2 caractères").optional(),
+  fullName: z.string().trim().min(2).max(60).optional(),
   phone: z.string().optional(),
   locale: z.enum(["fr", "ht"]).optional(),
   currentPassword: z.string().optional(),
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { error: "Données invalides", details: result.error.flatten() },
+        { error: "invalid_data" },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       const phoneValidation = validateAndFormatHaitianPhone(phone);
       if (!phoneValidation.isValid) {
         return NextResponse.json(
-          { error: "Numéro de téléphone haïtien invalide (+509 36123456)" },
+          { error: "invalid_phone" },
           { status: 400 }
         );
       }
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
 
     // 2. Update profile table
     const updateData: Record<string, any> = {};
-    if (fullName) updateData.full_name = fullName.trim();
-    if (formattedPhone !== null) updateData.phone = formattedPhone;
+    if (fullName !== undefined) updateData.full_name = fullName;
+    if (phone !== undefined) updateData.phone = formattedPhone;
     if (locale) updateData.locale = locale;
 
     if (Object.keys(updateData).length > 0) {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
       if (profileError) {
         return NextResponse.json(
-          { error: "Erreur lors de la mise à jour du profil", details: profileError.message },
+          { error: "profile_update_unavailable" },
           { status: 500 }
         );
       }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Le nouveau mot de passe doit comporter au moins 10 caractères avec une majuscule, une minuscule et un chiffre.",
+              "weak_password",
           },
           { status: 400 }
         );
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
       if (isCommonPassword(newPassword)) {
         return NextResponse.json(
-          { error: "Ce mot de passe est trop facile à deviner. Choisissez un mot de passe plus robuste." },
+          { error: "password_too_common" },
           { status: 400 }
         );
       }
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: "Erreur serveur", message: err?.message },
+      { error: "server_error" },
       { status: 500 }
     );
   }

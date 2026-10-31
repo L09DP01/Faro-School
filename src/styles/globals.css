@@ -22,94 +22,70 @@
 
 @font-face{font-family:FaroCertificateBodyBold;src:url('/fonts/certificates/Inter-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
 
-/* iOS zooms focused controls below 16px. Keep manual/pinch zoom available.
-   The marketing landing page is explicitly excluded by PwaViewport. */
-@media (max-width: 1023px), (hover: none) and (pointer: coarse) {
-  html[data-app-route="true"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), textarea, select, [contenteditable="true"]) {
-    font-size: max(16px, 1rem) !important;
-    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  }
-  .auth-mobile-header { position: sticky; top: 0; z-index: 40; flex-shrink: 0; }
+/* App viewport: CSS owns height; JS only describes display/keyboard state. */
+:root { --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px); }
+html { -webkit-text-size-adjust:100%; }
+html[data-app-route="true"] :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select,[contenteditable="true"]),
+:is(.pwa-app-shell,.pwa-admin-shell,.auth-shell,.pwa-lesson-shell) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),textarea,select,[contenteditable="true"]) { font-size:max(16px,1rem)!important; transition-property:color,background-color,border-color,box-shadow,opacity,transform; }
+html[data-app-route="true"] :is(button,[role="button"]) { touch-action:manipulation; }
+.pwa-viewport { display:contents; }
+html:is([data-app-shell="true"],[data-app-standalone="true"]),
+html:is([data-app-shell="true"],[data-app-standalone="true"]) body {
+ height:100%; min-height:100%; margin:0; background:var(--bg); overscroll-behavior:none;
 }
-.pwa-viewport { display: contents; }
-html[data-app-standalone="true"],
-html[data-app-standalone="true"] body {
-  height: 100%; min-height: 0; overflow: hidden; overscroll-behavior: none;
-  background: var(--bg);
+html[data-app-shell="true"] body { overflow:hidden; }
+html[data-app-shell="true"] .pwa-viewport { display:contents; }
+:is(.pwa-app-shell,.pwa-admin-shell) {
+ height:100dvh; min-height:100dvh; max-height:none; background:var(--bg);
 }
-html[data-app-standalone="true"] body { position: fixed; inset: 0; width: 100%; }
-html[data-app-standalone="true"] .pwa-viewport {
-  display: block; height: var(--app-height, 100dvh); min-height: 0;
-  overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: none;
-  background: var(--bg); -webkit-overflow-scrolling: touch;
-}
-/* Cover the status area with a solid surface: scrolling content must never show through. */
-html[data-app-standalone="true"] body::before {
-  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
-  background: var(--navy-deep); pointer-events: none; z-index: 100;
-}
-html[data-app-standalone="true"] :is(.auth-shell, .pwa-app-shell, .pwa-admin-shell) {
-  height: 100%; max-height: 100%; min-height: 0; overflow: hidden;
-}
-html[data-app-standalone="true"] .auth-form-panel {
-  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain;
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-}
-html[data-app-standalone="true"] .pwa-admin-main {
-  min-height: 0; overflow-y: auto; overscroll-behavior-y: contain;
-}
-@media (max-width: 1023px) {
-  html[data-app-standalone="true"] .auth-mobile-header { padding-top: calc(1rem + env(safe-area-inset-top)); }
-}
-@media (max-width: 767px) {
-  html[data-app-standalone="true"] :is(.pwa-app-header, .pwa-admin-header) {
-    height: calc(3.5rem + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top);
-    flex-shrink: 0;
-  }
-  html[data-app-standalone="true"] .pwa-admin-header { height: calc(4rem + env(safe-area-inset-top)); }
-  html[data-app-standalone="true"] .pwa-bottom-nav { height: calc(64px + env(safe-area-inset-bottom)); }
-}
-html[data-app-standalone="true"] .pwa-viewport {
-  padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right);
-}
-
-/* Shared app frame in Safari and installed PWA. Only the content pane scrolls. */
-html[data-app-shell="true"], html[data-app-shell="true"] body {
-  height:100%; min-height:0; overflow:hidden; overscroll-behavior:none;
-}
-html[data-app-shell="true"] .pwa-viewport {
-  display:block; position:fixed; inset:0; height:var(--app-height,100dvh);
-  min-height:0; overflow:hidden; background:var(--bg);
-}
-html[data-app-shell="true"] .pwa-app-shell,
-html[data-app-shell="true"] .pwa-admin-shell { height:100%; max-height:100%; min-height:0; }
+html[data-app-shell="true"] .pwa-app-shell > .flex-1 { display:flex; flex-direction:column; height:100%; min-height:0; }
 html[data-app-shell="true"] .pwa-app-header { background:var(--bg); }
-html[data-app-shell="true"] .pwa-admin-main { min-height:0; overflow-y:auto; overscroll-behavior-y:contain; }
-html[data-app-shell="true"] .pwa-bottom-nav {
-  height:calc(64px + env(safe-area-inset-bottom,0px));
-  padding-bottom:env(safe-area-inset-bottom,0px);
+html[data-app-shell="true"] .pwa-app-main {
+ flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain;
+ -webkit-overflow-scrolling:touch;
 }
-
-html[data-app-shell="true"] .pwa-lesson-shell {
-  height:100%; min-height:0; overflow-y:auto; overscroll-behavior-y:contain;
-  padding-bottom:env(safe-area-inset-bottom,0px);
+html[data-app-shell="true"] .pwa-admin-main { min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+html[data-app-standalone="true"] :is(.pwa-app-header,.pwa-admin-header) {
+ padding-top:var(--sat); height:calc(56px + var(--sat)); flex-shrink:0;
 }
-html[data-app-standalone="true"] .pwa-lesson-shell > header {
-  height:calc(4rem + env(safe-area-inset-top,0px));
-  padding-top:env(safe-area-inset-top,0px);
+html[data-app-standalone="true"] .pwa-admin-header { height:calc(64px + var(--sat)); }
+html[data-app-standalone="true"] .auth-shell { min-height:100dvh; height:100dvh; overflow:hidden; }
+html[data-app-standalone="true"] .auth-mobile-header { padding-top:calc(1rem + var(--sat)); flex-shrink:0; }
+html[data-app-standalone="true"] .auth-form-panel { min-height:0; flex:1; overflow-y:auto; padding-bottom:max(1.5rem,var(--sab)); -webkit-overflow-scrolling:touch; }
+.pwa-bottom-nav {
+ position:fixed; left:0; right:0; bottom:0; width:100%;
+ height:calc(64px + var(--sab)); padding-bottom:var(--sab); background:var(--surface); z-index:60;
 }
-
+html[data-app-keyboard="true"] .pwa-bottom-nav { display:none; }
+@media(max-width:767px) {
+ html[data-app-shell="true"] .pwa-app-main { padding-bottom:calc(64px + var(--sab) + 16px); }
+ /* Chat reserves the nav outside its message pane; its composer ends at nav top. */
+ html[data-app-shell="true"] .pwa-app-main[data-chat="true"] { overflow:hidden; padding-bottom:calc(64px + var(--sab)); }
+ html[data-app-shell="true"] [data-message-stream] { padding-bottom:16px; -webkit-overflow-scrolling:touch; }
+ html[data-app-keyboard="true"][data-app-shell="true"] .pwa-app-main { padding-bottom:16px; }
+ html[data-app-keyboard="true"][data-app-shell="true"] .pwa-app-main[data-chat="true"] { padding-bottom:0; }
+}
+.pwa-lesson-shell { height:100dvh; min-height:100dvh; max-height:none; overflow-y:auto; padding-bottom:var(--sab); -webkit-overflow-scrolling:touch; }
+html[data-app-standalone="true"] .pwa-lesson-shell > header { height:calc(64px + var(--sat)); padding-top:var(--sat); }
+@supports not (height:100dvh) {
+ .auth-shell { min-height:100vh; }
+ @media(min-width:1024px) { .auth-form-panel { min-height:100vh; } }
+ :is(.pwa-app-shell,.pwa-admin-shell,.pwa-lesson-shell),
+ html[data-app-standalone="true"] .auth-shell { height:100vh; min-height:100vh; }
+}
+@media(display-mode:standalone) {
+ .pwa-app-header { height:calc(56px + var(--sat)); padding-top:var(--sat); }
+ .pwa-admin-header { height:calc(64px + var(--sat)); padding-top:var(--sat); }
+}
+@media(min-width:768px) { html[data-app-standalone="true"] .pwa-app-header { height:calc(64px + var(--sat)); } }
+/* These outlines are enabled only by the development-only debug=safe guard. */
+html[data-safe-debug="true"] .pwa-app-header { outline:2px dashed var(--orange); outline-offset:-2px; }
+html[data-safe-debug="true"] .pwa-bottom-nav { outline:2px dashed var(--blue); outline-offset:-2px; }
+html[data-safe-debug="true"] body::before,html[data-safe-debug="true"] body::after {
+ content:""; position:fixed; left:0; right:0; pointer-events:none; z-index:130; border:1px dashed var(--orange);
+}
+html[data-safe-debug="true"] body::before { top:0; height:var(--sat); }
+html[data-safe-debug="true"] body::after { bottom:0; height:var(--sab); }
 .chat-dotted-background { background-image:radial-gradient(var(--line) 1px,transparent 1px); }
-
-/* Reserve a dedicated grid row for navigation; content never lives underneath it. */
-html[data-app-shell="true"] .pwa-app-shell { --app-nav-height:calc(64px + env(safe-area-inset-bottom,0px)); }
-html[data-app-shell="true"] .pwa-app-shell > .flex-1 {
- display:grid; grid-template-rows:auto minmax(0,1fr) var(--app-nav-height); min-height:0;
-}
-html[data-app-shell="true"] .pwa-bottom-nav { position:relative; align-self:end; width:100%; z-index:60; }
-@media(min-width:768px){
- html[data-app-shell="true"] .pwa-app-shell { --app-nav-height:0px; }
- html[data-app-shell="true"] .pwa-app-shell > .flex-1 { grid-template-rows:auto minmax(0,1fr); }
-}
 
 .compose-backdrop { background:color-mix(in srgb,var(--navy-deep) 60%,transparent); }

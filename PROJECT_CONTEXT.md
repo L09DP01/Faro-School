@@ -8,7 +8,7 @@ Student Messages: `openStaffConversationAction` resolves the actual course owner
 from active enrollments or a verified direction admin; the browser never chooses
 a staff UUID. Existing conversations are reused, tickets use course_id=null,
 and the System tab reads only the account's notifications. Shared PWA navigation
-always occupies its own grid row. Chat scrolling must target its message pane,
+is fixed to the viewport through a body portal; CSS dvh owns shell height. Chat scrolling must target its message pane,
 never scrollIntoView on all ancestors. See `docs/MESSAGING_FLOW.md`.
 
 PWA is the primary app. Shared shell scroll/safe-area changes must cover dashboard,
@@ -389,7 +389,7 @@ email-outbox cron internally every minute using the runtime `CRON_SECRET`.
       - Active tab: deep navy (`text-navy-deep`), 3px top orange indicator bar, and subtle orange tint pill (`bg-orange-tint/60`).
       - Inactive tabs: high-contrast `text-muted-faro` (contrast ratio 5.1:1 on white).
       - Red circle unread badges: 12 on Communauté, 1 on Messages (`bg-red text-white`).
-      - Fixed container layout to `h-[100dvh] max-h-[100dvh] overflow-hidden` with `visualViewport` keyboard awareness, ensuring the composer is never obscured by the bottom bar.
+      - Layout superseded by PWA_IPHONE_NOTES.md: CSS dvh shell, body-portaled fixed navigation, reserved main spacing; visualViewport only detects keyboard visibility.
     
 - **14 Visual Bug Fixes Across Student Area**:
       1. *Mobile bottom nav unreadable*: Replaced faint glassmorphic bar with solid white bar and high-contrast typography.
@@ -585,8 +585,10 @@ Le déploiement principal conserve désormais les variables runtime saisies dans
 
 Référence : https://developers.cloudflare.com/workers/wrangler/configuration/#source-of-truth
 
-PWA install/login fixes: see docs/PWA_INSTALL_LOGIN_FIXES.md. Full screen uses CSS dvh except while the keyboard is open. Custom install controls are mobile-only; short_name is Faro School. Logout must call Auth.js signOut, never just link to login.
+PWA install/login fixes: see docs/PWA_INSTALL_LOGIN_FIXES.md. Full screen uses CSS dvh; keyboard detection only toggles visibility, never writes shell height. Custom install controls are mobile-only; short_name is Faro School. Logout must call Auth.js signOut, never just link to login.
 
 Production HTTPS invariant: custom-worker.mjs upgrades HTTP public hosts before serving OpenNext, including /api/auth. Secure Auth.js cookies must stay enabled; MissingCSRF is not an invalid-password error. See docs/ADMIN_LOGIN_HTTP_CSRF.md.
 
 Student account navigation: /dashboard/profil is identity and account shortcuts; /dashboard/profil/parametres is language and security. Desktop profile matching is exact; only one account entry can be active. Both reuse ProfileForm and existing APIs. See docs/PROFILE_SETTINGS_AUDIT.md for remaining product and implementation gaps.
+
+Standalone iPhone layout: see PWA_IPHONE_NOTES.md. Preserve fixed body-portaled bottom navigation, main-content safe-area padding, light app-background meta/manifest consistency and production-disabled debug=safe. Native iPhone keyboard/status-bar/launch checks remain manual.

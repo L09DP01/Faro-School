@@ -4,7 +4,7 @@ import { Logo } from "@/components/brand/Logo";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="auth-shell min-h-screen flex flex-col lg:flex-row bg-surface">
+    <div className="auth-shell min-h-[100dvh] flex flex-col lg:flex-row bg-surface">
       {/* 1. Mobile Compact Top Banner (< 1024px) */}
       <div className="auth-mobile-header lg:hidden bg-gradient-to-r from-navy-deep via-navy to-blue px-6 py-4 text-white flex items-center justify-between shadow-md">
         <Link href="/" className="inline-flex items-center">
@@ -56,7 +56,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       </div>
 
       {/* 3. Right White Panel: Form starting 24px under banner on mobile, centered on desktop */}
-      <div className="auth-form-panel w-full lg:w-1/2 flex flex-col justify-start lg:justify-center items-center pt-6 px-4 pb-6 sm:p-8 md:p-12 lg:p-14 xl:p-16 bg-surface min-h-0 lg:min-h-screen overflow-y-auto">
+      <div className="auth-form-panel w-full lg:w-1/2 flex flex-col justify-start lg:justify-center items-center pt-6 px-4 pb-6 sm:p-8 md:p-12 lg:p-14 xl:p-16 bg-surface min-h-0 lg:min-h-[100dvh] overflow-y-auto">
         <div className="w-full max-w-[440px] mx-auto">
           {children}
         </div>
