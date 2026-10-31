@@ -1,4 +1,6 @@
+import {assistantModel,assistantCost,ASSISTANT_MODELS} from "./models";
 import { z } from "zod";
+import {createAdminClient} from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/config";
 import type { InstructorAiSettings } from "./types";
@@ -143,17 +145,18 @@ export async function getPersistedGlobalAiSettings() {
     defaultConfidenceThreshold: 0.75,
     dailyCostCapUsd: 15.0,
     studentDailyLimit: 30,
-    killSwitch: false,
+    killSwitch: true,
   };
 
   try {
-    const supabase = await createClient();
-    const { data } = await supabase
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
       .from("platform_settings")
       .select("value")
       .eq("key", "ai_global_settings")
       .maybeSingle();
 
+    if (error) throw Error("settings_unavailable");
     if (data?.value) {
       const val = data.value as any;
       const settings = {
@@ -220,7 +223,7 @@ async function checkAiLimits(
   }
 
   // In test / fallback mode if RPC is unreachable
-  return { allowed: true };
+  return { allowed: isDemoMode(), reason: "Vérification des limites indisponible." };
 }
 
 /**
@@ -240,15 +243,10 @@ export async function callAiAssistant({
   locale = "fr",
 }: CallAiAssistantParams): Promise<AiResponseResult> {
   const globalSettings = await getPersistedGlobalAiSettings();
-  const apiKey = process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY;
-  const isGemini = Boolean(
-    process.env.GEMINI_API_KEY ||
-      (!process.env.ANTHROPIC_API_KEY && (!process.env.AI_MODEL || process.env.AI_MODEL.includes("gemini"))) ||
-      (process.env.AI_MODEL && process.env.AI_MODEL.includes("gemini"))
-  );
-  const model =
-    process.env.AI_MODEL ||
-    (isGemini ? "gemini-1.5-flash" : globalSettings.defaultModel || "claude-3-haiku-20240307");
+  const model=assistantModel(process.env.AI_MODEL?.trim()||globalSettings.defaultModel,!!process.env.GEMINI_API_KEY,!!process.env.ANTHROPIC_API_KEY);
+  const isGemini=model.startsWith('gemini-');
+  const apiKey=isGemini?process.env.GEMINI_API_KEY:process.env.ANTHROPIC_API_KEY;
+  if(!ASSISTANT_MODELS.some(id=>id===model))return{answer:'',can_answer:false,confidence:0,escalate_reason:'Modèle IA non pris en charge. Transmission au responsable.',model,inputTokens:0,outputTokens:0};
 
   // 1. Kill Switch Check (env variable OR persisted setting)
   const isEnvDisabled =
@@ -490,7 +488,7 @@ ${safeQuestion}
     let costUsd = 0;
 
     if (isGemini) {
-      const geminiModel = model.includes("gemini") ? model : "gemini-1.5-flash";
+      const geminiModel = model;
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
         {
@@ -521,8 +519,7 @@ ${safeQuestion}
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        const errBody = await res.text();
-        console.error("[GEMINI API ERROR]", errBody);
+        console.error("[AI] provider_unavailable",{provider:"gemini",status:res.status});
         return {
           answer: "",
           can_answer: false,
@@ -535,12 +532,12 @@ ${safeQuestion}
       }
 
       const data = await res.json();
-      rawContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      rawContent = (data.candidates?.[0]?.content?.parts||[]).filter((p:any)=>!p.thought&&typeof p.text==="string").map((p:any)=>p.text).join("")||"{}";
       const usage = data.usageMetadata || {};
       inputTokens = Number(usage.promptTokenCount || 0);
-      outputTokens = Number(usage.candidatesTokenCount || 0);
-      // Gemini 1.5 Flash ($0.075/M input, $0.30/M output)
-      costUsd = (inputTokens * 0.075 + outputTokens * 0.30) / 1_000_000;
+      outputTokens = Number(usage.candidatesTokenCount || 0)+Number(usage.thoughtsTokenCount||0);
+      // Includes billable thinking tokens; a standard-rate estimate, not an invoice.
+      costUsd = assistantCost(model,inputTokens,outputTokens)!;
     } else {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -553,7 +550,6 @@ ${safeQuestion}
         body: JSON.stringify({
           model,
           max_tokens: 600,
-          temperature: 0.2,
           system: systemPrompt,
           messages: [{ role: "user", content: userPrompt }],
         }),
@@ -562,8 +558,7 @@ ${safeQuestion}
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        const errBody = await res.text();
-        console.error("[ANTHROPIC API ERROR]", errBody);
+        console.error("[AI] provider_unavailable",{provider:"anthropic",status:res.status});
         return {
           answer: "",
           can_answer: false,
@@ -576,12 +571,11 @@ ${safeQuestion}
       }
 
       const data = await res.json();
-      rawContent = data.content?.[0]?.text || "{}";
+      rawContent = (data.content||[]).filter((p:any)=>p.type==="text").map((p:any)=>p.text).join("")||"{}";
       const usage = data.usage || {};
       inputTokens = Number(usage.input_tokens || 0);
       outputTokens = Number(usage.output_tokens || 0);
-      // Calculate Claude-3-Haiku cost ($0.25/M input, $1.25/M output)
-      costUsd = (inputTokens * 0.25 + outputTokens * 1.25) / 1_000_000;
+      costUsd = assistantCost(model,inputTokens,outputTokens)!;
     }
 
     // 9. Validate Model Output with Zod

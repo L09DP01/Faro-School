@@ -242,7 +242,7 @@ export function ProfileForm({ user, currentLocale, section = "profile" }: Profil
       </form>
 
       {section === "settings" && <>
-      <ChangeEmailForm locale={currentLocale}/>
+      <ChangeEmailForm locale={currentLocale} returnHref={pathname.includes("/admin/")?"/admin/compte":"/dashboard/profil"}/>
       {/* 2. Password Change Form */}
       <form
         onSubmit={handleUpdatePassword}

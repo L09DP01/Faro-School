@@ -1,7 +1,9 @@
+import {assistantModel,ASSISTANT_MODELS} from "@/lib/messaging/models";
+import {z} from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { logAdminAction } from "./moderation";
 import type { Conversation, PrivateMessage } from "@/lib/messaging/types";
-import { getMockConversationsStore, getMockMessagesStore, getMockEscalationsStore } from "@/lib/messaging/data";
+
 
 export interface MessagingSupervisionStats {
   period: "today" | "7d" | "30d";
@@ -33,29 +35,6 @@ export interface BreakGlassAccessLog {
   accessedAt: string;
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __mockGlobalAiSettingsStore: GlobalAiSettings | undefined;
-  // eslint-disable-next-line no-var
-  var __mockBreakGlassLogsStore: BreakGlassAccessLog[] | undefined;
-}
-
-function initializeMockSupervision() {
-  if (!globalThis.__mockGlobalAiSettingsStore) {
-    globalThis.__mockGlobalAiSettingsStore = {
-      defaultModel: "claude-3-haiku-20240307",
-      defaultConfidenceThreshold: 0.75,
-      dailyCostCapUsd: 5.0,
-      studentDailyLimit: 30,
-      killSwitch: false,
-    };
-  }
-
-  if (!globalThis.__mockBreakGlassLogsStore) {
-    globalThis.__mockBreakGlassLogsStore = [];
-  }
-}
-
 /**
  * Returns global AI settings (kill switch, model, limits).
  */
@@ -71,17 +50,16 @@ export async function getGlobalAiSettings(): Promise<GlobalAiSettings> {
     if (data?.value) {
       const val = data.value as any;
       return {
-        defaultModel: val.default_model || "claude-3-haiku-20240307",
-        defaultConfidenceThreshold: val.default_confidence_threshold || 0.75,
-        dailyCostCapUsd: val.daily_cost_cap_usd || 5.0,
-        studentDailyLimit: val.student_daily_limit || 30,
+        defaultModel: assistantModel(val.default_model,!!process.env.GEMINI_API_KEY,!!process.env.ANTHROPIC_API_KEY),
+        defaultConfidenceThreshold: val.default_confidence_threshold ?? 0.75,
+        dailyCostCapUsd: val.daily_cost_cap_usd ?? 5.0,
+        studentDailyLimit: val.student_daily_limit ?? 30,
         killSwitch: Boolean(val.kill_switch),
       };
     }
   } catch {}
 
-  initializeMockSupervision();
-  return globalThis.__mockGlobalAiSettingsStore!;
+  throw new Error("settings_unavailable");
 }
 
 /**
@@ -91,9 +69,10 @@ export async function saveGlobalAiSettings(
   settings: GlobalAiSettings,
   adminId: string
 ): Promise<void> {
+  settings=z.object({defaultModel:z.enum(ASSISTANT_MODELS),defaultConfidenceThreshold:z.number().min(0).max(1),dailyCostCapUsd:z.number().min(0).max(1000),studentDailyLimit:z.number().int().min(0).max(1000),killSwitch:z.boolean()}).parse(settings);
   try {
     const supabase = await createClient();
-    await supabase.from("platform_settings").upsert(
+    const {error}=await supabase.from("platform_settings").upsert(
       {
         key: "ai_global_settings",
         value: {
@@ -108,11 +87,11 @@ export async function saveGlobalAiSettings(
       },
       { onConflict: "key" }
     );
-  } catch {}
+    if(error)throw new Error("settings_unavailable");
+  } catch {throw new Error("settings_unavailable");}
 
-  initializeMockSupervision();
-  globalThis.__mockGlobalAiSettingsStore = settings;
-  logAdminAction(
+
+  await logAdminAction(
     adminId,
     settings.killSwitch ? "enable_ai_kill_switch" : "update_global_ai_settings",
     "platform_settings",
@@ -128,32 +107,7 @@ export async function saveGlobalAiSettings(
 export async function getMessagingSupervisionStats(
   period: "today" | "7d" | "30d" = "7d"
 ): Promise<MessagingSupervisionStats> {
-  const conversations = getMockConversationsStore();
-  const escalations = getMockEscalationsStore();
-
-  const totalConvs = conversations.length;
-  const activeConvs = conversations.filter((c) => c.status !== "closed").length;
-  const aiResolved = conversations.filter((c) => c.status === "ai_handling" || c.status === "open").length;
-  const aiResolutionRate = totalConvs > 0 ? Math.round((aiResolved / totalConvs) * 100) : 65;
-
-  const escalationsCount = escalations.length || 3;
-  const reviensPlusTardCount = escalations.filter((e) => e.followupSentAt).length || 1;
-
-  // Approximate Haiku cost ($0.25 / 1M input tokens, $1.25 / 1M output tokens)
-  const totalTokens = 124500;
-  const costUsd = Number(((totalTokens / 1_000_000) * 0.75).toFixed(3)) || 0.45;
-
-  return {
-    period,
-    totalConversations: totalConvs,
-    activeConversations: activeConvs,
-    medianResponseTimeMinutes: 14, // median 14 minutes
-    aiResolutionRatePercent: aiResolutionRate,
-    escalationsCount,
-    reviensPlusTardCount,
-    aiCostPerDayUsd: costUsd,
-    totalTokensUsed: totalTokens,
-  };
+  const db=await createClient();const {data,error}=await db.rpc('get_messaging_supervision_stats',{p_period:period});if(error||!data)throw Error('supervision_unavailable');return data;
 }
 
 /**
@@ -166,31 +120,18 @@ export async function logBreakGlassAccess(
   context: "report" | "escalation",
   reason: string
 ): Promise<void> {
-  initializeMockSupervision();
-
-  const entry: BreakGlassAccessLog = {
-    id: `bg-${Date.now()}`,
-    adminId,
-    adminName,
-    conversationId,
-    context,
-    reason,
-    accessedAt: new Date().toISOString(),
-  };
-
-  globalThis.__mockBreakGlassLogsStore!.unshift(entry);
-
   try {
     const supabase = await createClient();
-    await supabase.from("private_conversation_access_logs").insert({
+    const {error}=await supabase.from("private_conversation_access_logs").insert({
       admin_id: adminId,
       conversation_id: conversationId,
       context,
       reason,
     });
-  } catch {}
+    if(error)throw new Error("audit_unavailable");
+  } catch {throw new Error("audit_unavailable");}
 
-  logAdminAction(
+  await logAdminAction(
     adminId,
     "break_glass_private_conversation_access",
     conversationId,
@@ -202,13 +143,6 @@ export async function logBreakGlassAccess(
 /**
  * Returns whether an admin has unlocked break-glass access for a specific conversation.
  */
-export function hasAdminUnlockedConversation(adminId: string, conversationId: string): boolean {
-  initializeMockSupervision();
-  return globalThis.__mockBreakGlassLogsStore!.some(
-    (log) => log.adminId === adminId && log.conversationId === conversationId
-  );
-}
-
 /**
  * Returns all break-glass audit logs.
  */
@@ -245,6 +179,5 @@ export async function getBreakGlassAuditLogs(): Promise<BreakGlassAccessLog[]> {
     }
   } catch {}
 
-  initializeMockSupervision();
-  return globalThis.__mockBreakGlassLogsStore!;
+  return [];
 }

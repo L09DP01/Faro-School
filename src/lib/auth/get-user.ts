@@ -43,7 +43,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     // 1. Fetch profile
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("id, email, role, full_name, phone, locale, email_verified_at")
+      .select("id, email, role, full_name, phone, locale, email_verified_at, banned_at")
       .eq("id", session.user.id)
       .single();
 
@@ -52,10 +52,11 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     }
 
     // 2. Strict Rule: account is unusable without verified email
-    if (!profile.email_verified_at) {
+    if (!profile.email_verified_at || profile.banned_at) {
       return null;
     }
 
+    if(profile.role==='instructor'){const {data:instructor,error}=await supabase.from('instructors').select('is_active').eq('profile_id',profile.id).maybeSingle();if(error||!instructor||instructor.is_active===false)return null;}
     // 3. Fetch user credentials to verify token_version
     const { data: creds,error:credentialError } = await supabase
       .from("user_credentials")

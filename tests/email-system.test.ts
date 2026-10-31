@@ -15,7 +15,7 @@ async function main(){
  CREATE TABLE enrollments(id uuid PRIMARY KEY,user_id uuid,course_id uuid,revoked_at timestamptz);
  CREATE TABLE certificates(id uuid PRIMARY KEY,user_id uuid,course_title text,certificate_number text);
  CREATE TABLE contact_messages(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),name text,contact text,message text);
- CREATE TABLE instructors(profile_id uuid PRIMARY KEY,escalation_email text);
+ CREATE TABLE instructors(profile_id uuid PRIMARY KEY,escalation_email text,is_active boolean NOT NULL DEFAULT true);
  CREATE TABLE conversations(id uuid PRIMARY KEY,student_id uuid,staff_id uuid,course_id uuid,subject text);
  CREATE TABLE escalations(id uuid PRIMARY KEY,conversation_id uuid,email_status text,trigger_message_id uuid,reason text,deadline_at timestamptz);
  CREATE TABLE messages(id uuid DEFAULT gen_random_uuid(),conversation_id uuid,sender_type text,sender_id uuid,body text);
@@ -78,6 +78,7 @@ async function main(){
  await db.query("UPDATE payments SET status='validated' WHERE id=$1",[payment]);await db.query("UPDATE payments SET status='validated' WHERE id=$1",[payment]);
  assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='payment_confirmed'")).rows.length,1);
  const invite=(await db.query<{id:string}>("INSERT INTO profiles(email,role)VALUES('invite@example.test','instructor')RETURNING id")).rows[0];
+ await db.query("INSERT INTO instructors(profile_id)VALUES($1)",[invite.id]);
  await db.query("INSERT INTO user_credentials(user_id,password_hash)VALUES($1,'unusable-random')",[invite.id]);
  // Test token material is generated in memory only and never logged.
  const invitationResult=await outbox.enqueueEmail({kind:'invitation',to:'invite@example.test',userId:invite.id,locale:'ht',key:'invitation:fixture'});assert.equal(invitationResult.status,'accepted');
@@ -95,7 +96,7 @@ async function main(){
  await db.query('UPDATE payments SET refunded_at=now() WHERE id=$1',[payment]);assert.equal((await db.query("SELECT id FROM email_outbox WHERE kind='access_revoked'")).rows.length,1);
  await db.query("UPDATE profiles SET email_verified_at=now() WHERE id=$1",[profile.id]);
  await db.query('UPDATE courses SET instructor_id=$1 WHERE id=$2',[invite.id,course]);
- await db.query('INSERT INTO instructors VALUES($1,$2)',[invite.id,'escalation@example.test']);
+ await db.query('UPDATE instructors SET escalation_email=$2 WHERE profile_id=$1',[invite.id,'escalation@example.test']);
  const conversation=crypto.randomUUID(),studentMessage=crypto.randomUUID(),escalation=crypto.randomUUID();
  await db.query('INSERT INTO conversations VALUES($1,$2,$3,$4,$5)',[conversation,profile.id,invite.id,course,'Question']);
  await db.query("INSERT INTO messages(id,conversation_id,sender_type,sender_id,body)VALUES($1,$2,'student',$3,$4)",[studentMessage,conversation,profile.id,'<a href="https://attacker.test">Student text</a>']);

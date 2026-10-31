@@ -182,7 +182,8 @@ export async function getStudentConversations(studentId: string): Promise<Conver
  */
 export async function getStaffConversations(
   staffId: string,
-  isAdmin: boolean = false
+  isAdmin: boolean = false,
+  includeSupport: boolean = false
 ): Promise<Conversation[]> {
   try {
     const supabase = await createClient();
@@ -202,6 +203,7 @@ export async function getStaffConversations(
           title_fr,
           title_ht
         ),
+        staff:profiles!staff_id (full_name, display_name, role),
         student:profiles!student_id (
           display_name,
           full_name,
@@ -211,7 +213,7 @@ export async function getStaffConversations(
       .order("last_message_at", { ascending: false });
 
     if (!isAdmin) {
-      query = query.eq("staff_id", staffId);
+      query = includeSupport ? query.or(`staff_id.eq.${staffId},course_id.is.null`) : query.eq("staff_id", staffId);
     }
 
     const { data, error } = await query;
@@ -222,8 +224,8 @@ export async function getStaffConversations(
         studentName: row.student?.display_name || row.student?.full_name || "Étudiant",
         studentAvatarUrl: row.student?.avatar_url || null,
         staffId: row.staff_id,
-        staffName: "Moi",
-        staffRole: "instructor",
+        staffName: row.staff?.full_name || row.staff?.display_name || "Faro School",
+        staffRole: row.staff?.role || (row.course_id ? "instructor" : "admin"),
         courseId: row.course_id,
         courseTitle:
           row.courses?.title_fr ||
@@ -490,22 +492,7 @@ export async function getStudentEnrolledCourses(studentId: string): Promise<Enro
  * Returns the unread messages count for a user across all private conversations.
  */
 export async function getUnreadPrivateMessagesCount(userId: string): Promise<number> {
-  try {
-    const supabase = await createClient();
-    const { count, error } = await supabase
-      .from("messages")
-      .select("id, conversation_id, conversations!inner(student_id, staff_id)", { count: "exact", head: true })
-      .is("read_at", null)
-      .neq("sender_id", userId);
-
-    if (!error) {
-      return count || 0;
-    }
-  } catch (err) {
-    console.error("[Messaging] Error counting unread messages:", err);
-  }
-
-  return 0;
+  const db=await createClient();const {data,error}=await db.rpc('private_unread_count');if(error)throw Error('unread_unavailable');return Number(data||0);
 }
 
 /** Own system inbox, backed by the existing notification table and RLS. */

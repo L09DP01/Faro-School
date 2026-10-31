@@ -4,6 +4,21 @@
 
 ## 2. Stack
 
+Administration real data (2026-10-31): dashboards use persisted queries only; empty
+results never become sample payments, courses or random progress. Admin technical
+tickets are shared across administrators; course threads belong to their actual
+author (including an admin author). A technical-ticket takeover is audited.
+`/admin/compte` is available to staff for account settings; `/admin/parametres`
+is admin-only and links to persisted system configuration. The Emails diagnostics
+entry is absent from navigation. See `docs/ADMIN_REAL_DATA_AUDIT.md`.
+Migration `20261031044646_admin_real_data_messaging.sql` supplies real unread/read
+receipts, notifications, staff availability, guarded AI versions and aggregate
+supervision stats. Apply it before deploying the corresponding code.
+AI model choices and standard-rate estimates live in `src/lib/messaging/models.ts`;
+`AI_MODEL`, if explicitly set, overrides the saved model. Configure provider keys
+as runtime secrets and configure/enable each course author’s assistant before use.
+
+
 Student Messages: `openStaffConversationAction` resolves the actual course owner
 from active enrollments or a verified direction admin; the browser never chooses
 a staff UUID. Existing conversations are reused, tickets use course_id=null,
@@ -351,7 +366,14 @@ email-outbox cron internally every minute using the runtime `CRON_SECRET`.
 - **Prompt Injection & Safety Defense**:      - Student inputs and retrieved snippets treated strictly as untrusted data.      - Strict instructions forbidding prompt leaks, role changes, or promises of refunds/certificates.      - Rate limit: 1 call per 2 seconds, max 30 AI replies per student per day, global daily cap, and admin kill switch.    
 - **Entry Points**:      1. Community chat header: "Contacter le formateur" button.      2. Video lesson player top bar: "Contacter le formateur" button.      3. Student dashboard navigation sidebar: "Messages du formateur" menu item with unread badge (`StudentDashboardShell.tsx`).    
 - **Decisions**:      1. *Scheduled 2-minute rule job*: Implemented as an internal API endpoint `POST /api/cron/escalations` secured via `Bearer <CRON_SECRET>`. It can be invoked via Cloudflare Cron Triggers or Supabase `pg_cron`.      2. *AI Provider*: Anthropic Claude API via pure server-side `fetch` (ensures 100% compatibility with Cloudflare Workers runtime).      3. *Transactional Email*: Resend API via server-side fetch with bilingual HTML templates and Faro School logo.    
-- **Required Production Configuration**:      - `ANTHROPIC_API_KEY`: Anthropic Claude API key.      - `AI_MODEL`: Claude model (default: `claude-3-haiku-20240307`).      - `RESEND_API_KEY`: Resend API key for escalation emails.      - `MAIL_FROM`: Verified sender email address (e.g., `Faro School <notifications@faroschool.com>`).      - `CRON_SECRET`: Secret token for calling `/api/cron/escalations`.      - DNS records: Configure SPF (`v=spf1 include:resend.com ~all`) and DKIM TXT records in domain DNS according to Resend instructions.24. **Instructor Workspace & AI Assistant Customization (P19 - Routes /admin/tableau-de-bord, /admin/eleves, /admin/messages, /admin/assistant-ia, /admin/communaute, /admin/formations)**:    
+- **Required Production Configuration**:
+  - `GEMINI_API_KEY` or `ANTHROPIC_API_KEY`: runtime secret for the selected provider.
+  - `AI_MODEL`: optional deployment override; otherwise use the saved admin setting and supported models in `src/lib/messaging/models.ts`.
+  - `RESEND_API_KEY` and `EMAIL_FROM`: email delivery credentials and verified sender.
+  - `CRON_SECRET`: protected scheduled endpoints.
+  - Configure SPF and DKIM from the email provider’s verified-domain instructions.
+
+24. **Instructor Workspace & AI Assistant Customization (P19 - Routes /admin/tableau-de-bord, /admin/eleves, /admin/messages, /admin/assistant-ia, /admin/communaute, /admin/formations)**:
 - **Pedagogical Dashboard (`/admin/tableau-de-bord`)**:      - Computes strictly pedagogical KPIs for instructor's assigned courses: Apprenants (`studentsCount`), Progression moyenne (`averageProgressPercent`), Taux de complétion (`completionRatePercent`), Échanges non lus (`unreadConversationsCount`), Escalades en attente (`escalationsWaitingCount`).      - Absolute business guard: Zero financial revenue, orders, payments, coupons or promotional codes exposed to instructors.      - Student activity stream: real-time feeds on lesson completions and enrollments.    
 - **Student Privacy & Mes Élèves (`/admin/eleves`)**:      - Instructors only see students enrolled in their own courses.      
 - **Strict Privacy Rule**: Email address and phone number are completely withheld from instructors. All communications link directly to secure private messaging (`/admin/messages?new=1&studentId=...`).      - In the 480px Student Detail Drawer: contact details and payment history tabs are hidden for instructors; manual grant/revoke access is restricted to administrators only.    
@@ -374,7 +396,7 @@ email-outbox cron internally every minute using the runtime `CRON_SECRET`.
 - **Key Metrics Dashboard**: Real-time KPIs tracking Total conversations, Median instructor response time, AI resolution rate (% questions handled without human intervention), Escalations waiting count & "reviens plus tard" followup cases, and Daily AI token usage & cost (USD).      
 - **Break-Glass Privacy Safeguard for Private Conversations**:        - Student private messages are strictly isolated from standard viewing.        - Admins cannot browse private instructor-student conversations unless triggered by an active report or escalation context.        - Mandatory written justification (minimum 10 characters) is required to unlock conversation details.        - Every inspection is irrevocably written to `private_conversation_access_logs` and `admin_audit_logs`.        - Student Privacy Policy (`/[locale]/confidentialite` in French and Haitian Creole) explicitly documents this break-glass procedure.      
 - **Direct Student Messaging**: Admin modal allowing staff to initiate a private conversation with any student across the platform.      
-- **Global AI Configuration**: Platform-wide settings for default Anthropic model (`claude-3-haiku-20240307`), global confidence threshold, daily cost cap, and per-student daily limits.    
+- **Global AI Configuration**: Platform-wide settings for default Anthropic model (`claude-haiku-5-5`), global confidence threshold, daily cost cap, and per-student daily limits.
 - **Access Control & Permissions**:      - Enforced strictly via `can(user, 'community.moderate')` and `can(user, 'ai.configure')` in `src/lib/permissions.ts`.      - Instructors and students are barred by `requireAdmin(locale)` and RLS policies; instructors only retain `community.pin`.      - Admin navigation sidebar dynamically displays `Modération` and `Supervision IA` tabs exclusively for admin role.26. **Visual Polish & Design System Alignment (P17 Community, P18 Private Messaging, P19 Instructor Workspace, P20 Moderation & Supervision)**:    
 - **Visual Reference Alignment (`media_1793130150552_a6563168.jpg`)**:      - Two distinct white panels with 20px border-radius (`rounded-[20px]`), border `border-line/60`, and soft shadow (`shadow-sm`).      - Left panel (~400px): Navy circle icon, title "Communauté", subtitle "Discussions de la communauté Faro School", pill search input (`bg-slate-panel`), single group conversation item with blue tint (`bg-blue-tint`), pin icon, timestamp, and orange unread count badge. Center empty-state illustration ("Une seule conversation de groupe"), and bottom blue-tint note box with Info icon.      - Right panel: Header with member count (2,548 membres · Communauté officielle), outline orange button "Contacter le formateur" with `GraduationCap` icon, info circle, search, and more action buttons.      - Pinned message banner with orange pushpin, message snippet, and close button.      - Message stream with subtle background pattern (`bg-chat-bg bg-[radial-gradient(#E2E8F0_1px,transparent_1px)]`).      - White bubbles (16px radius), author names with WCAG AA compliant colors (`text-indigo-600`, `text-purple-700`, `text-blue-600`, etc.), `ADMIN` orange pill, `FORMATEUR` badge with verified checkmark.      - Own messages right-aligned in light green bubble (`bg-chat-bubble-own`, `#DCF8C6`) with green double checkmarks (`✓✓`).      - Composer with outline plus (+) button, pill input container (`bg-slate-panel`) with Smile emoji and disabled mic button, and round solid orange send button with paper-plane icon (`bg-orange shadow-orange text-white`).    
 - **Student Sidebar & Top Bar (`StudentDashboardShell.tsx`)**:      - Sidebar on deep navy (`bg-navy-deep`), on-dark logo, uppercase "ÉTUDIANT" label, active navigation item styled as an orange rounded pill with white text and `shadow-orange`.      - Feature flags for unbuilt pages (`Apprentissage`, `Favoris`) hiding them gracefully.      - "Mon compte" navigation group: Profil, Paramètres, Aide (WhatsApp link), and Déconnexion.      - Top bar: "Bonjour, {prenom} ! 👋", notification bell with orange unread dot, and user avatar chip with name, role, and chevron.    

@@ -51,7 +51,7 @@ export default async function AdminEditCoursePage({
       locale={locale}
       userRole={user.role}
       currentUserId={user.id}
-      availableInstructors={instructors}
+      availableInstructors={instructors.filter(i=>i.isActive)}
     />
   );
 }

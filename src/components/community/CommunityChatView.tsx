@@ -185,12 +185,8 @@ export function CommunityChatView({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Mark messages as read on mount
-  useEffect(() => {
-    markCommunityReadAction().then(() => {
-      setUnreadCount(0);
-    });
-  }, []);
+  // New arrivals are read only in a visible community screen.
+  useEffect(()=>{const mark=()=>{if(document.visibilityState==='visible')void markCommunityReadAction().then(r=>{if(r.success){setUnreadCount(0);window.dispatchEvent(new Event('faro:unread-changed'));}}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[messages.length]);
 
   // Supabase Realtime Subscription & Presence
   useEffect(() => {

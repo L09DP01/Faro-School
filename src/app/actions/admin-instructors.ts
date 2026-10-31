@@ -156,18 +156,19 @@ export async function toggleInstructorActiveAction(
     const admin = await assertAdmin();
     const adminDb = createAdminClient();
 
-    const { error: updateErr } = await adminDb
+    if(typeof targetActive!=="boolean")return{success:false,error:"invalid_data"};
+    const { data:updatedInstructor,error: updateErr } = await adminDb
       .from("instructors")
       .update({
         is_active: targetActive,
         updated_at: new Date().toISOString(),
       })
-      .eq("profile_id", instructorId);
+      .eq("profile_id", instructorId).select("profile_id").single();
 
-    if (updateErr) {
+    if (updateErr||!updatedInstructor) {
       return {
         success: false,
-        error: `Échec de mise à jour du statut formateur : ${updateErr.message}`,
+        error: `Échec de mise à jour du statut formateur : ${updateErr?.message||"Formateur introuvable"}`,
       };
     }
 
@@ -234,31 +235,12 @@ export async function sendInstructorInvitationAction(
     const admin = await assertAdmin();
     const adminDb = createAdminClient();
 
-    // Check that target exists
-    const { data: profile } = await adminDb
-      .from("profiles")
-      .select("email")
-      .eq("id", instructorId)
-      .maybeSingle();
-
-    if (!profile) {
-      return { success: false, error: "Formateur introuvable." };
-    }
-
-    await adminDb.from("admin_audit_logs").insert({
-      admin_id: admin.id,
-      action: "instructor_invitation_sent",
-      note: `Lien d'invitation généré pour le formateur ${instructorId}`,
-      metadata: { instructor_id: instructorId, email: profile.email },
-    });
-
-    const resetToken = Buffer.from(`${instructorId}-${Date.now()}`).toString("base64");
-    const invitationUrl = `/fr/reinitialiser-mot-de-passe?token=${resetToken}&mode=invite`;
-
-    return {
-      success: true,
-      invitationUrl,
-    };
+    const {data:profile,error}=await adminDb.from('profiles').select('email,locale,role').eq('id',instructorId).maybeSingle();
+    if(error||!profile||profile.role!=='instructor')return{success:false,error:'Formateur introuvable.'};
+    const result=await queueAuthEmail(profile.email,'invitation',profile.locale||'fr',instructorId);
+    if(result.status!=='accepted')return{success:false,error:'invitation_pending'};
+    await adminDb.from('admin_audit_logs').insert({admin_id:admin.id,action:'instructor_invitation_sent',metadata:{instructor_id:instructorId}});
+    return{success:true};
   } catch (err: any) {
     return { success: false, error: err.message || "Impossible d'envoyer l'invitation." };
   }

@@ -8,7 +8,6 @@ import {
   getGlobalAiSettings,
   saveGlobalAiSettings,
   logBreakGlassAccess,
-  hasAdminUnlockedConversation,
   type GlobalAiSettings,
 } from "@/lib/admin/messaging-supervision";
 import {
@@ -136,102 +135,7 @@ export async function adminStartStudentConversationAction(
   subject: string,
   firstMessage: string
 ): Promise<SupervisionActionResult<{ conversationId: string }>> {
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "admin") {
-      return { success: false, error: "Réservé aux administrateurs." };
-    }
-
-    const trimmedSub = subject?.trim();
-    const trimmedBody = firstMessage?.trim();
-
-    if (!trimmedSub || !trimmedBody) {
-      return { success: false, error: "Veuillez spécifier un sujet et un message." };
-    }
-
-    const convId = `conv-adm-${Date.now()}`;
-    const nowIso = new Date().toISOString();
-
-    let studentName = "Étudiant";
-
-    try {
-      const supabase = await createClient();
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, full_name")
-        .eq("id", studentId)
-        .single();
-      if (profile) {
-        studentName = profile.display_name || profile.full_name || "Étudiant";
-      }
-
-      await supabase.from("conversations").insert({
-        id: convId,
-        student_id: studentId,
-        staff_id: user.id,
-        course_id: null,
-        subject: trimmedSub,
-        status: "staff_replied",
-        created_at: nowIso,
-        last_message_at: nowIso,
-      });
-
-      await supabase.from("messages").insert({
-        conversation_id: convId,
-        sender_type: "staff",
-        sender_id: user.id,
-        body: trimmedBody,
-        created_at: nowIso,
-      });
-
-      await supabase.from("notifications").insert({
-        user_id: studentId,
-        type: "staff_reply",
-        payload: {
-          conversationId: convId,
-          messageSnippet: trimmedBody.slice(0, 100),
-          senderName: "Administration Faro School",
-        },
-      });
-    } catch {}
-
-    // Mock store
-    const store = getMockConversationsStore();
-    store.unshift({
-      id: convId,
-      studentId,
-      studentName,
-      staffId: user.id,
-      staffName: user.fullName || "Administration Faro School",
-      staffRole: "admin",
-      courseId: null,
-      courseTitle: "Support Général & Administration",
-      subject: trimmedSub,
-      status: "staff_replied",
-      createdAt: nowIso,
-      lastMessageAt: nowIso,
-      unreadCount: 0,
-      lastMessagePreview: trimmedBody,
-      isStaffOnline: true,
-    });
-
-    const msgStore = getMockMessagesStore();
-    msgStore.set(convId, [
-      {
-        id: `msg-${Date.now()}`,
-        conversationId: convId,
-        senderType: "staff",
-        senderId: user.id,
-        senderName: user.fullName || "Administration Faro School",
-        senderRole: "admin",
-        body: trimmedBody,
-        createdAt: nowIso,
-      },
-    ]);
-
-    revalidatePath("/[locale]/admin/messagerie", "page");
-    return { success: true, data: { conversationId: convId } };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Erreur d'envoi du message." };
-  }
+  const user=await getCurrentUser();if(!user||!can(user,'admin.dashboard'))return{success:false,error:'forbidden'};
+  const {createConversationAction}=await import('./private-messaging');
+  return createConversationAction(null,subject,firstMessage,studentId,user.locale);
 }

@@ -4,7 +4,8 @@ import {hasCommunityAccess} from "@/lib/community/access";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
-import { checkProfanity, containsUrl } from "@/lib/community/word-filter";
+import {checkStoredProfanity} from "@/lib/community/stored-word-filter";
+import { containsUrl } from "@/lib/community/word-filter";
 import { checkMessageModeration } from "@/lib/moderation";
 import { recordModerationFlag } from "@/lib/moderation/flag-service";
 import {
@@ -104,7 +105,7 @@ export async function postMessageAction(
     }
 
     // Profanity and safety filter
-    const profanity = checkProfanity(trimmedBody);
+    const profanity = await checkStoredProfanity(trimmedBody);
     if (profanity.blocked) {
       return {
         success: false,

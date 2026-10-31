@@ -57,8 +57,8 @@ export function StudentDashboardShell({
       if(!controller.signal.aborted)setUnread({community:count(data.community),messages:count(data.messages),notifications:count(data.notifications)});
     }catch{/* Keep the last confirmed counts on transient disconnection. */}};
     void refresh();const timer=window.setInterval(refresh,30000);
-    window.addEventListener('focus',refresh);document.addEventListener('visibilitychange',refresh);
-    return()=>{controller.abort();window.clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
+    window.addEventListener('focus',refresh);window.addEventListener('faro:unread-changed',refresh);document.addEventListener('visibilitychange',refresh);
+    return()=>{controller.abort();window.clearInterval(timer);window.removeEventListener('focus',refresh);window.removeEventListener('faro:unread-changed',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[pathname]);
 
 

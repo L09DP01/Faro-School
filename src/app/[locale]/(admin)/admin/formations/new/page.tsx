@@ -33,7 +33,7 @@ export default async function AdminNewCoursePage({ params }: AdminNewCoursePageP
       locale={locale}
       userRole={user.role}
       currentUserId={user.id}
-      availableInstructors={instructors}
+      availableInstructors={instructors.filter(i=>i.isActive)}
     />
   );
 }

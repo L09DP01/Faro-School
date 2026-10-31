@@ -33,6 +33,7 @@ export default async function AdminMessageriePage({ params }: AdminMessageriePag
 
   return (
     <AdminMessagingSupervisionClient
+      aiConfigured={Boolean(process.env.GEMINI_API_KEY||process.env.ANTHROPIC_API_KEY)}
       initialStats={stats}
       initialSettings={settings}
       conversations={conversations}

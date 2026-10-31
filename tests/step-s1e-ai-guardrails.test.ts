@@ -1,5 +1,7 @@
 // Fast offline mock for fetch before any module loads
-globalThis.fetch = async () => {
+globalThis.fetch = async (url) => {
+  if(String(url).includes('platform_settings'))return new Response(JSON.stringify({value:{default_model:'claude-3-haiku-20240307',kill_switch:false,default_confidence_threshold:0.75,daily_cost_cap_usd:5,student_daily_limit:30}}),{status:200,headers:{'Content-Type':'application/json'}});
+  if(String(url).includes('check_ai_limits'))return new Response(JSON.stringify({allowed:true}),{status:200,headers:{'Content-Type':'application/json'}});
   return new Response(JSON.stringify({ message: "DB unavailable in test environment" }), {
     status: 400,
     headers: { "Content-Type": "application/json" },

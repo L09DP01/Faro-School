@@ -51,15 +51,13 @@ export interface ProfanityCheckResult {
   reason?: string;
 }
 
-export function checkProfanity(text: string): ProfanityCheckResult {
+export function checkProfanity(text: string, custom: string[] = []): ProfanityCheckResult {
   const normalized = text
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  const dynamicFr = (globalThis as any).__mockWordFilterStore?.fr || [];
-  const dynamicHt = (globalThis as any).__mockWordFilterStore?.ht || [];
-  const allBlocked = Array.from(new Set([...BLOCKED_WORDS, ...dynamicFr, ...dynamicHt]));
+  const allBlocked = Array.from(new Set([...BLOCKED_WORDS, ...custom]));
 
   for (const word of allBlocked) {
     const normalizedWord = word
@@ -68,7 +66,8 @@ export function checkProfanity(text: string): ProfanityCheckResult {
       .replace(/[\u0300-\u036f]/g, "");
     
     // Check whole word or substring for links/phrases
-    const regex = new RegExp(`\\b${normalizedWord}\\b`, "i");
+    const escaped = normalizedWord.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "i");
     if (regex.test(normalized) || (word.includes(" ") && normalized.includes(normalizedWord))) {
       return {
         blocked: true,

@@ -32,7 +32,7 @@ export default async function AdminMessagesPage({
   // If instructor: strictly pedagogical conversations for their courses
   if (user.role === "instructor") {
     const [conversations, enrolledStudents, instructorCourses] = await Promise.all([
-      getStaffConversations(user.id, false),
+      getStaffConversations(user.id, false, false),
       getAdminStudentsList(user.id),
       getAllAvailableCourses(user.id),
     ]);
@@ -65,13 +65,13 @@ export default async function AdminMessagesPage({
             href={`/${locale}/admin/messages?tab=pedagogical`}
             className="px-4 py-2 text-xs font-heading font-semibold rounded-xl border border-line text-muted-faro hover:text-ink hover:bg-surface transition-colors"
           >
-            Échanges Formateurs & Élèves
+            {locale === "ht" ? "Sipò teknik ak kou mwen yo" : "Support technique et mes cours"}
           </a>
           <a
             href={`/${locale}/admin/messages?tab=contact`}
             className="px-4 py-2 text-xs font-heading font-semibold rounded-xl bg-ink text-surface transition-colors"
           >
-            Formulaire de Contact Public
+            {locale === "ht" ? "Fòm kontak piblik" : "Formulaire de contact public"}
           </a>
         </div>
         <AdminMessagesClient initialMessages={messages} locale={locale} />
@@ -80,9 +80,9 @@ export default async function AdminMessagesPage({
   }
 
   const [conversations, enrolledStudents, courses] = await Promise.all([
-    getStaffConversations(user.id, true),
+    getStaffConversations(user.id, false, user.role === "admin"),
     getAdminStudentsList(),
-    getAllAvailableCourses(),
+    getAllAvailableCourses(user.id),
   ]);
 
   return (

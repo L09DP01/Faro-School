@@ -33,6 +33,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
 
   const isHt = locale === "ht";
 
+  const actionError=(code?:string)=>code==='duplicate_code'?(isHt?'Kòd promo sa a egziste deja.':'Ce code promotionnel existe déjà.'):(isHt?'Aksyon an pa disponib. Verifye done yo epi eseye ankò.':'Action indisponible. Vérifiez les données puis réessayez.');
   // Escape key handler
   useEffect(() => {
     if (!isDialogOpen && !deleteTarget) return;
@@ -120,7 +121,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
       const res = await saveCouponAction(payload);
       if (res.success) {
         const item: CouponItem = {
-          id: editingCoupon?.id || `coup-${Date.now()}`,
+          id: res.id || editingCoupon!.id,
           code: payload.code,
           discountType: payload.discountType,
           discountValue: payload.discountValue,
@@ -142,7 +143,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
         }
         setIsDialogOpen(false);
       } else {
-        setFormError(res.error || (isHt ? "Erè pandan anrejistreman an." : "Erreur lors de l'enregistrement."));
+        setFormError(actionError(res.error));
       }
     });
   };
@@ -160,7 +161,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
             ? (isHt ? `Kòd ${c.code} aktive.` : `Code ${c.code} activé.`)
             : (isHt ? `Kòd ${c.code} dezaktive.` : `Code ${c.code} désactivé.`)
         );
-      }
+      } else showNotification(actionError(res.error),"error");
     });
   };
 
@@ -169,10 +170,10 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
     startTransition(async () => {
       const res = await deleteCouponAction(deleteTarget.id);
       if (res.success) {
-        setCoupons((prev) => prev.filter((item) => item.id !== deleteTarget.id));
+        setCoupons((prev) => res.archived ? prev.map(item=>item.id===deleteTarget.id?{...item,isActive:false}:item) : prev.filter((item) => item.id !== deleteTarget.id));
         setDeleteTarget(null);
-        showNotification(isHt ? "Kòd promo efase." : "Code promo supprimé avec succès.");
-      }
+        showNotification(res.archived ? (isHt ? "Kòd promo dezaktive pou konsève kòmand yo." : "Code désactivé pour préserver les commandes.") : (isHt ? "Kòd promo efase." : "Code promo supprimé avec succès."));
+      } else showNotification(actionError(res.error),"error");
     });
   };
 

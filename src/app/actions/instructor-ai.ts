@@ -7,48 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import { callAiAssistant } from "@/lib/messaging/ai-assistant";
 import type { InstructorAiSettings, InstructorAiVersion } from "@/lib/messaging/types";
 
-// In-memory fallback store per instructor
-declare global {
-  // eslint-disable-next-line no-var
-  var __mockInstructorAiSettingsStore: Map<string, InstructorAiSettings> | undefined;
-  // eslint-disable-next-line no-var
-  var __mockInstructorAiVersionsStore: Map<string, InstructorAiVersion[]> | undefined;
-}
-
-function initializeMockAiStores() {
-  if (!globalThis.__mockInstructorAiSettingsStore) {
-    globalThis.__mockInstructorAiSettingsStore = new Map();
-  }
-  if (!globalThis.__mockInstructorAiVersionsStore) {
-    globalThis.__mockInstructorAiVersionsStore = new Map();
-  }
-}
-
 const DEFAULT_SETTINGS = (name: string): InstructorAiSettings => ({
-  enabled: true,
+  enabled: false,
   name: `Assistant de ${name}`,
   tone: "friendly",
   languages: ["fr", "ht"],
   greeting: `Bonjour ! Je suis l'assistant pédagogique de ${name}. Comment puis-je vous aider ?`,
   customInstructions: "Encourage les élèves à pratiquer sur des cas réels en Haïti. Reste concis.",
-  knowledgeBase: {
-    faq: [
-      {
-        id: "faq-1",
-        question: "Quels outils sont nécessaires pour suivre ce cours ?",
-        answer: "Un smartphone ou un ordinateur avec accès Internet et votre compte Faro School actif.",
-      },
-      {
-        id: "faq-2",
-        question: "Comment obtenir de l'aide sur un exercice ?",
-        answer: "Posez votre question dans cette boîte de dialogue. Je vous réponds ou transmets directement au formateur.",
-      },
-    ],
-    snippets: [
-      "Les vidéos sont optimisées pour charger avec peu de bande passante.",
-      "Chaque module comporte un quiz et un exercice d'application pratique.",
-    ],
-  },
+  knowledgeBase: {faq:[],snippets:[]},
   alwaysEscalate: [
     "remboursement",
     "rembourser",
@@ -68,7 +34,7 @@ const DEFAULT_SETTINGS = (name: string): InstructorAiSettings => ({
     start: "08:00",
     end: "20:00",
   },
-  escalationEmail: "formateur@faroschool.com",
+  escalationEmail: "",
 });
 
 const AiSettingsSchema = z.object({
@@ -122,64 +88,10 @@ export async function getInstructorAiDataAction(
     // Strict Isolation: instructors can ONLY read their own
     const instructorId = user.role === "instructor" ? user.id : targetInstructorId || user.id;
 
-    initializeMockAiStores();
-
-    // Try Supabase fetch
-    try {
-      const supabase = await createClient();
-
-      const { data: versionsData } = await supabase
-        .from("instructor_ai_versions")
-        .select("id, instructor_id, version_number, settings, created_at")
-        .eq("instructor_id", instructorId)
-        .order("version_number", { ascending: false })
-        .limit(5);
-
-      if (versionsData && versionsData.length > 0) {
-        const versions: InstructorAiVersion[] = versionsData.map((v: any) => ({
-          id: v.id,
-          instructorId: v.instructor_id,
-          versionNumber: v.version_number,
-          settings: v.settings,
-          createdAt: v.created_at,
-        }));
-
-        return {
-          success: true,
-          data: {
-            settings: versions[0].settings,
-            versions,
-          },
-        };
-      }
-    } catch {}
-
-    // Mock store fallback
-    const current =
-      globalThis.__mockInstructorAiSettingsStore!.get(instructorId) ||
-      DEFAULT_SETTINGS(user.fullName || "Formateur");
-
-    let versions = globalThis.__mockInstructorAiVersionsStore!.get(instructorId) || [];
-    if (versions.length === 0) {
-      const initialVersion: InstructorAiVersion = {
-        id: `v-init-${Date.now()}`,
-        instructorId,
-        versionNumber: 1,
-        settings: current,
-        createdAt: new Date().toISOString(),
-      };
-      versions = [initialVersion];
-      globalThis.__mockInstructorAiVersionsStore!.set(instructorId, versions);
-      globalThis.__mockInstructorAiSettingsStore!.set(instructorId, current);
-    }
-
-    return {
-      success: true,
-      data: {
-        settings: current,
-        versions,
-      },
-    };
+    const db=await createClient();const {data,error}=await db.from('instructor_ai_versions').select('id,instructor_id,version_number,settings,created_at').eq('instructor_id',instructorId).order('version_number',{ascending:false}).limit(5);
+    if(error)return{success:false,error:'settings_unavailable'};
+    const versions:InstructorAiVersion[]=(data||[]).map(v=>({id:v.id,instructorId:v.instructor_id,versionNumber:v.version_number,settings:v.settings,createdAt:v.created_at}));
+    return{success:true,data:{settings:versions[0]?.settings||DEFAULT_SETTINGS(user.fullName||'Faro School'),versions}};
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -213,40 +125,9 @@ export async function saveInstructorAiSettingsAction(
 
     const cleanSettings: InstructorAiSettings = parsed.data as InstructorAiSettings;
 
-    // Database save & version rotation
-    try {
-      const supabase = await createClient();
-      await supabase.rpc("save_instructor_ai_version", {
-        p_instructor_id: instructorId,
-        p_settings: cleanSettings,
-      });
-    } catch {}
-
-    // In-memory fallback rotation
-    initializeMockAiStores();
-    globalThis.__mockInstructorAiSettingsStore!.set(instructorId, cleanSettings);
-
-    const versions = globalThis.__mockInstructorAiVersionsStore!.get(instructorId) || [];
-    const nextVerNum = (versions[0]?.versionNumber || 0) + 1;
-    const newVersion: InstructorAiVersion = {
-      id: `v-${Date.now()}`,
-      instructorId,
-      versionNumber: nextVerNum,
-      settings: cleanSettings,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updatedVersions = [newVersion, ...versions].slice(0, 5);
-    globalThis.__mockInstructorAiVersionsStore!.set(instructorId, updatedVersions);
-
-    revalidatePath("/[locale]/admin/assistant-ia", "page");
-    return {
-      success: true,
-      data: {
-        settings: cleanSettings,
-        versions: updatedVersions,
-      },
-    };
+    const db=await createClient();const {error}=await db.rpc('save_instructor_ai_version',{p_instructor_id:instructorId,p_settings:cleanSettings});
+    if(error)return{success:false,error:'settings_unavailable'};
+    revalidatePath('/[locale]/admin/assistant-ia','page');return getInstructorAiDataAction(instructorId);
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -266,7 +147,6 @@ export async function restoreInstructorAiVersionAction(
     }
 
     const instructorId = user.role === "instructor" ? user.id : targetInstructorId || user.id;
-    initializeMockAiStores();
 
     // Check version from Supabase
     let versionSettings: InstructorAiSettings | null = null;
@@ -276,6 +156,7 @@ export async function restoreInstructorAiVersionAction(
         .from("instructor_ai_versions")
         .select("settings, instructor_id")
         .eq("id", versionId)
+        .eq("instructor_id", instructorId)
         .single();
 
       if (data) {
@@ -286,14 +167,6 @@ export async function restoreInstructorAiVersionAction(
       }
     } catch {}
 
-    // Check mock fallback
-    if (!versionSettings) {
-      const versions = globalThis.__mockInstructorAiVersionsStore!.get(instructorId) || [];
-      const match = versions.find((v) => v.id === versionId);
-      if (match) {
-        versionSettings = match.settings;
-      }
-    }
 
     if (!versionSettings) {
       return { success: false, error: "Version introuvable." };
@@ -334,18 +207,21 @@ export async function testInstructorAiAction(
       return { success: false, error: "Veuillez poser une question pour le test." };
     }
 
+    const parsed=AiSettingsSchema.safeParse(tempSettings);if(!parsed.success)return{success:false,error:'invalid_settings'};
+    const db=await createClient();const {data:conversation,error}=await db.from('conversations').select('id,student_id').eq('staff_id',user.id).order('last_message_at',{ascending:false}).limit(1).maybeSingle();
+    if(error||!conversation)return{success:false,error:user.locale==='ht'?'Yon konvèsasyon reyèl nesesè pou teste IA.':'Une conversation réelle est nécessaire pour tester l’assistant.'};
     const res = await callAiAssistant({
-      conversationId: "sandbox-test-conv",
-      studentId: "sandbox-student",
+      conversationId: conversation.id,
+      studentId: conversation.student_id,
       studentName: "Élève (Test Sandbox)",
       staffName: user.fullName || "Formateur",
-      courseTitle: courseTitle || "Marketing Digital & Entrepreneuriat",
+      courseTitle: courseTitle || "Assistance Faro School",
       instructorSettings: tempSettings,
       recentMessages: [
         { senderType: "student", body: "Bonjour formateur, j'ai une question sur le module." },
       ],
       currentQuestion: trimmed,
-      locale: "fr",
+      locale: user.locale,
     });
 
     return {

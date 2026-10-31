@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   sendPrivateMessageAction,
+  loadStaffInboxAction,
   closeConversationAction,
   startInstructorConversationAction,
   markConversationReadAction,
@@ -77,20 +78,21 @@ export function InstructorMessagesClient({
   // Modal: Start conversation
   const [isNewModalOpen, setIsNewModalOpen] = useState(Boolean(initialNewStudentId));
   const [newStudentId, setNewStudentId] = useState(initialNewStudentId || "");
-  const [newCourseId, setNewCourseId] = useState(instructorCourses[0]?.id || "");
+  const [newCourseId, setNewCourseId] = useState("");
   const [newSubject, setNewSubject] = useState("");
   const [newFirstMessage, setNewFirstMessage] = useState("");
   const [newModalError, setNewModalError] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isHt = locale === "ht";
-  const quickReplies = isHt ? QUICK_REPLIES_HT : QUICK_REPLIES_FR;
+
 
   const activeConversation = useMemo(
     () => conversations.find((c) => c.id === activeId) || null,
     [conversations, activeId]
   );
 
+  const quickReplies = activeConversation?.courseId ? (isHt?QUICK_REPLIES_HT:QUICK_REPLIES_FR) : (isHt?["Mwen resevwa demann ou a.","Ki etap ki bay pwoblèm nan?","M ap verifye sa pou ou."]:["J’ai bien reçu votre demande.","À quelle étape rencontrez-vous ce problème ?","Je vérifie cela pour vous."]);
   const activeStudent = useMemo(() => {
     if (!activeConversation) return null;
     return enrolledStudents.find((s) => s.id === activeConversation.studentId) || null;
@@ -106,70 +108,9 @@ export function InstructorMessagesClient({
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Mark active as read and load messages
-  useEffect(() => {
-    if (!activeId) return;
-    markConversationReadAction(activeId);
-
-    // Initial mock messages if not already loaded
-    if (!messagesMap[activeId]) {
-      const now = new Date();
-      const iso = (minsAgo: number) =>
-        new Date(now.getTime() - minsAgo * 60 * 1000).toISOString();
-
-      const conv = conversations.find((c) => c.id === activeId);
-      const studentName = conv?.studentName || "Étudiant";
-
-      const defaultMsgs: PrivateMessage[] = [
-        {
-          id: `m-init-1-${activeId}`,
-          conversationId: activeId,
-          senderType: "student",
-          senderName: studentName,
-          body:
-            conv?.lastMessagePreview ||
-            (isHt
-              ? "Bonjou fòmatè, mwen gen yon kesyon sou leson an."
-              : "Bonjour formateur, j'ai une question sur les exercices du cours."),
-          createdAt: conv?.createdAt || iso(45),
-        },
-      ];
-
-      if (conv?.status === "ai_handling") {
-        defaultMsgs.push({
-          id: `m-init-2-${activeId}`,
-          conversationId: activeId,
-          senderType: "ai",
-          senderName: `Assistant IA de ${currentUserName}`,
-          body: isHt
-            ? `Bonjou ${studentName} ! Fòmatè a pa an liy pou kounye a. Mwen konseye w revize videyo leson an epi telechaje fichye pratik la.`
-            : `Bonjour ${studentName} ! En attendant que ${currentUserName} soit en ligne, vérifiez que vous avez bien suivi les étapes du chapitre et testé la configuration.`,
-          meta: {
-            confidence: 0.94,
-            model: "claude-3-haiku-20240307",
-          },
-          createdAt: iso(40),
-        });
-      } else if (conv?.status === "waiting_staff") {
-        defaultMsgs.push({
-          id: `m-init-sys-${activeId}`,
-          conversationId: activeId,
-          senderType: "system",
-          body: isHt
-            ? "Mesaj sa a ap tann fòmatè a reponn (notifikasyon voye pa imèl)."
-            : "Question en attente d'intervention directe du formateur (escalation e-mail envoyée).",
-          createdAt: iso(30),
-        });
-      }
-
-      setMessagesMap((prev) => ({ ...prev, [activeId]: defaultMsgs }));
-    }
-  }, [activeId, conversations, currentUserName, isHt, messagesMap]);
-
-  // Scroll to bottom on message change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeMessages]);
+  // Poll the persisted inbox. Never synthesize a message or an AI reply.
+  useEffect(()=>{let alive=true;const refresh=async()=>{if(document.visibilityState!=='visible')return;try{const result=await loadStaffInboxAction(activeId||undefined);if(alive&&result.success&&result.data){setConversations(result.data.conversations);if(activeId){setMessagesMap(prev=>({...prev,[activeId]:result.data!.messages}));const read=await markConversationReadAction(activeId);if(read.success)window.dispatchEvent(new Event("faro:unread-changed"));}}}catch{if(alive)setNotification({message:isHt?'Mesaj yo pa disponib.':'Chargement des messages indisponible.',type:'error'});}};void refresh();const timer=setInterval(refresh,5000);window.addEventListener('focus',refresh);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[activeId,isHt]);
+  useEffect(()=>{const pane=messagesEndRef.current?.parentElement;if(pane)pane.scrollTop=pane.scrollHeight;},[activeMessages.length]);
 
   // Filtered conversations
   const filteredConversations = useMemo(() => {
@@ -249,9 +190,12 @@ export function InstructorMessagesClient({
     setInputText("");
 
     startTransition(async () => {
-      const res = await sendPrivateMessageAction(activeId, trimmed);
+      const res = await sendPrivateMessageAction(activeId, trimmed, crypto.randomUUID(), locale);
       if (!res.success) {
+        setMessagesMap(prev=>({...prev,[activeId]:(prev[activeId]||[]).filter(m=>m.id!==optimisticMsg.id)}));
+        setInputText(trimmed);
         showNotification(res.error || "Erreur lors de l'envoi.", "error");
+        if(activeConversation)setConversations(prev=>prev.map(c=>c.id===activeId?activeConversation:c));
       }
     });
   };
@@ -289,7 +233,7 @@ export function InstructorMessagesClient({
   // Start new conversation submit
   const handleCreateConversationSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudentId || !newCourseId || !newSubject.trim() || !newFirstMessage.trim()) {
+    if (!newStudentId || !newSubject.trim() || !newFirstMessage.trim()) {
       setNewModalError(
         isHt ? "Tanpri ranpli tout chan yo." : "Veuillez remplir tous les champs obligatoires."
       );
@@ -386,22 +330,20 @@ export function InstructorMessagesClient({
             </span>
           </nav>
           <h1 className="font-heading font-bold text-2xl text-ink">
-            {isHt ? "Bwat Mesaj Pwofesè" : "Boîte de réception Formateur"}
+            {currentUserRole === "admin" ? (isHt ? "Sipò teknik ak kou mwen yo" : "Support technique et mes cours") : (isHt ? "Bwat mesaj pwofesè" : "Boîte de réception professeur")}
           </h1>
           <p className="text-xs text-muted-faro">
-            {isHt
-              ? "Echanje dirèkteman ak elèv ki nan fòmasyon w yo, pran relè asistan IA a, epi reponn kesyon yo."
-              : "Échangez directement avec les étudiants de vos cours, prenez le relais de l'IA et suivez leur progression."}
+            {currentUserRole==='admin'?(isHt?'Reponn tikè teknik yo ak kesyon sou kou ou yo.':'Répondez aux tickets techniques et aux questions concernant vos propres cours.'):(isHt?'Reponn kesyon elèv ki nan kou ou yo.':'Répondez aux questions des élèves de vos formations.')}
           </p>
         </div>
 
-        <button
+        {currentUserRole === "admin" ? <button
           onClick={() => setIsNewModalOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange hover:bg-orange-strong text-white text-xs font-heading font-semibold shadow-orange transition-all shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           <span>{isHt ? "Nouvo diskisyon" : "Nouvelle discussion"}</span>
-        </button>
+        </button> : null}
       </div>
 
       {/* 2-Panel Layout Card */}
@@ -673,7 +615,7 @@ export function InstructorMessagesClient({
                           </span>
                         ) : (
                           <span className="font-heading font-semibold text-ink">
-                            {isInstructorSender ? (isHt ? "Ou menm" : "Vous (Formateur)") : msg.senderName}
+                            {isInstructorSender ? (msg.senderId === currentUserId ? (isHt ? "Ou menm" : "Vous") : msg.senderName || "Faro School") : msg.senderName}
                           </span>
                         )}
                         <span className="text-muted-faro text-[10px]">
@@ -841,14 +783,15 @@ export function InstructorMessagesClient({
 
               <div className="space-y-1">
                 <label className="font-heading font-semibold text-ink">
-                  {isHt ? "Fòmasyon konsène" : "Formation concernée"} *
+                  {isHt ? "Kou oswa sipò teknik" : "Formation ou support technique"}
                 </label>
                 <select
                   value={newCourseId}
                   onChange={(e) => setNewCourseId(e.target.value)}
                   className="w-full rounded-xl border border-line bg-bg p-2.5 text-ink focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30"
                 >
-                  {instructorCourses.map((c) => (
+                  <option value="">{isHt ? "Sipò teknik" : "Support technique"}</option>
+                    {instructorCourses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.titleFr}
                     </option>

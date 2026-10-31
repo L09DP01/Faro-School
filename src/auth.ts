@@ -19,6 +19,9 @@ class AccountLockedError extends CredentialsSignin {
   code = "ACCOUNT_LOCKED";
 }
 
+async function staffAccountEnabled(db:ReturnType<typeof getAdminSupabase>,id:string,role:string){
+ if(role!=='instructor')return true;const {data,error}=await db.from('instructors').select('is_active').eq('profile_id',id).maybeSingle();return !error&&!!data&&data.is_active!==false;
+}
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -34,9 +37,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           try {
             const {payload}=await jwtVerify(credentials.verificationGrant,new TextEncoder().encode(process.env.AUTH_SECRET),{audience:'email-verification-login',issuer:'faro',algorithms:['HS256']});
             const db=getAdminSupabase();
-            const {data:p,error}=await db.from('profiles').select('id,email,full_name,role,email_verified_at').eq('id',payload.sub!).single();
+            const {data:p,error}=await db.from('profiles').select('id,email,full_name,role,email_verified_at,banned_at').eq('id',payload.sub!).single();
             const {data:c,error:ce}=await db.from('user_credentials').select('token_version').eq('user_id',payload.sub!).single();
-            if(error||ce||!p?.email_verified_at||!c)return null;
+            if(error||ce||!p?.email_verified_at||p.banned_at||!c||!await staffAccountEnabled(db,p.id,p.role))return null;
             return{id:p.id,email:p.email,name:p.full_name,role:p.role,emailVerified:p.email_verified_at,tokenVersion:c.token_version};
           }catch{return null;}
         }
@@ -59,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // 2. Fetch profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, email, full_name, role, email_verified_at, phone")
+          .select("id, email, full_name, role, email_verified_at, phone, banned_at")
           .eq("email", email)
           .single();
 
@@ -89,6 +92,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await recordFailedLogin(email, ip);
           return null;
         }
+
+        if(profile.banned_at||!await staffAccountEnabled(supabase,profile.id,profile.role))return null;
 
         // 5. Require verified email
         if (!profile.email_verified_at) {

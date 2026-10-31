@@ -85,7 +85,7 @@ export async function saveCourseAction(
     let finalInstructorId = existingInstructorId;
     if (user.role === "admin") {
       if (data.instructorId !== undefined) {
-        finalInstructorId = data.instructorId;
+        finalInstructorId = data.instructorId || user.id;
       } else if (!courseId) {
         finalInstructorId = user.id;
       }

@@ -91,12 +91,9 @@ export function StudentStaffChatView({
     return()=>{disposed=true;if(timer)clearTimeout(timer);if(channel)void channel.unsubscribe();};
   },[currentUserId,isStaffView,router]);
 
-  // Mark active conversation read on mount
-  useEffect(() => {
-    if (activeConversation) {
-      markConversationReadAction(activeConversation.id);
-    }
-  }, [activeConversation]);
+  const activeReadId=activeConversation?.id;
+  // Read receipts are sent only while the conversation is visible.
+  useEffect(()=>{const mark=()=>{if(activeReadId&&document.visibilityState==='visible')void markConversationReadAction(activeReadId).then(r=>{if(r.success)window.dispatchEvent(new Event('faro:unread-changed'));}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[activeReadId,messages.length]);
 
   // Realtime subscription for incoming messages
   useEffect(() => {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import { CircleDot, Loader2 } from "lucide-react";
-import { staffHeartbeatAction, toggleStaffAvailabilityAction } from "@/app/actions/private-messaging";
+import { staffHeartbeatAction, toggleStaffAvailabilityAction, getStaffAvailabilityAction } from "@/app/actions/private-messaging";
 
 interface StaffAvailabilityToggleProps {
   initialAvailable?: boolean;
@@ -18,6 +18,7 @@ export function StaffAvailabilityToggle({
 
   // Heartbeat every 30 seconds
   useEffect(() => {
+    void getStaffAvailabilityAction().then(r=>{if(r.success&&r.data)setIsAvailable(r.data.available);});
     // Send immediate heartbeat on mount
     staffHeartbeatAction();
 
@@ -33,7 +34,8 @@ export function StaffAvailabilityToggle({
     setIsAvailable(nextState);
 
     startTransition(async () => {
-      await toggleStaffAvailabilityAction(nextState);
+      const result=await toggleStaffAvailabilityAction(nextState);
+      if(!result.success)setIsAvailable(!nextState);
     });
   };
 

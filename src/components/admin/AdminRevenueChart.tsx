@@ -26,8 +26,8 @@ export function AdminRevenueChart({ data, locale }: AdminRevenueChartProps) {
   const totalOverall = totalMonCash + totalNatCash;
 
   const moncashPctSplit =
-    totalOverall > 0 ? Math.round((totalMonCash / totalOverall) * 100) : 50;
-  const natcashPctSplit = 100 - moncashPctSplit;
+    totalOverall > 0 ? Math.round((totalMonCash / totalOverall) * 100) : 0;
+  const natcashPctSplit = totalOverall > 0 ? 100 - moncashPctSplit : 0;
 
   // Find max monthly total to calculate relative bar heights
   const maxTotal = Math.max(...data.map((m) => m.totalAmount), 1);

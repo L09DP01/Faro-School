@@ -16,6 +16,7 @@ import {
 } from "@/lib/messaging/data";
 import type { Conversation, PrivateMessage, EscalationRecord } from "@/lib/messaging/types";
 import { STUDENT_DM_ENABLED } from "@/config/messaging";
+import { checkStoredProfanity } from "@/lib/community/stored-word-filter";
 import { checkMessageModeration } from "@/lib/moderation";
 import { recordModerationFlag } from "@/lib/moderation/flag-service";
 
@@ -54,6 +55,7 @@ export async function createConversationAction(
 
     const trimmedSubject = subject?.trim();
     const trimmedBody = firstMessage?.trim();
+    if (trimmedBody && (await checkStoredProfanity(trimmedBody)).blocked) return {success:false,error:locale === "ht" ? "Mesaj sa a pa respekte règ yo." : "Ce message contient des mots interdits."};
 
     if (!trimmedSubject) {
       return { success: false, error: "Veuillez renseigner un sujet." };
@@ -286,7 +288,8 @@ export async function createConversationAction(
     messagesStore.set(conversationId, []);
 
     // Dispatch the first message
-    await sendPrivateMessageAction(conversationId, trimmedBody, null, locale);
+    const sent=await sendPrivateMessageAction(conversationId, trimmedBody, null, locale);
+    if(!sent.success)return{success:false,error:sent.error};
 
     try {
       revalidatePath("/[locale]/dashboard/messages", "page");
@@ -336,6 +339,7 @@ export async function sendPrivateMessageAction(
       return { success: false, error: "Message vide." };
     }
 
+    if ((await checkStoredProfanity(trimmedBody)).blocked) return {success:false,error:locale === "ht" ? "Mesaj sa a pa respekte règ yo." : "Ce message contient des mots interdits."};
     // Moderation check: non-admins cannot send phone numbers or off-platform invitations
     if (user.role !== "admin") {
       const modCheck = checkMessageModeration(trimmedBody);
@@ -458,7 +462,7 @@ export async function sendPrivateMessageAction(
       }
     } catch {}
 
-    if (!conv) {
+    if (!conv && isDemoMode()) {
       const store = getMockConversationsStore();
       conv = store.find((c) => c.id === conversationId) || null;
     }
@@ -467,8 +471,15 @@ export async function sendPrivateMessageAction(
       return { success: false, error: "Conversation introuvable." };
     }
 
+    // A shared technical ticket can be taken over by another verified administrator.
+    if(user.role==='admin'&&!conv.courseId&&conv.staffId!==user.id){
+      const db=await createClient();const {data,error}=await db.from('conversations').update({staff_id:user.id}).eq('id',conversationId).is('course_id',null).select('id').single();
+      if(error||!data)return{success:false,error:'forbidden'};conv.staffId=user.id;conv.staffName=user.fullName||'Faro School';conv.staffRole='admin';
+    }
     const isStudent = user.id === conv.studentId;
-    const isStaff = user.id === conv.staffId || user.role === "admin";
+    const isStaff = user.id === conv.staffId;
+    if (!isStudent && !isStaff) return {success:false,error:"forbidden"};
+    if (conv.status === "closed") return {success:false,error:locale === "ht" ? "Konvèsasyon sa a fèmen." : "Cette discussion est clôturée."};
     const senderType = isStudent ? "student" : "staff";
 
     // Create user message
@@ -514,12 +525,9 @@ export async function sendPrivateMessageAction(
       }
     }
 
-    // Save in mock store
-    const messagesStore = getMockMessagesStore();
-    const existingMsgs = messagesStore.get(conversationId) || [];
-    existingMsgs.push(studentMessage);
-    messagesStore.set(conversationId, existingMsgs);
-
+    // Load persisted context for the assistant, not the per-instance demo map.
+    const {getConversationMessages}=await import('@/lib/messaging/data');
+    const existingMsgs=await getConversationMessages(conversationId);
     conv.lastMessageAt = nowIso;
     conv.lastMessagePreview = trimmedBody;
 
@@ -595,22 +603,28 @@ export async function sendPrivateMessageAction(
     }
 
     // 2. Staff is offline -> Call AI Assistant
-    const aiResult = await callAiAssistant({
+    const trusted=createAdminClient();
+    const {data:staffProfile}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();
+    if(staffProfile){conv.staffName=staffProfile.full_name||staffProfile.display_name||'Faro School';conv.staffRole=staffProfile.role;}
+    const {data:instructorVersion,error:versionError}=await trusted.from('instructor_ai_versions').select('settings').eq('instructor_id',conv.staffId).order('version_number',{ascending:false}).limit(1).maybeSingle();
+    const aiResult = versionError ? {can_answer:false,answer:'',confidence:0,escalate_reason:'assistant_settings_unavailable',model:'',inputTokens:0,outputTokens:0} : await callAiAssistant({
       conversationId,
       studentId: conv.studentId,
       studentName: conv.studentName,
       staffName: conv.staffName,
       courseTitle: conv.courseTitle,
+      courseContextSummary:conv.courseId?undefined:'Support technique Faro School uniquement : installation de l’application, navigation, lecture vidéo. Toute question de cours doit être adressée à son auteur. Aucune intervention sur un compte ou un paiement sans humain.',
+      instructorSettings:instructorVersion?.settings||(conv.courseId?{enabled:false}:undefined),
       recentMessages: existingMsgs.map((m) => ({ senderType: m.senderType, body: m.body })),
       currentQuestion: trimmedBody,
       locale: user.locale || "fr",
     });
 
     // If AI can answer confidently -> Post AI answer!
-    if (aiResult.can_answer && aiResult.answer.trim()) {
+    if (aiResult.can_answer && aiResult.answer.trim() && !(await checkStoredProfanity(aiResult.answer)).blocked) {
       conv.status = "ai_handling";
       const aiMessage: PrivateMessage = {
-        id: `msg-ai-${Date.now()}`,
+        id: crypto.randomUUID(),
         conversationId,
         senderType: "ai",
         senderName: `Assistant IA de ${conv.staffName}`,
@@ -625,8 +639,8 @@ export async function sendPrivateMessageAction(
       };
 
       try {
-        const supabase = await createClient();
-        await supabase.from("messages").insert({
+        const supabase = createAdminClient();
+        const {error:aiWriteError}=await supabase.from("messages").insert({
           id: aiMessage.id,
           conversation_id: conversationId,
           sender_type: "ai",
@@ -635,6 +649,7 @@ export async function sendPrivateMessageAction(
           meta: aiMessage.meta,
           created_at: aiMessage.createdAt,
         });
+        if(aiWriteError)throw new Error("assistant_message_unavailable");
         await supabase
           .from("conversations")
           .update({ status: "ai_handling", last_message_at: aiMessage.createdAt })
@@ -689,7 +704,7 @@ export async function sendPrivateMessageAction(
     escalationsStore.push(escalation);
 
     try {
-      const supabase = await createClient();
+      const supabase = createAdminClient();
       await supabase.from("messages").insert({
         id: systemMsg.id,
         conversation_id: conversationId,
@@ -730,42 +745,7 @@ export async function staffHeartbeatAction(): Promise<MessagingActionResult> {
       return { success: false, error: "Non autorisé." };
     }
 
-    await recordStaffHeartbeat(user.id, user.role);
-
-    // Check if any open escalations for this staff can be resolved
-    try {
-      const supabase = await createClient();
-      const { data: convs } = await supabase
-        .from("conversations")
-        .select("id")
-        .eq("staff_id", user.id)
-        .eq("status", "waiting_staff");
-
-      if (convs && convs.length > 0) {
-        for (const c of convs) {
-          await supabase
-            .from("escalations")
-            .update({ resolved_at: new Date().toISOString() })
-            .eq("conversation_id", c.id)
-            .is("resolved_at", null);
-
-          // Post "Le formateur a rejoint la conversation"
-          await supabase.from("messages").insert({
-            conversation_id: c.id,
-            sender_type: "system",
-            body: "Le formateur a rejoint la conversation. / Fòmatè a rantre nan konvèsasyon an.",
-            created_at: new Date().toISOString(),
-          });
-
-          await supabase
-            .from("conversations")
-            .update({ status: "open" })
-            .eq("id", c.id);
-        }
-      }
-    } catch {}
-
-    return { success: true };
+    return {success:await recordStaffHeartbeat(user.id,user.role)};
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -783,7 +763,7 @@ export async function toggleStaffAvailabilityAction(
       return { success: false, error: "Non autorisé." };
     }
 
-    await setStaffAvailability(user.id, user.role, isAvailable);
+    if(!await setStaffAvailability(user.id,user.role,isAvailable))return{success:false,error:"availability_unavailable"};
     revalidatePath("/[locale]/admin/messages", "page");
     return { success: true };
   } catch (err: any) {
@@ -794,37 +774,9 @@ export async function toggleStaffAvailabilityAction(
 /**
  * Marks messages in a conversation as read.
  */
-export async function markConversationReadAction(
-  conversationId: string
-): Promise<MessagingActionResult> {
-  try {
-    const user = await getCurrentUser();
-    if (!user) return { success: false };
-
-    try {
-      const supabase = await createClient();
-      await supabase
-        .from("messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .neq("sender_id", user.id)
-        .is("read_at", null);
-    } catch {}
-
-    const messagesStore = getMockMessagesStore();
-    const msgs = messagesStore.get(conversationId);
-    if (msgs) {
-      msgs.forEach((m) => {
-        if (m.senderId !== user.id) {
-          m.readAt = new Date().toISOString();
-        }
-      });
-    }
-
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+export async function markConversationReadAction(conversationId:string):Promise<MessagingActionResult>{
+ const user=await getCurrentUser();if(!user)return{success:false,error:'forbidden'};
+ const db=await createClient();const {error}=await db.rpc('mark_private_conversation_read',{p_conversation:conversationId});return error?{success:false,error:'read_unavailable'}:{success:true};
 }
 
 /**
@@ -840,59 +792,11 @@ export async function closeConversationAction(
       return { success: false, error: "Non autorisé." };
     }
 
-    const nowIso = new Date().toISOString();
-
-    try {
-      const supabase = await createClient();
-      await supabase
-        .from("conversations")
-        .update({ status: newStatus, last_message_at: nowIso })
-        .eq("id", conversationId);
-
-      const systemText =
-        newStatus === "closed"
-          ? user.locale === "ht"
-            ? "Fòmatè a make konvèsasyon sa a kòm rezoud epi li fèmen l."
-            : "La discussion a été clôturée par le formateur."
-          : user.locale === "ht"
-            ? "Fòmatè a relouvri konvèsasyon sa a."
-            : "La discussion a été rouverte par le formateur.";
-
-      await supabase.from("messages").insert({
-        conversation_id: conversationId,
-        sender_type: "system",
-        body: systemText,
-        created_at: nowIso,
-      });
-    } catch {}
-
-    const conversations = getMockConversationsStore();
-    const conv = conversations.find((c) => c.id === conversationId);
-    if (conv) {
-      conv.status = newStatus;
-      conv.lastMessageAt = nowIso;
-    }
-
-    const messagesStore = getMockMessagesStore();
-    const msgs = messagesStore.get(conversationId) || [];
-    msgs.push({
-      id: `msg-sys-${Date.now()}`,
-      conversationId,
-      senderType: "system",
-      body:
-        newStatus === "closed"
-          ? "La discussion a été clôturée par le formateur."
-          : "La discussion a été rouverte par le formateur.",
-      createdAt: nowIso,
-    });
-    messagesStore.set(conversationId, msgs);
-
-    revalidatePath("/[locale]/admin/messages", "page");
-    revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+    if(!['closed','open'].includes(newStatus))return{success:false,error:'invalid_status'};
+    const db=await createClient();let query=db.from('conversations').update({status:newStatus}).eq('id',conversationId);query=user.role==='admin'?query.or(`staff_id.eq.${user.id},course_id.is.null`):query.eq('staff_id',user.id);const {data,error}=await query.select('id').single();
+    if(error||!data)return{success:false,error:'forbidden'};
+    revalidatePath('/[locale]/admin/messages','page');return{success:true};
+  }catch{return{success:false,error:'unavailable'};}
 }
 
 /**
@@ -904,120 +808,22 @@ export async function startInstructorConversationAction(
   subject: string,
   firstMessage: string
 ): Promise<MessagingActionResult<{ conversationId: string }>> {
-  try {
-    const user = await getCurrentUser();
-    if (!user || (user.role !== "instructor" && user.role !== "admin")) {
-      return { success: false, error: "Non autorisé." };
-    }
+  const user=await getCurrentUser();if(!user||user.role!=='admin')return{success:false,error:'forbidden'};
+  if(courseId){const db=await createClient();const {data,error}=await db.from('courses').select('instructor_id').eq('id',courseId).single();if(error||data?.instructor_id!==user.id)return{success:false,error:'forbidden'};}
+  return createConversationAction(courseId||null,subject,firstMessage,studentId,user.locale);
+}
 
-    const trimmedSubject = subject?.trim();
-    const trimmedBody = firstMessage?.trim();
+/** Live inbox reads: participants only; supervision has its separate audited action. */
+export async function loadStaffInboxAction(conversationId?:string):Promise<MessagingActionResult<{conversations:Conversation[];messages:PrivateMessage[]}>>{
+ const user=await getCurrentUser();if(!user||!['admin','instructor'].includes(user.role))return{success:false,error:'forbidden'};
+ const {getStaffConversations,getConversationMessages}=await import('@/lib/messaging/data');
+ const conversations=await getStaffConversations(user.id,false,user.role==='admin');
+ if(conversationId&&!conversations.some(c=>c.id===conversationId))return{success:false,error:'not_found'};
+ return{success:true,data:{conversations,messages:conversationId?await getConversationMessages(conversationId):[]}};
+}
 
-    if (!trimmedSubject || !trimmedBody) {
-      return { success: false, error: "Veuillez renseigner un sujet et un message." };
-    }
-
-    const convId = `conv-${Date.now()}`;
-    const nowIso = new Date().toISOString();
-
-    let studentName = "Étudiant";
-    let courseTitle = "Formation";
-
-    try {
-      const supabase = await createClient();
-
-      // Fetch student details
-      const { data: studentProfile } = await supabase
-        .from("profiles")
-        .select("display_name, full_name")
-        .eq("id", studentId)
-        .single();
-      if (studentProfile) {
-        studentName = studentProfile.display_name || studentProfile.full_name || "Étudiant";
-      }
-
-      // Fetch course title
-      const { data: courseData } = await supabase
-        .from("courses")
-        .select("title_fr, title_ht")
-        .eq("id", courseId)
-        .single();
-      if (courseData) {
-        courseTitle = courseData.title_fr || courseData.title_ht || "Formation";
-      }
-
-      // Insert conversation
-      await supabase.from("conversations").insert({
-        id: convId,
-        student_id: studentId,
-        staff_id: user.id,
-        course_id: courseId,
-        subject: trimmedSubject,
-        status: "staff_replied",
-        created_at: nowIso,
-        last_message_at: nowIso,
-      });
-
-      // Insert first message
-      await supabase.from("messages").insert({
-        conversation_id: convId,
-        sender_type: "staff",
-        sender_id: user.id,
-        body: trimmedBody,
-        created_at: nowIso,
-      });
-
-      // Notify student
-      await supabase.from("notifications").insert({
-        user_id: studentId,
-        type: "staff_reply",
-        payload: {
-          conversationId: convId,
-          messageSnippet: trimmedBody.slice(0, 100),
-          senderName: user.fullName || "Formateur",
-          courseTitle,
-        },
-      });
-    } catch {}
-
-    // Mock store update
-    const convStore = getMockConversationsStore();
-    const newConv: Conversation = {
-      id: convId,
-      studentId,
-      studentName,
-      staffId: user.id,
-      staffName: user.fullName || "Formateur",
-      staffRole: user.role as "instructor" | "admin",
-      courseId,
-      courseTitle,
-      subject: trimmedSubject,
-      status: "staff_replied",
-      createdAt: nowIso,
-      lastMessageAt: nowIso,
-      unreadCount: 0,
-      lastMessagePreview: trimmedBody,
-      isStaffOnline: true,
-    };
-    convStore.unshift(newConv);
-
-    const messagesStore = getMockMessagesStore();
-    messagesStore.set(convId, [
-      {
-        id: `msg-${Date.now()}`,
-        conversationId: convId,
-        senderType: "staff",
-        senderId: user.id,
-        senderName: user.fullName || "Formateur",
-        senderRole: user.role as "instructor" | "admin",
-        body: trimmedBody,
-        createdAt: nowIso,
-      },
-    ]);
-
-    revalidatePath("/[locale]/admin/messages", "page");
-    return { success: true, data: { conversationId: convId } };
-  } catch (err: any) {
-    return { success: false, error: err.message };
-  }
+export async function getStaffAvailabilityAction():Promise<MessagingActionResult<{available:boolean}>>{
+ const user=await getCurrentUser();if(!user||!['instructor','admin'].includes(user.role))return{success:false,error:'forbidden'};
+ const db=await createClient();const {data,error}=await db.from('profiles').select('staff_available').eq('id',user.id).single();
+ return error||!data?{success:false,error:'availability_unavailable'}:{success:true,data:{available:data.staff_available}};
 }

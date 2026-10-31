@@ -54,7 +54,8 @@ export default async function AdminDashboardPage({
     : "this_month";
 
   // Fetch aggregated data via RPC
-  const data = await getAdminDashboardData(period);
+  const data = await getAdminDashboardData(period).catch(()=>null);
+  if(!data)return <p role="alert" className="rounded-xl border border-line bg-surface p-6 text-red">{locale==='ht'?'Done yo pa disponib. Eseye ankò.':'Les données sont indisponibles. Veuillez réessayer.'}</p>;
   const t = await getTranslations({ locale, namespace: "admin.dashboard" });
 
   const initials = admin.fullName

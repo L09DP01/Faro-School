@@ -1,3 +1,4 @@
+import {courseProgress} from "./progress";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/config";
 export * from "./student-types";
@@ -278,6 +279,7 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
           course_id,
           created_at,
           note,
+          revoked_at,
           granted_by,
           courses (
             id,
@@ -308,8 +310,10 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
       .order("created_at", { ascending: false });
 
     if (!error && profiles && profiles.length > 0) {
+      const courseIds=Array.from(new Set<string>(profiles.flatMap((p:any)=>(p.enrollments||[]).filter((e:any)=>!e.revoked_at&&(!instructorId||e.courses?.instructor_id===instructorId)).map((e:any)=>e.course_id))));
+      const {totals,done}=await courseProgress(courseIds,profiles.map(p=>p.id));
       const list = profiles.map((p: any) => {
-        const rawEnrollments = p.enrollments || [];
+        const rawEnrollments = (p.enrollments || []).filter((e:any)=>!e.revoked_at&&(!instructorId||e.courses?.instructor_id===instructorId));
         const enrollments: any[] = rawEnrollments.map((e: any) => ({
           id: e.id,
           courseId: e.course_id,
@@ -348,7 +352,7 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
           locale: p.locale || "fr",
           createdAt: p.created_at,
           coursesCount: enrollments.length,
-          progressPercent: Math.floor(Math.random() * 80) + 10,
+          progressPercent: enrollments.length?Math.round(enrollments.reduce((sum:number,e:any)=>sum+(totals.get(e.courseId)?Math.min(100,(done.get(p.id+':'+e.courseId)||0)/totals.get(e.courseId)!*100):0),0)/enrollments.length):0,
           lastActivityAt: p.created_at,
           enrollments,
           payments,

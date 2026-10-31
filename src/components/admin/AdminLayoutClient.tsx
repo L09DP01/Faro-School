@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -39,6 +39,8 @@ export function AdminLayoutClient({
 }: AdminLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const [unread,setUnread]=useState({community:0,messages:0});
+  useEffect(()=>{let alive=true;const refresh=async()=>{try{const r=await fetch('/api/dashboard/unread',{cache:'no-store'});if(r.ok&&alive)setUnread(await r.json());}catch{}};void refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh);window.addEventListener('faro:unread-changed',refresh);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);window.removeEventListener('faro:unread-changed',refresh);};},[pathname]);
   const t = useTranslations("admin.sidebar");
   const isHt = locale === "ht";
   const isInstructor = admin.role === "instructor";
@@ -112,10 +114,11 @@ export function AdminLayoutClient({
           exact: false,
           label: isHt ? "Kominote" : "Communauté",
           icon: <Users className="w-5 h-5 shrink-0" />,
-          badge: 12,
+          badge: unread.community,
         },
         {
           href: "/admin/messages",
+          badge: unread.messages,
           exact: false,
           label: isHt ? "Mesaj" : "Messages",
           icon: <MessageSquare className="w-5 h-5 shrink-0" />,
@@ -133,7 +136,7 @@ export function AdminLayoutClient({
           exact: false,
           label: isHt ? "Kominote" : "Communauté",
           icon: <Users className="w-5 h-5 shrink-0" />,
-          badge: 12,
+          badge: unread.community,
         },
         {
           href: "/admin/promotions",
@@ -155,6 +158,7 @@ export function AdminLayoutClient({
         },
         {
           href: "/admin/messages",
+          badge: unread.messages,
           exact: false,
           label: t("messages") || "Messages",
           icon: <MessageSquare className="w-5 h-5 shrink-0" />,
@@ -163,7 +167,6 @@ export function AdminLayoutClient({
 
   if (!isInstructor) contentNavItems.push({href:"/admin/certificats",exact:false,label:isHt?"Sètifika":"Certificats",icon:<GraduationCap className="w-5 h-5 shrink-0"/>});
 
-  if (!isInstructor) contentNavItems.push({href:"/admin/emails",exact:false,label:isHt?"Imèl":"Emails",icon:<MessageSquare className="w-5 h-5 shrink-0"/>});
 
   const systemNavItems: NavItem[] = isInstructor
     ? []
@@ -182,6 +185,7 @@ export function AdminLayoutClient({
         },
       ];
 
+  systemNavItems.push({href:'/admin/compte',exact:false,label:isHt?'Kont mwen':'Mon compte',icon:<Settings className="w-5 h-5 shrink-0"/>});
   const checkIsActive = (href: string, exact: boolean) => {
     const localizedHref = `/${locale}${href}`;
     if (exact) {
@@ -305,8 +309,8 @@ export function AdminLayoutClient({
               </p>
               <p className="text-[11px] text-white/50 font-sans truncate">
                 {isInstructor
-                  ? (isHt ? "Fòmatè Limyè" : "Formateur certifié")
-                  : "Directeur pédagogique"}
+                  ? (isHt ? "Pwofesè" : "Professeur")
+                  : (isHt ? "Administrasyon ak sipò teknik" : "Administration et support technique")}
               </p>
             </div>
           </div>

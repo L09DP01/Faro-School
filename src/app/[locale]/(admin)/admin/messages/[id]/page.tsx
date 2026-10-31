@@ -28,12 +28,12 @@ export default async function AdminConversationPage({
   const user = await requireRole(["admin", "instructor"], locale, `/${locale}/admin/messages/${id}`);
 
   const [conversations, activeConversation, initialMessages] = await Promise.all([
-    getStaffConversations(user.id, user.role === "admin"),
+    getStaffConversations(user.id, false, user.role === "admin"),
     getConversationById(id, user.id, user.role),
     getConversationMessages(id),
   ]);
 
-  if (!activeConversation) {
+  if (!activeConversation || activeConversation.staffId !== user.id && !(user.role === "admin" && !activeConversation.courseId)) {
     notFound();
   }
 

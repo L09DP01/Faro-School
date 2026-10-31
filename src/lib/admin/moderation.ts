@@ -159,23 +159,13 @@ function initializeMockModeration() {
   }
 }
 
-export function logAdminAction(adminId: string, action: string, targetId: string, reason?: string, details?: any) {
-  initializeMockModeration();
-  const entry = {
-    id: `log-${Date.now()}`,
-    adminId,
-    action,
-    targetId,
-    reason: reason || "Action administrative",
-    details: details || {},
-    createdAt: new Date().toISOString(),
-  };
-  globalThis.__mockAuditLogsStore!.unshift(entry);
+export async function logAdminAction(adminId:string,action:string,targetId:string,reason?:string,details?:any){
+ const db=await createClient();const {error}=await db.from('admin_audit_logs').insert({admin_id:adminId,action,target_id:targetId,reason:reason||null,details:details||{}});
+ if(error)throw new Error('audit_unavailable');
 }
-
-export function getMockAuditLogs() {
-  initializeMockModeration();
-  return globalThis.__mockAuditLogsStore!;
+export async function getModerationAuditLogs(){
+ const db=await createClient();const {data,error}=await db.from('admin_audit_logs').select('id,admin_id,action,target_id,reason,details,created_at').order('created_at',{ascending:false}).limit(100);
+ if(error)throw new Error('audit_unavailable');return(data||[]).map(row=>({id:row.id,adminId:row.admin_id,action:row.action,targetId:row.target_id,reason:row.reason,details:row.details,createdAt:row.created_at}));
 }
 
 /**
@@ -350,19 +340,18 @@ export async function getMutedAndBannedUsers(): Promise<{
 export async function getWordFilterSettings(): Promise<WordFilterSettings> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data,error } = await supabase
       .from("platform_settings")
       .select("value")
       .eq("key", "word_filter")
       .single();
 
+    if(error)throw Error("settings_unavailable");
     if (data?.value) {
       return data.value as WordFilterSettings;
     }
-  } catch {}
-
-  initializeMockModeration();
-  return globalThis.__mockWordFilterStore!;
+  } catch {throw Error("settings_unavailable");}
+  return {fr:[],ht:[]};
 }
 
 /**
@@ -392,7 +381,7 @@ export async function saveWordFilterSettings(
 
   initializeMockModeration();
   globalThis.__mockWordFilterStore = filters;
-  logAdminAction(adminId, "update_word_filter", "platform_settings", "Mise à jour des filtres de mots");
+  await logAdminAction(adminId, "update_word_filter", "platform_settings", "Mise à jour des filtres de mots");
 }
 
 /**
@@ -401,19 +390,18 @@ export async function saveWordFilterSettings(
 export async function getCommunityRulesSettings(): Promise<CommunityRulesSettings> {
   try {
     const supabase = await createClient();
-    const { data } = await supabase
+    const { data,error } = await supabase
       .from("platform_settings")
       .select("value")
       .eq("key", "community_rules")
       .single();
 
+    if(error)throw Error("settings_unavailable");
     if (data?.value) {
       return data.value as CommunityRulesSettings;
     }
-  } catch {}
-
-  initializeMockModeration();
-  return globalThis.__mockCommunityRulesStore!;
+  } catch {throw Error("settings_unavailable");}
+  return {fr:"",ht:""};
 }
 
 /**
@@ -443,5 +431,5 @@ export async function saveCommunityRulesSettings(
 
   initializeMockModeration();
   globalThis.__mockCommunityRulesStore = rules;
-  logAdminAction(adminId, "update_community_rules", "platform_settings", "Mise à jour du texte des règles de communauté");
+  await logAdminAction(adminId, "update_community_rules", "platform_settings", "Mise à jour du texte des règles de communauté");
 }

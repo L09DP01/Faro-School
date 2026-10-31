@@ -110,26 +110,7 @@ export function CourseFormClient({
 
   // Modules & Lessons
   const [modules, setModules] = useState<AdminModuleForm[]>(
-    initialCourse?.modules && initialCourse.modules.length > 0
-      ? initialCourse.modules
-      : [
-          {
-            titleFr: "Module 1 - Fondations",
-            titleHt: "Modil 1 - Baz",
-            position: 1,
-            lessons: [
-              {
-                titleFr: "Introduction à la formation",
-                titleHt: "Entwodiksyon sou fòmasyon an",
-                position: 1,
-                videoId: "mock_vid_intro",
-                durationSec: 600,
-                isFreePreview: true,
-                resources: [],
-              },
-            ],
-          },
-        ]
+    initialCourse?.modules || []
   );
 
   // UI state
@@ -1362,19 +1343,8 @@ export function CourseFormClient({
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-line bg-bg text-ink focus:outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition-all"
                   >
                     <option value="">Formateur par défaut (Admin Faro)</option>
-                    {availableInstructors.length > 0 ? (
-                      availableInstructors.map((inst) => (
-                        <option key={inst.id} value={inst.id}>
-                          {inst.fullName} {inst.title ? `— ${inst.title}` : ""}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="mock-admin-id">Professeur Faro (Directeur)</option>
-                        <option value="mock-instructor-id">Jean-Baptiste Formateur (Marketing)</option>
-                        <option value="inst-003">Nadine Pierre-Louis (Anglais des Affaires)</option>
-                      </>
-                    )}
+                    {availableInstructors.map(inst=><option key={inst.id} value={inst.id}>{inst.fullName}{inst.title ? ' — '+inst.title : ''}</option>)}
+
                   </select>
                   <p className="text-[11px] text-muted-faro">
                     L&apos;instructeur assigné aura les droits d&apos;édition sur ce cours et pourra consulter les élèves inscrits.

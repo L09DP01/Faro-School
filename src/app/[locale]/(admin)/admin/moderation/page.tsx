@@ -4,7 +4,7 @@ import {
   getMutedAndBannedUsers,
   getWordFilterSettings,
   getCommunityRulesSettings,
-  getMockAuditLogs,
+  getModerationAuditLogs,
 } from "@/lib/admin/moderation";
 import { getModerationFlags } from "@/lib/moderation/flag-service";
 import { AdminModerationClient } from "@/components/admin/moderation/AdminModerationClient";
@@ -32,7 +32,7 @@ export default async function AdminModerationPage({ params }: AdminModerationPag
     getModerationFlags("all"),
   ]);
 
-  const auditLogs = getMockAuditLogs();
+  const auditLogs = await getModerationAuditLogs();
 
   return (
     <AdminModerationClient

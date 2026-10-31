@@ -44,10 +44,12 @@ interface AdminMessagingSupervisionClientProps {
   breakGlassLogs: BreakGlassAccessLog[];
   currentAdminId: string;
   locale: string;
+  aiConfigured?: boolean;
 }
 
 export function AdminMessagingSupervisionClient({
   initialStats,
+  aiConfigured = false,
   initialSettings,
   conversations: initialConvs,
   students,
@@ -293,8 +295,8 @@ export function AdminMessagingSupervisionClient({
                     ? "KILL SWITCH AKTIF : Asistan IA arête nèt"
                     : "KILL SWITCH ACTIF : Assistant IA coupé partout"
                   : isHt
-                    ? "Asistan IA an fonksyonman nòmal"
-                    : "Assistant IA opérationnel sur la plateforme"}
+                    ? "Asistans IA otorize sou platfòm nan"
+                    : "Assistance IA autorisée sur la plateforme"}
               </h2>
               <span
                 className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
@@ -303,7 +305,7 @@ export function AdminMessagingSupervisionClient({
                     : "bg-ok-tint text-ok border border-ok/30"
                 }`}
               >
-                {settings.killSwitch ? "Arret d'urgence" : "En service"}
+                {settings.killSwitch ? (isHt?'Arè ijans':'Arrêt d’urgence') : !aiConfigured ? (isHt?'API pa konfigire':'API non configurée') : (isHt?'Otorize':'Autorisée')}
               </span>
             </div>
 
@@ -357,7 +359,7 @@ export function AdminMessagingSupervisionClient({
         <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-blue" />
-            <span>{isHt ? "Rezolisyon pa IA" : "Résolu par l'IA"}</span>
+            <span>{isHt ? "Diskisyon IA ap okipe" : "Discussions prises en charge par l’IA"}</span>
           </p>
           <p className="text-2xl font-heading font-bold text-ink">{stats.aiResolutionRatePercent}%</p>
         </div>
@@ -583,8 +585,8 @@ export function AdminMessagingSupervisionClient({
                 onChange={(e) => setSettings({ ...settings, defaultModel: e.target.value })}
                 className="w-full rounded-xl border border-line bg-bg p-2.5 text-ink focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 font-mono text-xs"
               >
-                <option value="claude-3-haiku-20240307">Claude 3 Haiku (Rapide, économique, idéal pour le mobile)</option>
-                <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Raisonnement avancé, plus coûteux)</option>
+                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+                <option value="claude-haiku-5-5">Claude Haiku 5.5</option>
               </select>
             </div>
 

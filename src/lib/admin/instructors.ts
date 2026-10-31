@@ -109,7 +109,7 @@ export async function getAdminInstructorsList(): Promise<InstructorItem[]> {
         return {
           id: inst.profile_id,
           email: inst.profiles?.email || "",
-          fullName: inst.profiles?.full_name || "Formateur Limyè",
+          fullName: inst.profiles?.full_name || "Formateur",
           title: inst.title || "",
           bio: inst.bio || "",
           escalationEmail: inst.escalation_email || null,

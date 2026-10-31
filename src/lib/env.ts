@@ -43,7 +43,7 @@ export const serverEnvSchema = z.object({
   // AI Assistant (Google Gemini / Anthropic Claude)
   GEMINI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().default("gemini-1.5-flash"),
+  AI_MODEL: z.string().optional(),
   DISABLE_AI: z.string().optional(),
   AI_ASSISTANT_ENABLED: z.string().optional(),
 

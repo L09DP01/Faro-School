@@ -1,25 +1,3 @@
-import { requireAdmin } from "@/lib/auth";
-import { getTranslations } from "next-intl/server";
-
-interface AdminSettingsPageProps {
-  params: Promise<{ locale: string }>;
-}
-
-export default async function AdminSettingsPage({ params }: AdminSettingsPageProps) {
-  const { locale } = await params;
-  await requireAdmin(locale);
-  const t = await getTranslations({ locale, namespace: "admin.dashboard.placeholders" });
-
-  return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-card p-8">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          {t("settingsTitle")}
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {t("settingsDesc")}
-        </p>
-      </div>
-    </div>
-  );
-}
+import {requireAdmin} from '@/lib/auth';
+import {Link} from '@/i18n/navigation';
+export default async function SettingsPage({params}:{params:Promise<{locale:string}>}){const {locale}=await params;await requireAdmin(locale);const ht=locale==='ht';const links=[['/admin/compte',ht?'Kont mwen ak sekirite':'Mon compte et sécurité',ht?'Non, telefòn, lang, imèl ak modpas.':'Identité, téléphone, langue, adresse e-mail et mot de passe.'],['/admin/messagerie',ht?'Asistans ak IA':'Assistance et IA',ht?'Disponibilite, limit, modèl ak bouton ijans IA.':'Disponibilité, limites, modèle et arrêt global de l’IA.'],['/admin/moderation',ht?'Règ ak moderasyon':'Règles et modération',ht?'Mo entèdi ak règ kominote a ak mesaj prive.':'Mots interdits et règles de la communauté et des messages privés.'],['/admin/certificats',ht?'Siyati sètifika':'Signature des certificats',ht?'Non, tit ak siyati moun ki siyen an.':'Nom, fonction et image du signataire.'],['/admin/formateurs',ht?'Fòmatè ak kou':'Formateurs et formations',ht?'Envitasyon, aksè ak responsab kou yo.':'Invitations, accès et responsables des formations.']];return <div className="space-y-6"><h1 className="text-2xl font-heading font-bold text-navy-deep">{ht?'Paramèt sistèm nan':'Paramètres du système'}</h1><div className="rounded-2xl bg-surface border border-line divide-y divide-line">{links.map(([href,title,description])=><Link key={href} href={href} className="block p-6 hover:bg-bg"><h2 className="font-semibold text-navy-deep">{title}</h2><p className="text-sm text-muted-faro mt-1">{description}</p></Link>)}</div></div>;}

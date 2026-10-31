@@ -44,8 +44,7 @@ async function runStepS1DTests() {
     const staffConvs = await getStaffConversations("00000000-0000-0000-0000-000000000001");
     assert.deepStrictEqual(staffConvs, [], "Production staff conversations must be empty");
 
-    const unreadMsgCount = await getUnreadPrivateMessagesCount("00000000-0000-0000-0000-000000000001");
-    assert.strictEqual(unreadMsgCount, 0, "Production unread messages count must be 0, not 1");
+    await assert.rejects(()=>getUnreadPrivateMessagesCount("00000000-0000-0000-0000-000000000001"),/unread_unavailable/,"Unavailable counts must not masquerade as measured zeros");
 
     // Community data now requires a verified account with an active enrollment.
     for(const read of [getCommunityGroupInfo,getCommunityMessages,getUnreadCommunityCount]){

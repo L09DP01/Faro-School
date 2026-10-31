@@ -105,13 +105,13 @@ export function AdminInstructorsClient({
         escalationEmail: newEscalationEmail,
       });
 
-      if (!res.success) {
+      if (!res.success || !res.instructorId) {
         setCreateError(res.error || "Erreur de création.");
         return;
       }
 
       const newInst: InstructorItem = {
-        id: res.instructorId || `inst-${Date.now()}`,
+        id: res.instructorId,
         fullName: newFullName,
         email: newEmail,
         title: newTitle,
@@ -203,10 +203,7 @@ export function AdminInstructorsClient({
         alert(res.error || "Erreur d'invitation");
         return;
       }
-      setInvitationModalData({
-        instructor: inst,
-        url: res.invitationUrl || `${window.location.origin}/fr/reinitialisation-mot-de-passe`,
-      });
+      showToast(isHt ? "Envitasyon an voye pa imèl." : "L’invitation a été envoyée par e-mail.");
       setCopiedLink(false);
     });
   };

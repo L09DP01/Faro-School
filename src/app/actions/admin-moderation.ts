@@ -78,7 +78,7 @@ export async function deleteReportedMessageAction(
       }
     }
 
-    logAdminAction(user.id, "moderation_delete_message", messageId, reason, { reportId });
+    await logAdminAction(user.id, "moderation_delete_message", messageId, reason, { reportId });
 
     revalidatePath("/[locale]/admin/moderation", "page");
     revalidatePath("/[locale]/admin/communaute", "page");
@@ -155,7 +155,7 @@ export async function muteReportAuthorAction(
       }
     }
 
-    logAdminAction(user.id, `moderation_mute_author_${duration}`, authorId, reason, {
+    await logAdminAction(user.id, `moderation_mute_author_${duration}`, authorId, reason, {
       reportId,
       mutedUntil,
     });
@@ -227,7 +227,7 @@ export async function banReportAuthorAction(
       }
     }
 
-    logAdminAction(user.id, "moderation_ban_author", authorId, reason, {
+    await logAdminAction(user.id, "moderation_ban_author", authorId, reason, {
       reportId,
       bannedAt,
     });
@@ -277,7 +277,7 @@ export async function dismissReportAction(
       }
     }
 
-    logAdminAction(user.id, "moderation_dismiss_report", reportId, reason);
+    await logAdminAction(user.id, "moderation_dismiss_report", reportId, reason);
 
     revalidatePath("/[locale]/admin/moderation", "page");
     return { success: true };
@@ -318,7 +318,7 @@ export async function unmuteUserAction(userId: string): Promise<AdminActionResul
       }
     }
 
-    logAdminAction(user.id, "moderation_unmute_user", userId, "Levée de la mise en sourdine");
+    await logAdminAction(user.id, "moderation_unmute_user", userId, "Levée de la mise en sourdine");
 
     revalidatePath("/[locale]/admin/moderation", "page");
     return { success: true };
@@ -359,7 +359,7 @@ export async function unbanUserAction(userId: string): Promise<AdminActionResult
       }
     }
 
-    logAdminAction(user.id, "moderation_unban_user", userId, "Rétablissement du compte débanni");
+    await logAdminAction(user.id, "moderation_unban_user", userId, "Rétablissement du compte débanni");
 
     revalidatePath("/[locale]/admin/moderation", "page");
     return { success: true };
@@ -423,7 +423,7 @@ export async function reviewModerationFlagAction(
     }
 
     await updateModerationFlagStatus(flagId, status, user.id);
-    logAdminAction(user.id, `moderation_flag_${status}`, flagId, `Flag ${status}`);
+    await logAdminAction(user.id, `moderation_flag_${status}`, flagId, `Flag ${status}`);
 
     try {
       revalidatePath("/[locale]/admin/moderation", "page");
@@ -474,7 +474,7 @@ export async function muteUserFromFlagAction(
       await updateModerationFlagStatus(flagId, "reviewed", user.id);
     }
 
-    logAdminAction(user.id, `moderation_mute_from_flag_${duration}`, userId, "Mise en sourdine suite à flag automatique", {
+    await logAdminAction(user.id, `moderation_mute_from_flag_${duration}`, userId, "Mise en sourdine suite à flag automatique", {
       flagId,
       mutedUntil,
     });
