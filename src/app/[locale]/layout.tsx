@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   },
   description: "Apprenez des compétences recherchées en Haïti et payez facilement par MonCash et NatCash.",
   manifest: "/manifest.webmanifest",
+  // Next 15 emits the modern name; retain the Apple alias for installed Safari apps.
+  other: { "apple-mobile-web-app-capable": "yes" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

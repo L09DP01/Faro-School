@@ -94,3 +94,8 @@ Les vérifications matérielles listées plus haut restent à réaliser par l’
 ### Complément issu de la relecture des PNG à 320px
 
 La carte Heures d’apprentissage poussait son icône hors de sa bordure et Communauté était elliptique. En dessous de 360px seulement, les icônes occupent leur propre ligne, les libellés restent dans la largeur utile et les captions de navigation utilisent 10px sans padding latéral. Les champs de saisie restent à 16px minimum. Les tests vérifient désormais les limites et l’absence de chevauchement de chaque tuile, ainsi que l’absence de troncature de chaque libellé de navigation sur les quatre tailles. La capture after-home-320.png a été régénérée à partir du vrai rendu corrigé.
+
+
+### Contrôle du HTML réellement servi
+
+Le contrôle anonyme du HTML après déploiement a montré que Next.js 15 émettait mobile-web-app-capable=yes mais omettait l’alias apple-mobile-web-app-capable malgré appleWebApp.capable=true. L’alias Apple est donc ajouté explicitement via metadata.other ; les deux noms ont la même valeur yes. Le style reste unique : default. Ce contrôle complète les assertions de configuration, sans connexion à un compte ni interrogation Supabase.
