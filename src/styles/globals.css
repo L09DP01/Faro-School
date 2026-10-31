@@ -97,3 +97,27 @@ html[data-safe-debug="true"] body::after { bottom:0; height:var(--sab); }
  .pwa-home-stats > div > div:first-child > span { max-width:100%; overflow-wrap:break-word; }
  .pwa-bottom-nav > a > span:last-child { padding-left:0; padding-right:0; font-size:10px; }
 }
+
+/* Hide the visual scrollbar while retaining touch, wheel and keyboard scrolling. */
+.no-scrollbar { scrollbar-width:none; -ms-overflow-style:none; }
+.no-scrollbar::-webkit-scrollbar { display:none; width:0; height:0; }
+/* The inbox owns the remaining viewport; only its list and message stream scroll. */
+.pwa-admin-main:has([data-staff-inbox]),
+html[data-app-shell="true"] .pwa-admin-main:has([data-staff-inbox]) { overflow:hidden; }
+.pwa-admin-content:has([data-staff-inbox]) {
+ display:flex; flex-direction:column; min-height:0; overflow:hidden;
+ padding:12px; padding-bottom:max(12px,var(--sab));
+}
+[data-staff-inbox] [data-message-stream], [data-staff-inbox] [data-conversation-list] { -webkit-overflow-scrolling:touch; }
+html[data-app-standalone="true"] .pwa-admin-desktop-header { padding-top:calc(12px + var(--sat)); }
+html[data-app-standalone="true"] .pwa-admin-sidebar { padding-top:calc(24px + var(--sat)); padding-bottom:calc(24px + var(--sab)); }
+@media(min-width:768px) { .pwa-admin-content:has([data-staff-inbox]) { padding:24px; padding-bottom:max(24px,var(--sab)); } }
+html[data-app-keyboard="true"] :is([data-inbox-page-heading],.admin-inbox-tabs) { display:none; }
+@media(max-width:639px) {
+ .pwa-admin-content:has([data-inbox-active="true"]) .admin-inbox-tabs,
+ [data-inbox-active="true"] [data-inbox-page-heading] { display:none; }
+}
+@media(max-height:520px) {
+ [data-staff-inbox] :is([data-inbox-page-heading],[data-quick-replies]),
+ .pwa-admin-content:has([data-staff-inbox]) .admin-inbox-tabs { display:none; }
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "browser": "chromium",
+    "width": 1440,
+    "height": 900,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "chromium",
+    "width": 1024,
+    "height": 768,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "chromium",
+    "width": 768,
+    "height": 1024,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "chromium",
+    "width": 820,
+    "height": 1180,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "chromium",
+    "width": 390,
+    "height": 844,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": false,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "chromium",
+    "width": 320,
+    "height": 568,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": false,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 1440,
+    "height": 900,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 1024,
+    "height": 768,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 768,
+    "height": 1024,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 820,
+    "height": 1180,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": true,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 390,
+    "height": 844,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": false,
+    "resized_viewport_restored": true
+  },
+  {
+    "browser": "webkit",
+    "width": 320,
+    "height": 568,
+    "fixed_header_and_composer": true,
+    "independent_scrollers": true,
+    "collapsible_sidebar": false,
+    "resized_viewport_restored": true
+  }
+]

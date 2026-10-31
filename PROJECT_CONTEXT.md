@@ -4,6 +4,13 @@
 
 ## 2. Stack
 
+Staff inbox layout: the bounded admin shell keeps global/chat headers and composer
+outside scrolling. Only the message stream and conversation list scroll; visual
+scrollbars are hidden while keyboard/touch scrolling remains available. The admin
+sidebar can be collapsed on tablets/desktops. See docs/STAFF_INBOX_LAYOUT.md and
+tests/staff_inbox_layout.py for real-component responsive verification.
+
+
 Assistant modes (2026-10-31): support uses platform procedures and escalates to the
 shared admin technical inbox. Pedagogical assistance uses the private course author
 summary, runs while the author is absent, and hands off uncertainty to that author.

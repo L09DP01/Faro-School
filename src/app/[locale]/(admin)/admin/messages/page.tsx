@@ -86,20 +86,20 @@ export default async function AdminMessagesPage({
   ]);
 
   return (
-    <div className="space-y-4">
+    <div className="admin-inbox-page flex flex-col flex-1 min-h-0 min-w-0 gap-3 sm:gap-4 overflow-hidden">
       {/* Admin Tab Switcher */}
-      <div className="flex gap-2 border-b border-line pb-2">
+      <div className="admin-inbox-tabs shrink-0 flex gap-2 overflow-x-auto no-scrollbar border-b border-line pb-2">
         <a
           href={`/${locale}/admin/messages?tab=pedagogical`}
           className="px-4 py-2 text-xs font-heading font-semibold rounded-xl bg-ink text-surface transition-colors"
         >
-          Échanges Formateurs & Élèves
+          {locale === "ht" ? "Sipò teknik ak kou mwen yo" : "Support technique et mes cours"}
         </a>
         <a
           href={`/${locale}/admin/messages?tab=contact`}
           className="px-4 py-2 text-xs font-heading font-semibold rounded-xl border border-line text-muted-faro hover:text-ink hover:bg-surface transition-colors"
         >
-          Formulaire de Contact Public
+          {locale === "ht" ? "Fòm kontak piblik" : "Formulaire de contact public"}
         </a>
       </div>
       <InstructorMessagesClient

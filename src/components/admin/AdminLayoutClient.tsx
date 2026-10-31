@@ -38,6 +38,7 @@ export function AdminLayoutClient({
   locale,
 }: AdminLayoutClientProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed,setSidebarCollapsed]=useState(false);
   const pathname = usePathname();
   const [unread,setUnread]=useState({community:0,messages:0});
   useEffect(()=>{let alive=true;const refresh=async()=>{try{const r=await fetch('/api/dashboard/unread',{cache:'no-store'});if(r.ok&&alive)setUnread(await r.json());}catch{}};void refresh();const timer=setInterval(refresh,15000);window.addEventListener('focus',refresh);window.addEventListener('faro:unread-changed',refresh);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);window.removeEventListener('faro:unread-changed',refresh);};},[pathname]);
@@ -238,11 +239,11 @@ export function AdminLayoutClient({
   );
 
   return (
-    <div className="pwa-admin-shell md:overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
+    <div className="pwa-admin-shell overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
       {/* ========================================================= */}
       {/* 1. PERSISTENT 260px NAVY SIDEBAR (Fixed 100dvh on Desktop)*/}
       {/* ========================================================= */}
-      <aside className="hidden md:flex flex-col justify-between w-[260px] h-full shrink-0 bg-navy-deep text-white p-6 z-30 shadow-card select-none">
+      <aside id="admin-sidebar" className={`pwa-admin-sidebar ${sidebarCollapsed?"hidden":"hidden md:flex"} flex-col justify-between w-[260px] h-full min-h-0 shrink-0 bg-navy-deep text-white p-6 z-30 shadow-card select-none`}>
         {/* Top: Logo & Role Tag (Fixed) */}
         <div className="shrink-0 flex items-center justify-between pt-1 pb-4">
           <Link
@@ -263,7 +264,7 @@ export function AdminLayoutClient({
         </div>
 
         {/* Center: Internal Scrollable Navigation Area */}
-        <div className="flex-1 min-h-0 overflow-y-auto py-2 space-y-6 pr-1 focus-visible:outline-none">
+        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar overscroll-contain py-2 space-y-6 pr-1 focus-visible:outline-none">
           {/* Primary Nav Items */}
           <nav aria-label="Menu principal" className="space-y-1">
             {renderNavGroup(primaryNavItems)}
@@ -339,14 +340,14 @@ export function AdminLayoutClient({
       {/* ========================================================= */}
       {/* 2. MOBILE HEADER & DRAWER (< 768px)                      */}
       {/* ========================================================= */}
-      <div className="pwa-admin-header md:hidden sticky top-0 z-40 bg-navy-deep border-b border-white/10 px-4 h-16 flex items-center justify-between shadow-subtle">
+      <div className="pwa-admin-header md:hidden sticky top-0 z-40 bg-navy-deep border-b border-white/10 px-3 sm:px-4 h-16 shrink-0 flex items-center justify-between shadow-subtle">
         <Link
           href={isInstructor ? "/admin/tableau-de-bord" : "/admin"}
           className="flex items-center gap-2"
         >
-          <Logo variant="on-dark" width={120} height={32} />
+          <Logo variant="on-dark" width={96} height={32} />
           <span
-            className={`text-[10px] font-heading font-bold uppercase px-1.5 py-0.5 rounded-full border ${
+            className={`hidden sm:inline-block text-[10px] font-heading font-bold uppercase px-1.5 py-0.5 rounded-full border ${
               isInstructor
                 ? "bg-amber-400/20 text-amber-300 border-amber-400/30"
                 : "bg-orange/20 text-orange border-orange/30"
@@ -357,14 +358,14 @@ export function AdminLayoutClient({
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="scale-90 origin-right">
+          <div className="[&_button]:px-2 [&_button]:gap-1 [&_button]:text-[11px]">
             <StaffAvailabilityToggle locale={locale} />
           </div>
 
           <Link
             href={isInstructor ? "/admin/tableau-de-bord" : "/admin"}
             locale={locale === "fr" ? "ht" : "fr"}
-            className="text-xs text-white/80 font-heading font-semibold px-2 py-1 rounded bg-white/10"
+            className="text-xs text-white/80 font-heading font-semibold px-1.5 py-1 rounded bg-white/10"
           >
             {locale === "fr" ? "KR" : "FR"}
           </Link>
@@ -399,7 +400,7 @@ export function AdminLayoutClient({
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-5">
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar space-y-5">
             <div className="space-y-1">
               <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-white/40 px-3.5">
                 Principal
@@ -440,10 +441,11 @@ export function AdminLayoutClient({
       {/* ========================================================= */}
       {/* 3. MAIN CONTENT AREA (Scrolls Independently)              */}
       {/* ========================================================= */}
-      <main className="pwa-admin-main flex-1 min-w-0 h-full md:overflow-y-auto overflow-x-hidden flex flex-col">
+      <main className="pwa-admin-main no-scrollbar flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-hidden flex flex-col">
         {/* Desktop Header: Availability Toggle & Context */}
-        <header className="hidden md:flex items-center justify-between border-b border-line bg-surface/80 backdrop-blur-md px-6 lg:px-10 py-3 sticky top-0 z-30 shrink-0">
+        <header className="pwa-admin-desktop-header hidden md:flex items-center justify-between border-b border-line bg-surface/80 backdrop-blur-md px-6 lg:px-10 py-3 sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-2">
+            <button type="button" onClick={()=>setSidebarCollapsed(value=>!value)} aria-controls="admin-sidebar" aria-expanded={!sidebarCollapsed} aria-label={sidebarCollapsed?(isHt?"Louvri meni lateral la":"Ouvrir le menu latéral"):(isHt?"Kache meni lateral la":"Masquer le menu latéral")} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl border border-line text-navy hover:bg-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange"><Menu className="w-5 h-5"/></button>
             <span
               className={`text-[11px] font-heading font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
                 isInstructor
@@ -460,7 +462,7 @@ export function AdminLayoutClient({
           </div>
         </header>
 
-        <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-10 pb-16 md:pb-10 flex-1">
+        <div className="pwa-admin-content w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-10 pb-16 md:pb-10 flex-1">
           {children}
         </div>
       </main>

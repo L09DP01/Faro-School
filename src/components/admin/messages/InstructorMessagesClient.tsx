@@ -297,7 +297,7 @@ export function InstructorMessagesClient({
   };
 
   return (
-    <div className="space-y-4">
+    <div data-staff-inbox data-inbox-active={Boolean(activeId)} className="flex flex-col flex-1 min-h-0 min-w-0 gap-3 sm:gap-4 overflow-hidden">
       {/* Toast Notification */}
       {notification && (
         <div
@@ -321,19 +321,19 @@ export function InstructorMessagesClient({
       )}
 
       {/* Header bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div data-inbox-page-heading className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <nav aria-label="Fil d'Ariane" className="text-xs text-muted-faro flex items-center gap-1.5 mb-1">
+          <nav aria-label="Fil d'Ariane" className="text-xs text-muted-faro hidden sm:flex items-center gap-1.5 mb-1">
             <span>Administration</span>
             <span aria-hidden="true">/</span>
             <span className="text-ink font-medium" aria-current="page">
               {isHt ? "Mesaj Prive" : "Messagerie Directe"}
             </span>
           </nav>
-          <h1 className="font-heading font-bold text-2xl text-ink">
+          <h1 className="font-heading font-bold text-lg sm:text-2xl text-ink">
             {currentUserRole === "admin" ? (isHt ? "Sipò teknik ak kou mwen yo" : "Support technique et mes cours") : (isHt ? "Bwat mesaj pwofesè" : "Boîte de réception professeur")}
           </h1>
-          <p className="text-xs text-muted-faro">
+          <p className="hidden sm:block text-xs text-muted-faro">
             {currentUserRole==='admin'?(isHt?'Reponn tikè teknik yo ak kesyon sou kou ou yo.':'Répondez aux tickets techniques et aux questions concernant vos propres cours.'):(isHt?'Reponn kesyon elèv ki nan kou ou yo.':'Répondez aux questions des élèves de vos formations.')}
           </p>
         </div>
@@ -348,16 +348,16 @@ export function InstructorMessagesClient({
       </div>
 
       {/* 2-Panel Layout Card */}
-      <div className="rounded-[18px] border border-line bg-surface shadow-card overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
+      <div className="rounded-[18px] border border-line bg-surface shadow-card overflow-hidden grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 min-w-0">
         {/* LEFT PANEL: Filters & Conversations List (5 cols) */}
         <section
           aria-label="Liste des conversations"
-          className={`lg:col-span-5 border-r border-line flex flex-col bg-bg/20 ${
+          className={`lg:col-span-5 min-h-0 min-w-0 overflow-hidden border-r border-line flex flex-col bg-bg/20 ${
             activeId ? "hidden lg:flex" : "flex"
           }`}
         >
           {/* Search bar */}
-          <div className="p-3.5 border-b border-line bg-surface">
+          <div className="shrink-0 p-3.5 border-b border-line bg-surface">
             <div className="relative">
               <Search className="w-4 h-4 text-muted-faro absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -429,7 +429,7 @@ export function InstructorMessagesClient({
           </div>
 
           {/* Conversations list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-line/60">
+          <div data-conversation-list tabIndex={0} aria-label={isHt?"Diskisyon yo":"Conversations"} className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar divide-y divide-line/60">
             {filteredConversations.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-faro space-y-2">
                 <MessageSquare className="w-8 h-8 text-muted-faro/40 mx-auto" />
@@ -505,19 +505,19 @@ export function InstructorMessagesClient({
         {/* RIGHT PANEL: Active Conversation View (7 cols) */}
         <section
           aria-label="Contenu de la conversation"
-          className={`lg:col-span-7 flex flex-col bg-surface ${
+          className={`lg:col-span-7 min-h-0 min-w-0 overflow-hidden flex-col bg-surface ${
             activeId ? "flex" : "hidden lg:flex"
           }`}
         >
           {activeConversation ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b border-line flex items-center justify-between bg-surface gap-3">
+              <div data-conversation-header className="shrink-0 p-3 sm:p-4 border-b border-line flex flex-wrap items-center justify-between bg-surface gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                   <button
                     onClick={() => setActiveId(null)}
                     className="lg:hidden p-1.5 rounded-lg border border-line text-muted-faro hover:text-ink hover:bg-bg transition-colors"
-                    aria-label="Retour à la liste"
+                    aria-label={isHt?"Retounen nan lis la":"Retour à la liste"}
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
@@ -578,7 +578,7 @@ export function InstructorMessagesClient({
               </div>
 
               {/* Messages scroll area */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-bg/30">
+              <div data-message-stream tabIndex={0} aria-label={isHt?"Mesaj diskisyon an":"Messages de la conversation"} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar p-4 sm:p-5 space-y-4 bg-bg/30">
                 {activeMessages.map((msg) => {
                   if (msg.senderType === "system") {
                     return (
@@ -653,7 +653,7 @@ export function InstructorMessagesClient({
               </div>
 
               {/* Quick Replies chips */}
-              <div className="p-2.5 bg-surface border-t border-line/60 overflow-x-auto no-scrollbar flex items-center gap-2">
+              <div data-quick-replies className="shrink-0 p-2.5 bg-surface border-t border-line/60 overflow-x-auto no-scrollbar flex items-center gap-2">
                 <span className="text-[10px] font-heading font-bold uppercase tracking-wider text-muted-faro shrink-0">
                   {isHt ? "Repons rapid :" : "Réponses rapides :"}
                 </span>
@@ -669,7 +669,7 @@ export function InstructorMessagesClient({
               </div>
 
               {/* Composer */}
-              <footer className="p-3 bg-surface border-t border-line">
+              <footer data-message-composer className="shrink-0 p-3 bg-surface border-t border-line">
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <textarea
@@ -687,16 +687,16 @@ export function InstructorMessagesClient({
                           handleSendReply();
                         }
                       }}
-                      className="w-full resize-none p-3 text-xs sm:text-sm rounded-xl bg-bg border border-line text-ink placeholder:text-muted-faro focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-all"
+                      className="w-full min-h-11 max-h-28 resize-none p-3 text-base rounded-xl bg-bg border border-line text-ink placeholder:text-muted-faro focus:outline-none focus:border-orange focus:ring-1 focus:ring-orange/30 transition-all"
                     />
                   </div>
 
                   <button
                     onClick={handleSendReply}
                     disabled={isPending || !inputText.trim()}
-                    className={`p-3 rounded-xl text-white font-semibold transition-all flex items-center gap-1.5 shadow-sm ${
+                    className={`min-h-11 min-w-11 p-3 rounded-xl bg-orange text-white font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                       !inputText.trim()
-                        ? "bg-orange/40 cursor-not-allowed"
+                        ? "opacity-40 cursor-not-allowed"
                         : "bg-orange hover:bg-orange-strong active:scale-95 shadow-orange"
                     }`}
                     title={isHt ? "Voye repons la" : "Envoyer la réponse"}
@@ -710,7 +710,7 @@ export function InstructorMessagesClient({
               </footer>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-faro space-y-3">
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col items-center justify-center p-5 sm:p-8 text-center text-muted-faro space-y-3">
               <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center shadow-subtle">
                 <MessageSquare className="w-8 h-8 text-orange" />
               </div>
@@ -741,7 +741,7 @@ export function InstructorMessagesClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-modal-title"
-            className="w-full max-w-lg rounded-2xl border border-line bg-surface p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4"
+            className="w-full max-w-lg max-h-[90dvh] overflow-y-auto no-scrollbar rounded-2xl border border-line bg-surface p-6 shadow-2xl animate-in zoom-in-95 duration-200 space-y-4"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 id="new-modal-title" className="font-heading font-bold text-base text-ink flex items-center gap-2">
