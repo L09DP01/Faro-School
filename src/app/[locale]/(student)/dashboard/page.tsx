@@ -297,7 +297,7 @@ export default async function StudentDashboardPage({
       {/* ========================================================= */}
       {/* 2. FOUR STAT CARDS (28px bold value, 2x2 mobile, no trunc)*/}
       {/* ========================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="pwa-home-stats grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Active courses */}
         <div className="rounded-[16px] border border-line bg-surface p-4 sm:p-5 shadow-card flex flex-col justify-between min-h-[96px] sm:min-h-[108px]">
           <div className="flex items-start justify-between gap-2">

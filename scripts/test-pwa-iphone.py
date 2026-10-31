@@ -13,10 +13,13 @@ with sync_playwright() as p:
   for name,route,extra in cases:
    page.goto('http://127.0.0.1:4186/?route='+route+'&pwa=1'+extra);page.wait_for_selector('.pwa-lesson-shell' if name=='lesson' else '.pwa-app-main');page.add_style_tag(content=f':root{{--sat:{sat}px;--sab:{sab}px}}')
    if name in ['home','formations']:page.wait_for_selector('[data-server-page] h1')
+   if name=='home':
+    assert page.locator('.pwa-home-stats > div').evaluate_all('''cards=>cards.every(card=>{const r=card.getBoundingClientRect(),head=card.firstElementChild,a=head.firstElementChild.getBoundingClientRect(),b=head.lastElementChild.getBoundingClientRect();return a.left>=r.left&&a.right<=r.right&&b.left>=r.left&&b.right<=r.right&&(a.right<=b.left||b.right<=a.left||a.bottom<=b.top||b.bottom<=a.top)})'''),'stat tile overflow/overlap'
    if name=='lesson':assert page.locator('.pwa-bottom-nav').count()==0
    else:
     page.wait_for_selector('.pwa-bottom-nav');page.wait_for_function("document.documentElement.dataset.appRoute==='true'");nav=page.locator('.pwa-bottom-nav').bounding_box();assert abs(nav['y']+nav['height']-height)<1,(name,width,nav);assert abs(nav['height']-(64+sab))<1,(name,nav)
     assert page.locator('.pwa-bottom-nav').evaluate('(e)=>e.parentElement.tagName')=='BODY'
+    assert page.locator('.pwa-bottom-nav > a > span:last-child').evaluate_all('(labels)=>labels.every(e=>e.scrollWidth<=e.clientWidth)'),(name,width,'nav label clipped')
     assert page.locator('.pwa-bottom-nav').evaluate('''e=>{for(let n=e.parentElement;n;n=n.parentElement){const s=getComputedStyle(n);if(s.transform!=='none'||s.filter!=='none'||s.contain!=='none')return false}return true}''')
     assert page.evaluate('document.documentElement.scrollWidth')<=width,(name,'horizontal overflow')
     header=page.locator('.pwa-app-header').bounding_box();assert header['height']>=56+sat-1

@@ -446,7 +446,7 @@ export function StudentDashboardShell({
                     ) : null}
                   </div>
 
-                  {/* Tab label (11px-12px semibold, fits at 320px) */}
+                  {/* Tab label (responsive 10px-12px, kept whole at 320px) */}
                   <span
                     className={`w-full px-0.5 text-[11px] sm:text-[12px] leading-tight tracking-tight text-center truncate ${
                       active ? "text-navy-deep font-semibold" : "text-muted-faro"

@@ -89,3 +89,8 @@ Ces vérifications matérielles restent ouvertes : WebKit automatisé ne prouve 
 Les modifications fonctionnelles concernent uniquement les défauts Profil/Paramètres demandés dans le premier paragraphe du besoin ; la partie PWA ne modifie que structure, dimensions, métadonnées et textes d’accueil explicitement demandés. La communauté, les paiements, les progrès, l’authentification, /app, les règles PWA et le service worker conservent leurs mécanismes existants.
 
 Les vérifications matérielles listées plus haut restent à réaliser par l’utilisateur : cette livraison ne les coche pas comme réussies.
+
+
+### Complément issu de la relecture des PNG à 320px
+
+La carte Heures d’apprentissage poussait son icône hors de sa bordure et Communauté était elliptique. En dessous de 360px seulement, les icônes occupent leur propre ligne, les libellés restent dans la largeur utile et les captions de navigation utilisent 10px sans padding latéral. Les champs de saisie restent à 16px minimum. Les tests vérifient désormais les limites et l’absence de chevauchement de chaque tuile, ainsi que l’absence de troncature de chaque libellé de navigation sur les quatre tailles. La capture after-home-320.png a été régénérée à partir du vrai rendu corrigé.

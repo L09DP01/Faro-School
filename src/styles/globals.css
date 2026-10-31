@@ -89,3 +89,11 @@ html[data-safe-debug="true"] body::after { bottom:0; height:var(--sab); }
 .chat-dotted-background { background-image:radial-gradient(var(--line) 1px,transparent 1px); }
 
 .compose-backdrop { background:color-mix(in srgb,var(--navy-deep) 60%,transparent); }
+
+/* At 320px the long learning-hours label must not push its icon out of its tile. */
+@media(max-width:359px) {
+ .pwa-home-stats > div > div:first-child { flex-direction:column-reverse; align-items:flex-start; }
+ .pwa-home-stats > div > div:first-child > div { align-self:flex-end; }
+ .pwa-home-stats > div > div:first-child > span { max-width:100%; overflow-wrap:break-word; }
+ .pwa-bottom-nav > a > span:last-child { padding-left:0; padding-right:0; font-size:10px; }
+}
