@@ -51,9 +51,11 @@ interface AdminModerationClientProps {
   initialFlags?: ModerationFlagRecord[];
   auditLogs: any[];
   locale: string;
+  unavailableSections?:string[];
 }
 
 export function AdminModerationClient({
+  unavailableSections=[],
   initialReports,
   initialMuted,
   initialBanned,
@@ -307,6 +309,7 @@ export function AdminModerationClient({
 
   return (
     <div className="space-y-6">
+      {unavailableSections.length>0?<p role="alert" className="rounded-xl border border-line bg-surface p-4 text-sm text-red">{isHt?'Kèk seksyon pa disponib. Done ki pa chaje yo pa ka modifye.':'Certaines sections sont indisponibles. Les données non chargées ne peuvent pas être modifiées.'} <a href={`/${locale}/admin/moderation`} className="underline">{isHt?'Eseye ankò':'Réessayer'}</a></p>:null}
       {/* Toast Notification */}
       {notification && (
         <div
@@ -440,7 +443,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 1: REPORTS QUEUE                                                      */}
       {/* ========================================================================= */}
-      {activeTab === "reports" && (
+      {activeTab === "reports" && !unavailableSections.includes("reports") && (
         <div className="space-y-4">
           {/* Sub-filter pills */}
           <div className="flex gap-2 text-xs">
@@ -623,7 +626,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB: AUTOMATIC MODERATION FLAGS (PHONE & OFF-PLATFORM DETECTION)          */}
       {/* ========================================================================= */}
-      {activeTab === "flags" && (
+      {activeTab === "flags" && !unavailableSections.includes("flags") && (
         <div className="space-y-4">
           {/* Sub-filter pills */}
           <div className="flex gap-2 text-xs">
@@ -779,7 +782,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 2: MUTED & BANNED USERS LIST (WITH 1-CLICK UNDO & AUTO EXPIRY)         */}
       {/* ========================================================================= */}
-      {activeTab === "sanctions" && (
+      {activeTab === "sanctions" && !unavailableSections.includes("sanctions") && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Muted Users */}
           <div className="rounded-[18px] border border-line bg-surface p-6 shadow-card space-y-4">
@@ -891,7 +894,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 3: WORD FILTER (FR & KR)                                              */}
       {/* ========================================================================= */}
-      {activeTab === "filters" && (
+      {activeTab === "filters" && !unavailableSections.includes("filters") && (
         <div className="rounded-[18px] border border-line bg-surface p-6 shadow-card space-y-6">
           <div className="flex items-center justify-between border-b border-line pb-4">
             <div>
@@ -1005,7 +1008,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 4: COMMUNITY RULES (FR & KR)                                          */}
       {/* ========================================================================= */}
-      {activeTab === "rules" && (
+      {activeTab === "rules" && !unavailableSections.includes("rules") && (
         <div className="rounded-[18px] border border-line bg-surface p-6 shadow-card space-y-6">
           <div className="flex items-center justify-between border-b border-line pb-4">
             <div>
@@ -1057,7 +1060,7 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 5: AUDIT LOGS                                                         */}
       {/* ========================================================================= */}
-      {activeTab === "audit" && (
+      {activeTab === "audit" && !unavailableSections.includes("audit") && (
         <div className="rounded-[18px] border border-line bg-surface p-6 shadow-card space-y-4">
           <div className="flex items-center justify-between border-b border-line pb-3">
             <h2 className="text-sm font-heading font-bold text-ink flex items-center gap-2">

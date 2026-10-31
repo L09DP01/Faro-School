@@ -1,4 +1,5 @@
 "use client";
+import {MessageSources} from "@/components/messaging/MessageSources";
 import {scrollMessagePane} from "@/lib/messaging/scroll";
 
 import { useState, useEffect, useRef, useTransition, useMemo } from "react";
@@ -532,7 +533,7 @@ export function StudentStaffChatView({
                     return (
                       <div key={msg.id} className="flex justify-center my-3">
                         <div className="max-w-md px-4 py-1.5 rounded-full bg-slate-100 border border-line/60 text-xs text-muted-faro text-center shadow-2xs leading-relaxed font-medium">
-                          {msg.body}
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
                         </div>
                       </div>
                     );
@@ -549,12 +550,12 @@ export function StudentStaffChatView({
                           {/* Label Pill */}
                           <div className="inline-flex items-center gap-1.5 mb-1 px-2.5 py-0.5 rounded-full bg-orange text-white text-[10px] font-bold shadow-2xs uppercase tracking-wider">
                             <Sparkles className="w-3 h-3 text-white" />
-                            <span>{msg.senderName || `Assistant IA`}</span>
+                            <span>{msg.meta?.assistantMode==='support'?(isHt?'Asistan sipò Faro School':'Assistant support Faro School'):(isHt?'Asistan pedagojik':'Assistant pédagogique')}</span>
                           </div>
 
                           {/* Bubble */}
                           <div className="p-4 rounded-2xl rounded-tl-sm bg-orange-tint/70 border border-orange/30 text-ink shadow-xs text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                            {msg.body}
+                            {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
 
                             <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-muted-faro">
                               <span>
@@ -602,7 +603,7 @@ export function StudentStaffChatView({
                               : "bg-white border border-line/40 rounded-tl-sm text-ink"
                           }`}
                         >
-                          {msg.body}
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
 
                           <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-muted-faro">
                             <span>

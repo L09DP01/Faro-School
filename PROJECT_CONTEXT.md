@@ -4,6 +4,23 @@
 
 ## 2. Stack
 
+Assistant modes (2026-10-31): support uses platform procedures and escalates to the
+shared admin technical inbox. Pedagogical assistance uses the private course author
+summary, runs while the author is absent, and hands off uncertainty to that author.
+Authors maintain summaries under /admin/assistant-ia (course publication opens this
+tab); an admin author uses the same workflow. Private course_ai_context is never
+readable by students/anon. Web research receives only the redacted current question
+and public course title, never private summary/history/student identity. Provider
+answers may use the private summary and the last messages of this conversation,
+with explicit owner consent granted on 2026-10-31. Sources are shown in chat.
+An unresolved conversation has one human escalation/email; the assistant can still
+clarify while waiting, and the human sees the full conversation on return.
+Migration 20261031060204_course_ai_context_and_moderation_repair.sql was confirmed
+applied by the owner. Moderation isolates failed sections and tolerates absent
+optional settings instead of crashing or displaying invented healthy data.
+See docs/ASSISTANT_SUPPORT_COURSES.md for verification and operational checks.
+
+
 Administration real data (2026-10-31): dashboards use persisted queries only; empty
 results never become sample payments, courses or random progress. Admin technical
 tickets are shared across administrators; course threads belong to their actual

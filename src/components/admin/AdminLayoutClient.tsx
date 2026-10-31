@@ -126,7 +126,7 @@ export function AdminLayoutClient({
         {
           href: "/admin/assistant-ia",
           exact: false,
-          label: isHt ? "Asistan IA" : "Assistant IA",
+          label: isHt ? "IA ak rezime kou" : "IA et résumés des cours",
           icon: <Sparkles className="w-5 h-5 shrink-0 text-amber-300" />,
         },
       ]
@@ -165,6 +165,7 @@ export function AdminLayoutClient({
         },
       ];
 
+  if (!isInstructor) contentNavItems.push({href:"/admin/assistant-ia",exact:false,label:isHt?"Rezime kou ak IA":"Résumés des cours et IA",icon:<BookOpen className="w-5 h-5 shrink-0"/>});
   if (!isInstructor) contentNavItems.push({href:"/admin/certificats",exact:false,label:isHt?"Sètifika":"Certificats",icon:<GraduationCap className="w-5 h-5 shrink-0"/>});
 
 

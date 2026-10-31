@@ -1,3 +1,4 @@
+import {isDemoMode} from '@/lib/config';
 import { createClient } from "@/lib/supabase/server";
 
 export interface ModerationFlagRecord {
@@ -148,7 +149,9 @@ export async function getModerationFlags(status: "open" | "all" = "all"): Promis
       query = query.eq("status", "open");
     }
 
-    const { data } = await query;
+    const { data,error } = await query;
+    if(error)throw Error("flags_unavailable");
+    if(data?.length===0)return [];
     if (data && data.length > 0) {
       return data.map((d: any) => ({
         id: d.id,
@@ -165,7 +168,7 @@ export async function getModerationFlags(status: "open" | "all" = "all"): Promis
         reviewedBy: d.reviewed_by,
       }));
     }
-  } catch {}
+  } catch {if(!isDemoMode())throw Error("flags_unavailable");}
 
   const store = getMockModerationFlagsStore();
   if (status === "open") {
@@ -177,24 +180,7 @@ export async function getModerationFlags(status: "open" | "all" = "all"): Promis
 /**
  * Updates a moderation flag status.
  */
-export async function updateModerationFlagStatus(
-  flagId: string,
-  status: "reviewed" | "dismissed",
-  adminId: string
-): Promise<boolean> {
-  try {
-    const supabase = await createClient();
-    await supabase
-      .from("moderation_flags")
-      .update({ status, reviewed_by: adminId })
-      .eq("id", flagId);
-  } catch {}
-
-  const store = getMockModerationFlagsStore();
-  const f = store.find((flag) => flag.id === flagId);
-  if (f) {
-    f.status = status;
-    f.reviewedBy = adminId;
-  }
-  return true;
+export async function updateModerationFlagStatus(flagId:string,status:'reviewed'|'dismissed',adminId:string):Promise<boolean>{
+ try{const db=await createClient();const {data,error}=await db.from('moderation_flags').update({status,reviewed_by:adminId}).eq('id',flagId).select('id').single();if(error||!data)throw Error('flags_unavailable');return true;}catch{if(!isDemoMode())throw Error('flags_unavailable');}
+ const flag=getMockModerationFlagsStore().find(f=>f.id===flagId);if(!flag)return false;flag.status=status;flag.reviewedBy=adminId;return true;
 }

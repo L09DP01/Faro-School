@@ -8,7 +8,7 @@ import { callAiAssistant } from "@/lib/messaging/ai-assistant";
 import type { InstructorAiSettings, InstructorAiVersion } from "@/lib/messaging/types";
 
 const DEFAULT_SETTINGS = (name: string): InstructorAiSettings => ({
-  enabled: false,
+  enabled: true,
   name: `Assistant de ${name}`,
   tone: "friendly",
   languages: ["fr", "ht"],

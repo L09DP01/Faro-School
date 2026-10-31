@@ -5,6 +5,10 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Moderation missing settings and database failure states",cmd:"npx tsx tests/moderation-resilience.test.ts"},
+  {name:"Assistant support/course modes and private web research",cmd:"npx tsx tests/assistant-modes.test.ts"},
+  {name:"Assistant messaging orchestration",cmd:"npx tsx tests/assistant-messaging-flow.test.ts"},
+  {name:"Course summaries and deduplicated handoff PostgreSQL RLS",cmd:"npx tsx tests/course-ai-context.test.ts"},
   {name:"AI provider requests and actual token estimates",cmd:"npx tsx tests/admin-ai-provider.test.ts"},
   {name:"Admin real data and persisted writes",cmd:"npx tsx tests/admin-real-data.test.ts"},
   {name:"Admin messaging PostgreSQL notifications and read receipts",cmd:"npx tsx tests/admin-real-messaging.test.ts"},

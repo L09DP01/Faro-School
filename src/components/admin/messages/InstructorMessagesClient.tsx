@@ -1,4 +1,5 @@
 "use client";
+import {MessageSources} from "@/components/messaging/MessageSources";
 
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import {
@@ -583,7 +584,7 @@ export function InstructorMessagesClient({
                     return (
                       <div key={msg.id} className="flex justify-center my-2">
                         <span className="px-3 py-1 rounded-full bg-line/60 text-muted-faro text-[11px] font-medium text-center max-w-md">
-                          {msg.body}
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
                         </span>
                       </div>
                     );
@@ -606,7 +607,7 @@ export function InstructorMessagesClient({
                         {isAiSender ? (
                           <span className="font-heading font-bold text-blue flex items-center gap-1 bg-blue-tint px-2 py-0.5 rounded-md border border-blue/20">
                             <Sparkles className="w-3 h-3 text-blue" />
-                            {msg.senderName || "Assistant IA"}
+                            {msg.meta?.assistantMode==='support'?(isHt?'Asistan sipò Faro School':'Assistant support Faro School'):(isHt?'Asistan pedagojik':'Assistant pédagogique')}
                             {msg.meta?.confidence && (
                               <span className="text-[10px] text-muted-faro font-normal ml-1">
                                 (Confiance: {Math.round(msg.meta.confidence * 100)}%)
@@ -636,7 +637,7 @@ export function InstructorMessagesClient({
                               : "bg-surface border border-line text-ink rounded-bl-sm"
                         }`}
                       >
-                        {msg.body}
+                        {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
 
                         {isAiSender && (
                           <div className="mt-2 pt-2 border-t border-blue/15 flex items-center justify-between text-[10px] text-muted-faro">

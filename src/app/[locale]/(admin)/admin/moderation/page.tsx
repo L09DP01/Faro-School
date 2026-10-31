@@ -24,18 +24,15 @@ export default async function AdminModerationPage({ params }: AdminModerationPag
   const { locale } = await params;
   await requireAdmin(locale);
 
-  const [reports, sanctions, wordFilters, rules, flags] = await Promise.all([
-    getModerationReports("all"),
-    getMutedAndBannedUsers(),
-    getWordFilterSettings(),
-    getCommunityRulesSettings(),
-    getModerationFlags("all"),
-  ]);
-
-  const auditLogs = await getModerationAuditLogs();
+  const results=await Promise.allSettled([getModerationReports('all'),getMutedAndBannedUsers(),getWordFilterSettings(),getCommunityRulesSettings(),getModerationFlags('all'),getModerationAuditLogs()]);
+  const sections=['reports','sanctions','filters','rules','flags','audit'];
+  const unavailable=results.flatMap((r,i)=>r.status==='rejected'?[sections[i]]:[]);
+  const read=<T,>(index:number,fallback:T):T=>results[index].status==='fulfilled'?(results[index] as PromiseFulfilledResult<T>).value:fallback;
+  const reports=read(0,[]),sanctions=read(1,{mutedUsers:[],bannedUsers:[]}),wordFilters=read(2,{fr:[],ht:[]}),rules=read(3,{fr:'',ht:''}),flags=read(4,[]),auditLogs=read(5,[]);
 
   return (
     <AdminModerationClient
+      unavailableSections={unavailable}
       initialReports={reports}
       initialMuted={sanctions.mutedUsers}
       initialBanned={sanctions.bannedUsers}

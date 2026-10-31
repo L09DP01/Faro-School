@@ -14,7 +14,7 @@ import {
   getMockMessagesStore,
   getMockEscalationsStore,
 } from "@/lib/messaging/data";
-import type { Conversation, PrivateMessage, EscalationRecord } from "@/lib/messaging/types";
+import type { Conversation, PrivateMessage } from "@/lib/messaging/types";
 import { STUDENT_DM_ENABLED } from "@/config/messaging";
 import { checkStoredProfanity } from "@/lib/community/stored-word-filter";
 import { checkMessageModeration } from "@/lib/moderation";
@@ -537,28 +537,7 @@ export async function sendPrivateMessageAction(
     if (!isStudent && isStaff) {
       conv.status = "staff_replied";
 
-      // If there is an active escalation, resolve it
-      try {
-        const supabase = await createClient();
-        await supabase
-          .from("escalations")
-          .update({ resolved_at: nowIso })
-          .eq("conversation_id", conversationId)
-          .is("resolved_at", null);
-
-        // Notify student
-        await supabase.from("notifications").insert({
-          user_id: conv.studentId,
-          type: "staff_reply",
-          payload: {
-            conversationId,
-            messageSnippet: trimmedBody.slice(0, 100),
-            senderName: conv.staffName,
-            courseTitle: conv.courseTitle,
-          },
-        });
-      } catch {}
-
+      await createAdminClient().from('escalations').update({resolved_at:nowIso}).eq('conversation_id',conversationId).is('resolved_at',null);
       const escalations = getMockEscalationsStore();
       escalations.forEach((esc) => {
         if (esc.conversationId === conversationId && !esc.resolvedAt) {
@@ -573,162 +552,40 @@ export async function sendPrivateMessageAction(
       return { success: true, data: studentMessage };
     }
 
-    // =========================================================================
-    // FLOW 2: STUDENT MESSAGE ARRIVED
-    // =========================================================================
-    const staffOnline = await isStaffOnline(conv.staffId);
-
-    // 1. If staff is online -> Deliver live, notify staff, AI stays silent!
-    if (staffOnline) {
-      conv.status = "open";
-
-      try {
-        const supabase = await createClient();
-        await supabase.from("notifications").insert({
-          user_id: conv.staffId,
-          type: "student_message",
-          payload: {
-            conversationId,
-            studentName: conv.studentName,
-            subject: conv.subject,
-            messageSnippet: trimmedBody.slice(0, 100),
-          },
-        });
-      } catch {}
-
-      try {
-        revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");
-      } catch {}
-      return { success: true, data: studentMessage };
-    }
-
-    // 2. Staff is offline -> Call AI Assistant
-    const trusted=createAdminClient();
-    const {data:staffProfile}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();
-    if(staffProfile){conv.staffName=staffProfile.full_name||staffProfile.display_name||'Faro School';conv.staffRole=staffProfile.role;}
-    const {data:instructorVersion,error:versionError}=await trusted.from('instructor_ai_versions').select('settings').eq('instructor_id',conv.staffId).order('version_number',{ascending:false}).limit(1).maybeSingle();
-    const aiResult = versionError ? {can_answer:false,answer:'',confidence:0,escalate_reason:'assistant_settings_unavailable',model:'',inputTokens:0,outputTokens:0} : await callAiAssistant({
-      conversationId,
-      studentId: conv.studentId,
-      studentName: conv.studentName,
-      staffName: conv.staffName,
-      courseTitle: conv.courseTitle,
-      courseContextSummary:conv.courseId?undefined:'Support technique Faro School uniquement : installation de l’application, navigation, lecture vidéo. Toute question de cours doit être adressée à son auteur. Aucune intervention sur un compte ou un paiement sans humain.',
-      instructorSettings:instructorVersion?.settings||(conv.courseId?{enabled:false}:undefined),
-      recentMessages: existingMsgs.map((m) => ({ senderType: m.senderType, body: m.body })),
-      currentQuestion: trimmedBody,
-      locale: user.locale || "fr",
-    });
-
-    // If AI can answer confidently -> Post AI answer!
-    if (aiResult.can_answer && aiResult.answer.trim() && !(await checkStoredProfanity(aiResult.answer)).blocked) {
-      conv.status = "ai_handling";
-      const aiMessage: PrivateMessage = {
-        id: crypto.randomUUID(),
-        conversationId,
-        senderType: "ai",
-        senderName: `Assistant IA de ${conv.staffName}`,
-        body: aiResult.answer,
-        meta: {
-          confidence: aiResult.confidence,
-          model: aiResult.model,
-          inputTokens: aiResult.inputTokens,
-          outputTokens: aiResult.outputTokens,
-        },
-        createdAt: new Date().toISOString(),
-      };
-
-      try {
-        const supabase = createAdminClient();
-        const {error:aiWriteError}=await supabase.from("messages").insert({
-          id: aiMessage.id,
-          conversation_id: conversationId,
-          sender_type: "ai",
-          sender_id: null,
-          body: aiMessage.body,
-          meta: aiMessage.meta,
-          created_at: aiMessage.createdAt,
-        });
-        if(aiWriteError)throw new Error("assistant_message_unavailable");
-        await supabase
-          .from("conversations")
-          .update({ status: "ai_handling", last_message_at: aiMessage.createdAt })
-          .eq("id", conversationId);
-      } catch {}
-
-      existingMsgs.push(aiMessage);
-      conv.lastMessageAt = aiMessage.createdAt;
-      conv.lastMessagePreview = aiMessage.body;
-
-      try {
-        revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");
-      } catch {}
-      return { success: true, data: studentMessage };
-    }
-
-    // 3. AI cannot answer confidently / Out of scope / Asked for human -> ESCALATION PATH!
-    conv.status = "waiting_staff";
-    const deadlineAt = new Date(Date.now() + 2 * 60 * 1000).toISOString(); // now + 2 minutes
-
-    // Post system message informing the student
-    const systemNoticeText =
-      user.locale === "ht"
-        ? `Mesaj ou a transmèt bay ${conv.staffName}. Demann notifikasyon an ap trete.`
-        : `Votre question a été transmise à ${conv.staffName}. La demande de notification est en cours de traitement.`;
-
-    const systemMsg: PrivateMessage = {
-      id: crypto.randomUUID(),
-      conversationId,
-      senderType: "system",
-      senderName: "Faro School",
-      body: systemNoticeText,
-      createdAt: new Date().toISOString(),
-    };
-
-    existingMsgs.push(systemMsg);
-
-    // Record escalation
-    const escalation: EscalationRecord = {
-      id: crypto.randomUUID(),
-      conversationId,
-      triggerMessageId: messageId,
-      reason: aiResult.escalate_reason || "Formateur hors ligne & question hors périmètre IA",
-      emailStatus: "pending",
-      deadlineAt,
-      resolvedAt: null,
-      followupSentAt: null,
-      createdAt: nowIso,
-    };
-
-    const escalationsStore = getMockEscalationsStore();
-    escalationsStore.push(escalation);
-
+    // The message is already committed. Assistant failures never ask the client to resend it.
     try {
-      const supabase = createAdminClient();
-      await supabase.from("messages").insert({
-        id: systemMsg.id,
-        conversation_id: conversationId,
-        sender_type: "system",
-        sender_id: null,
-        body: systemMsg.body,
-        created_at: systemMsg.createdAt,
-      });
-
-      await supabase
-        .from("conversations")
-        .update({ status: "waiting_staff", last_message_at: systemMsg.createdAt })
-        .eq("id", conversationId);
-
-    } catch {}
-
-    // The database confirms participation, the persisted message and the course instructor.
-    const {data:emailId,error:emailQueueError}=await createAdminClient().rpc('queue_instructor_escalation',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_escalation:escalation.id,p_reason:escalation.reason,p_fallback:process.env.INSTRUCTOR_ESCALATION_EMAIL?.trim()??null});
-    if(emailQueueError)console.error('[email] escalation_queue_unavailable');
-    if(emailId){const [emailResult]=await processOutbox(emailId);if(emailResult?.status==='accepted')escalation.emailStatus='sent';}
-
-    try {
-      revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");
-    } catch {}
+      const trusted=createAdminClient();
+      const {data:pending,error:pendingError}=await trusted.from('escalations').select('id').eq('conversation_id',conversationId).is('resolved_at',null).limit(1).maybeSingle();
+      if(pendingError)throw Error('handoff_state_unavailable');
+      if(pending)await trusted.from('conversations').update({status:'waiting_staff'}).eq('id',conversationId);
+      const staffOnline=await isStaffOnline(conv.staffId);
+      if(staffOnline&&(conv.courseId||pending||conv.status==='staff_replied'))return{success:true,data:studentMessage};
+      const {data:staff}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();
+      if(staff){conv.staffName=staff.full_name||staff.display_name||'Faro School';conv.staffRole=staff.role;}
+      const mode=conv.courseId?'course':'support';
+      let summary='',settings:Partial<import('@/lib/messaging/types').InstructorAiSettings>|undefined,web=false,contextError=false;
+      if(conv.courseId){
+        const {data:context,error}=await trusted.from('course_ai_context').select('summary_fr,summary_ht,enabled,web_search_enabled').eq('course_id',conv.courseId).maybeSingle();
+        const version=await trusted.from('instructor_ai_versions').select('settings').eq('instructor_id',conv.staffId).order('version_number',{ascending:false}).limit(1).maybeSingle();
+        contextError=!!error||!!version.error;settings=version.data?.settings||undefined;
+        if(context){summary=(user.locale==='ht'?context.summary_ht||context.summary_fr:context.summary_fr||context.summary_ht).slice(0,12000);settings={...settings,enabled:context.enabled&&settings?.enabled!==false};web=context.web_search_enabled===true;}
+      }
+      const result=contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system').slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
+      const answer=result.answer.trim().slice(0,4000),safeAnswer=answer&&!(await checkStoredProfanity(answer)).blocked;
+      const meta={assistantMode:mode,confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
+      if(result.can_answer&&safeAnswer){
+        const {error}=await trusted.from('messages').insert({id:crypto.randomUUID(),conversation_id:conversationId,sender_type:'ai',sender_id:null,body:answer,meta});
+        if(error)throw Error('assistant_message_unavailable');
+        await trusted.from('conversations').update({status:pending?'waiting_staff':'ai_handling'}).eq('id',conversationId);
+      }else{
+        const destination=conv.courseId?conv.staffName:(user.locale==='ht'?'ekip sipò Faro School':'l’équipe support Faro School');
+        const notice=user.locale==='ht'?'Mwen transmèt demann ou a bay '+destination+'. Ou ka ajoute detay isit la pandan w ap tann repons lan.':'Je transmets votre demande à '+destination+'. Vous pouvez ajouter des précisions ici en attendant sa réponse.';
+        const {data:handoff,error}=await trusted.rpc('queue_assistant_handoff',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_reason:result.escalate_reason||'human_help_required',p_notice:(safeAnswer?answer+'\n\n':'')+notice,p_meta:meta});
+        if(error)throw Error('handoff_unavailable');
+        if(handoff?.email_id)await processOutbox(handoff.email_id);
+      }
+    }catch{console.error('[messaging] assistant_or_handoff_unavailable');}
+    try{revalidatePath('/[locale]/dashboard/messages','page');revalidatePath('/[locale]/admin/messages','page');}catch{}
     return { success: true, data: studentMessage };
   } catch (err: any) {
     return { success: false, error: err.message || "Erreur lors de l'envoi du message." };

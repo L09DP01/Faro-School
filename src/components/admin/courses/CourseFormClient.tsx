@@ -392,7 +392,7 @@ export function CourseFormClient({
     if (res.success) {
       setAlertSuccess(publish ? t("successPublish") : t("successSave"));
       setTimeout(() => {
-        router.push("/admin/formations");
+        router.push(publish&&res.courseId?`/admin/assistant-ia?tab=courses&courseId=${res.courseId}`:"/admin/formations");
       }, 1200);
     } else {
       setAlertError(res.error || "Erreur lors de l'enregistrement.");

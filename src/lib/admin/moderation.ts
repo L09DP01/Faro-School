@@ -160,12 +160,12 @@ function initializeMockModeration() {
 }
 
 export async function logAdminAction(adminId:string,action:string,targetId:string,reason?:string,details?:any){
- const db=await createClient();const {error}=await db.from('admin_audit_logs').insert({admin_id:adminId,action,target_id:targetId,reason:reason||null,details:details||{}});
+ const db=await createClient();const {error}=await db.from('admin_audit_logs').insert({admin_id:adminId,action,note:reason||null,metadata:{target_id:targetId,reason:reason||null,details:details||{}}});
  if(error)throw new Error('audit_unavailable');
 }
 export async function getModerationAuditLogs(){
- const db=await createClient();const {data,error}=await db.from('admin_audit_logs').select('id,admin_id,action,target_id,reason,details,created_at').order('created_at',{ascending:false}).limit(100);
- if(error)throw new Error('audit_unavailable');return(data||[]).map(row=>({id:row.id,adminId:row.admin_id,action:row.action,targetId:row.target_id,reason:row.reason,details:row.details,createdAt:row.created_at}));
+ const db=await createClient();const {data,error}=await db.from('admin_audit_logs').select('id,admin_id,action,note,metadata,created_at').order('created_at',{ascending:false}).limit(100);
+ if(error)throw new Error('audit_unavailable');return(data||[]).map(row=>({id:row.id,adminId:row.admin_id,action:row.action,targetId:row.metadata?.target_id,reason:row.note||row.metadata?.reason,createdAt:row.created_at}));
 }
 
 /**
@@ -209,7 +209,8 @@ export async function getModerationReports(status: string = "pending"): Promise<
       query = query.eq("status", status);
     }
 
-    const { data } = await query;
+    const { data,error } = await query;
+    if(error)throw Error("reports_unavailable");
     if (data && data.length > 0) {
       return data.map((row: any) => ({
         id: row.id,
@@ -237,7 +238,7 @@ export async function getModerationReports(status: string = "pending"): Promise<
       return [];
     }
   } catch (err) {
-    console.error("[Moderation] Error fetching moderation reports:", err);
+    if(!isDemoMode())throw Error("reports_unavailable");
   }
 
   if (isDemoMode()) {
@@ -263,11 +264,13 @@ export async function getMutedAndBannedUsers(): Promise<{
     const supabase = await createClient();
 
     // 1. Fetch profiles with muted_until or banned_at
-    const { data } = await supabase
+    const { data,error } = await supabase
       .from("profiles")
       .select("id, full_name, display_name, email, role, muted_until, banned_at")
       .or("muted_until.is.not.null,banned_at.is.not.null");
 
+    if(error)throw Error("sanctions_unavailable");
+    if(data?.length===0)return{mutedUsers:[],bannedUsers:[]};
     if (data && data.length > 0) {
       const mutedUsers: MutedUserItem[] = [];
       const bannedUsers: BannedUserItem[] = [];
@@ -299,7 +302,7 @@ export async function getMutedAndBannedUsers(): Promise<{
       return { mutedUsers, bannedUsers };
     }
   } catch (err) {
-    console.error("[Moderation] Error fetching muted/banned users:", err);
+    if(!isDemoMode())throw Error("sanctions_unavailable");
   }
 
   if (isDemoMode()) {
@@ -344,11 +347,11 @@ export async function getWordFilterSettings(): Promise<WordFilterSettings> {
       .from("platform_settings")
       .select("value")
       .eq("key", "word_filter")
-      .single();
+      .maybeSingle();
 
     if(error)throw Error("settings_unavailable");
     if (data?.value) {
-      return data.value as WordFilterSettings;
+      if(!Array.isArray(data.value.fr)||!Array.isArray(data.value.ht)||![...data.value.fr,...data.value.ht].every(v=>typeof v==='string'))throw Error('settings_invalid');return data.value as WordFilterSettings;
     }
   } catch {throw Error("settings_unavailable");}
   return {fr:[],ht:[]};
@@ -394,11 +397,11 @@ export async function getCommunityRulesSettings(): Promise<CommunityRulesSetting
       .from("platform_settings")
       .select("value")
       .eq("key", "community_rules")
-      .single();
+      .maybeSingle();
 
     if(error)throw Error("settings_unavailable");
     if (data?.value) {
-      return data.value as CommunityRulesSettings;
+      if(typeof data.value.fr!=='string'||typeof data.value.ht!=='string')throw Error('settings_invalid');return data.value as CommunityRulesSettings;
     }
   } catch {throw Error("settings_unavailable");}
   return {fr:"",ht:""};
