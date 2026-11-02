@@ -115,7 +115,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
         .select("id")
         .eq("user_id", currentUser.id)
         .eq("course_id", course.id)
-        .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
+        .is("revoked_at",null)
         .maybeSingle();
 
       if (enrollment) {

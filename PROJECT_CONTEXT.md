@@ -10,7 +10,11 @@ manage their own public profile/photo in Mon compte. Both MonCash and NatCash us
 Kobara checkout; manual transfer instructions are removed. Official signed,
 timestamped callbacks bind the persisted provider payment to its exact HTG order
 before the existing atomic enrollment transaction. Owner confirmed the public facts
-migration. See docs/COURSE_COMMERCE_REAL_DATA.md for validation and live checks.
+migration. Production diagnosis found no enrollments.expires_at column; active
+means revoked_at IS NULL. Additive repair 20261102180000 replaces affected SQL
+functions, and app queries use the actual schema. Regression tests reproduce the
+old undefined-column failure before applying the repair. See
+docs/COURSE_COMMERCE_REAL_DATA.md for validation and live checks.
 
 Course publication repair (2026-11-02): covers upload as multipart to Bunny Storage,
 not inline base64 in Server Actions. Public /api/covers serves only random artwork

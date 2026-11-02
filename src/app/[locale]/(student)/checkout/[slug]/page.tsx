@@ -70,7 +70,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     .select("id")
     .eq("user_id", user.id)
     .eq("course_id", course.id)
-    .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
+    .is("revoked_at",null)
     .maybeSingle();
 
   if (enrollment) {

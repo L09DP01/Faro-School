@@ -55,5 +55,27 @@ Le build OpenNext de production a réussi. Aucun paiement réel n'a été décle
 5. Tester le parcours sur iPhone et Android réels : les tests navigateur ne
    confirment pas le comportement des applications de paiement installées.
 
-Limite préexistante : le rachat après révocation/expiration d'une inscription
+Limite préexistante : le rachat après révocation d'une inscription
 nécessite une politique explicite de réactivation ; ce cas n'est pas validé ici.
+
+
+## Réparation du schéma réel (2 novembre 2026)
+
+Le contrôle de production a révélé `42703: column e.expires_at does not exist`.
+Cette colonne n'existe ni dans le schéma initial des inscriptions, ni dans une
+migration ultérieure. Le premier test local l'avait ajoutée à tort dans sa fixture.
+La migration corrective `20261102180000_repair_course_facts_enrollment_schema.sql`
+remplace les fonctions avec le seul critère existant : `revoked_at IS NULL`.
+Elle conserve les contrôles de compte vérifié, les restrictions auteur, les droits
+et les données. Les quatre requêtes applicatives concernées sont corrigées aussi.
+Aucune colonne d'expiration ni règle commerciale nouvelle n'est introduite.
+
+Le test PostgreSQL utilise maintenant une table sans `expires_at`, reproduit
+l'erreur de l'ancienne fonction, applique la réparation deux fois et vérifie les
+compteurs, les avis et les refus d'accès. Le propriétaire doit appliquer ce nouveau
+fichier ; l'application de la première migration ne suffit pas.
+
+Le propriétaire a ensuite fourni une capture du résultat SQL réussi. Contrôle
+en lecture seule du site : Marketing affiche désormais « Aucun avis »,
+« 0 apprenant », un module et une leçon, ainsi que l'auteur « Lorvenson CEO ».
+Les mentions « Données indisponibles » ont disparu de ces sections.

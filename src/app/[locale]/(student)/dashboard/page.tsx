@@ -83,7 +83,7 @@ export default async function StudentDashboardPage({
       )
     `)
     .eq("user_id", user.id)
-    .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
+    .is("revoked_at",null)
     .order("created_at", { ascending: false });
 
   // 2. Fetch user's lesson progress
