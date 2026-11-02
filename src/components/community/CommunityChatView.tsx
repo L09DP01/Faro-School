@@ -172,7 +172,7 @@ export function CommunityChatView({
   const [moderationAction, setModerationAction] = useState<"mute_1h" | "mute_24h" | "mute_7d" | "ban">("mute_1h");
 
   // Mobile navigation state: "list" or "chat"
-  const [mobileView, setMobileView] = useState<"list" | "chat">("chat");
+  const [mobileView, setMobileView] = useState<"list" | "chat">("list");
 
   // Search filter inside chat
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -186,7 +186,7 @@ export function CommunityChatView({
   const [isPending, startTransition] = useTransition();
 
   // New arrivals are read only in a visible community screen.
-  useEffect(()=>{const mark=()=>{if(document.visibilityState==='visible')void markCommunityReadAction().then(r=>{if(r.success){setUnreadCount(0);window.dispatchEvent(new Event('faro:unread-changed'));}}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[messages.length]);
+  useEffect(()=>{const mark=()=>{if(document.visibilityState==='visible'&&(mobileView==='chat'||window.matchMedia('(min-width: 1280px)').matches))void markCommunityReadAction().then(r=>{if(r.success){setUnreadCount(0);window.dispatchEvent(new Event('faro:unread-changed'));}}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[messages.length,mobileView]);
 
   // Supabase Realtime Subscription & Presence
   useEffect(() => {
@@ -681,8 +681,8 @@ export function CommunityChatView({
       {/* 1. LEFT PANEL: DISCUSSIONS LIST & GROUP SUMMARY                           */}
       {/* ========================================================================= */}
       <aside
-        className={`w-full md:w-[380px] lg:w-[410px] shrink-0 rounded-[20px] bg-white border border-line/60 shadow-sm flex flex-col justify-between overflow-hidden p-5 transition-transform duration-200 ${
-          mobileView === "list" ? "flex" : "hidden md:flex"
+        className={`w-full xl:w-[410px] shrink-0 rounded-[20px] bg-white border border-line/60 shadow-sm flex flex-col justify-between overflow-hidden p-5 transition-transform duration-200 ${
+          mobileView === "list" ? "flex" : "hidden xl:flex"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -786,8 +786,8 @@ export function CommunityChatView({
       {/* 2. RIGHT PANEL: CHAT WINDOW                                              */}
       {/* ========================================================================= */}
       <section
-        className={`flex-1 flex flex-col h-full rounded-[20px] bg-white border border-line/60 shadow-sm relative overflow-hidden ${
-          mobileView === "chat" ? "flex" : "hidden md:flex"
+        className={`flex-1 min-w-0 flex flex-col h-full rounded-[20px] bg-white border border-line/60 shadow-sm relative overflow-hidden ${
+          mobileView === "chat" ? "flex" : "hidden xl:flex"
         }`}
       >
         {/* Offline / Connection Banner (Slim 32px strip, shown ONLY after lost for > 3s) */}
@@ -811,8 +811,8 @@ export function CommunityChatView({
             {/* Mobile Back Button (44px min tap target) */}
             <button
               onClick={() => setMobileView("list")}
-              className="md:hidden min-h-[44px] min-w-[36px] p-1.5 rounded-lg text-muted-faro hover:text-ink hover:bg-bg shrink-0 flex items-center justify-center"
-              aria-label="Retour à la liste"
+              className="xl:hidden min-h-[44px] min-w-[36px] p-1.5 rounded-lg text-muted-faro hover:text-ink hover:bg-bg shrink-0 flex items-center justify-center"
+              aria-label={locale === "ht" ? "Retounen nan lis la" : "Retour à la liste"}
             >
               <ArrowLeft className="w-5 h-5" />
             </button>

@@ -313,8 +313,8 @@ export function StudentStaffChatView({
         {/* 1. LEFT PANEL: CONVERSATIONS INBOX                                       */}
         {/* ========================================================================= */}
         <aside
-          className={`w-full md:w-[380px] lg:w-[410px] shrink-0 rounded-[20px] bg-white border border-line/60 shadow-sm flex flex-col justify-between overflow-hidden p-5 transition-transform duration-200 ${
-            activeConversation ? "hidden md:flex" : "flex"
+          className={`w-full xl:w-[410px] shrink-0 rounded-[20px] bg-white border border-line/60 shadow-sm flex flex-col justify-between overflow-hidden p-5 transition-transform duration-200 ${
+            activeConversation ? "hidden xl:flex" : "flex"
           }`}
         >
           <div className="flex flex-col h-full min-h-0">
@@ -430,8 +430,8 @@ export function StudentStaffChatView({
         {/* 2. RIGHT PANEL: CHAT WINDOW                                              */}
         {/* ========================================================================= */}
         <section
-          className={`flex-1 flex flex-col h-full rounded-[20px] bg-white border border-line/60 shadow-sm relative overflow-hidden ${
-            activeConversation ? "flex" : "hidden md:flex"
+          className={`flex-1 min-w-0 flex flex-col h-full rounded-[20px] bg-white border border-line/60 shadow-sm relative overflow-hidden ${
+            activeConversation ? "flex" : "hidden xl:flex"
           }`}
         >
           {activeConversation ? (
@@ -443,7 +443,7 @@ export function StudentStaffChatView({
                   <Link
                     aria-label={t("back")}
                     href={(isStaffView ? "/admin/messages" : "/dashboard/messages") as any}
-                    className="md:hidden p-1.5 rounded-lg text-muted-faro hover:text-ink hover:bg-bg"
+                    className="xl:hidden p-1.5 rounded-lg text-muted-faro hover:text-ink hover:bg-bg"
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Link>
