@@ -189,12 +189,12 @@ export function StudentStaffChatView({
 
   // Filtered conversations list
   const filteredConversations = useMemo(() => {
-    const eligible=conversations.filter(c=>inboxFilter==='all'||(inboxFilter==='tickets'?!c.courseId:inboxFilter==='courses'?!!c.courseId:false));
+    const eligible=conversations.filter(c=>inboxFilter==='all'||(inboxFilter==='tickets'?!!c.ticketNumber:inboxFilter==='courses'?!!c.courseId:false));
     if (!searchQuery.trim()) return eligible;
     const q = searchQuery.toLowerCase();
     return eligible.filter(
       (c) =>
-        c.subject.toLowerCase().includes(q) ||
+        c.subject.toLowerCase().includes(q) || c.ticketNumber?.toLowerCase().includes(q) ||
         (c.courseTitle && c.courseTitle.toLowerCase().includes(q)) ||
         c.staffName.toLowerCase().includes(q) ||
         c.studentName.toLowerCase().includes(q)
@@ -204,9 +204,9 @@ export function StudentStaffChatView({
   const isSendingRef = useRef(false);
 
   // Handle message submission
-  const handleSendMessage = () => {
+  const handleSendMessage = (requestTicket = false) => {
     if (isSendingRef.current || isPending || composerPaused) return;
-    const trimmed = inputText.trim();
+    const trimmed = requestTicket ? (isHt?'Mwen mande yon administratè : kreye yon tikè sipò.':'Je demande un administrateur : créer un ticket support.') : inputText.trim();
     if (!trimmed || !activeConversation) return;
 
     isSendingRef.current = true;
@@ -243,7 +243,8 @@ export function StudentStaffChatView({
           activeConversation.id,
           trimmed,
           clientMessageId,
-          locale
+          locale,
+          requestTicket
         );
         if (!res.success) {
           setErrorMessage(res.error || "Impossible d'envoyer le message.");
@@ -436,7 +437,7 @@ export function StudentStaffChatView({
           {activeConversation ? (
             <>
               {/* Header */}
-              <header className="shrink-0 min-h-[72px] py-3 px-4 md:px-6 border-b border-line/60 bg-white flex items-center justify-between gap-3 shadow-subtle z-10">
+              <header className="shrink-0 min-h-[72px] py-3 px-4 md:px-6 border-b border-line/60 bg-white flex items-center justify-between gap-3 z-10">
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Mobile Back Button */}
                   <Link
@@ -536,7 +537,7 @@ export function StudentStaffChatView({
                   if (isSystem) {
                     return (
                       <div key={msg.id} className="flex justify-center my-3">
-                        <div className="max-w-md px-4 py-1.5 rounded-full bg-slate-100 border border-line/60 text-xs text-muted-faro text-center shadow-2xs leading-relaxed font-medium">
+                        <div className="max-w-md px-4 py-1.5 rounded-full bg-slate-100 border border-line/60 text-xs text-muted-faro text-center break-words shadow-2xs leading-relaxed font-medium">
                           {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
                         </div>
                       </div>
@@ -650,6 +651,8 @@ export function StudentStaffChatView({
                 </div>
               )}
 
+              {!isStaffView&&!activeConversation.courseId&&!composerPaused&&<div className="shrink-0 px-4 py-2 border-t border-line bg-surface"><button type="button" disabled={isPending} onClick={()=>handleSendMessage(true)} className="min-h-11 text-sm font-semibold text-blue disabled:opacity-50">{isHt?'Kreye yon tikè sipò — mande yon administratè':'Créer un ticket support — demander un administrateur'}</button></div>}
+              {activeConversation.ticketNumber&&<p className="shrink-0 px-4 py-2 text-xs break-all text-navy-deep bg-blue-tint">{isHt?'Tikè sipò':'Ticket support'} : {activeConversation.ticketNumber}</p>}
               {composerPaused&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Tikè a ap tann repons ekip sipò a. Saisie a an poz.':'Votre ticket attend la réponse du support. La saisie est suspendue.'}</p>}
               {activeConversation.courseId&&activeConversation.status==='waiting_staff'&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Yon kesyon ap tann pwofesè a. Ou ka poze asistan pedagojik la yon lòt kesyon.':'Une question attend le professeur. Vous pouvez poser une autre question à son assistant pédagogique.'}</p>}
               {/* Composer */}
@@ -677,7 +680,7 @@ export function StudentStaffChatView({
                   </div>
 
                   <button
-                    onClick={handleSendMessage}
+                    onClick={()=>handleSendMessage()}
                     disabled={composerPaused || isPending || !inputText.trim()}
                     className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-orange hover:bg-orange-hover text-white shadow-orange flex items-center justify-center shrink-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                     title={isHt ? "Voye mesaj la" : "Envoyer le message"}

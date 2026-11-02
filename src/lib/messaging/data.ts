@@ -126,6 +126,12 @@ export async function getStudentConversations(studentId: string): Promise<Conver
       .order("last_message_at", { ascending: false });
 
     if (!error && data && data.length > 0) {
+      const supportIds=data.filter((row:any)=>!row.course_id).map((row:any)=>row.id);
+      const ticketNumbers=new Map<string,string>();
+      if(supportIds.length){
+        const {data:notices}=await supabase.from('messages').select('conversation_id,meta').in('conversation_id',supportIds).eq('sender_type','system').contains('meta',{ticketCreated:true});
+        for(const notice of notices||[]){const number=notice.meta?.ticketNumber;if(typeof number==='string'&&/^FARO-SUP-[A-F0-9]{32}$/.test(number))ticketNumbers.set(notice.conversation_id,number);}
+      }
       const convs: Conversation[] = await Promise.all(
         data.map(async (row: any) => {
           const staffOnline = await isStaffOnline(row.staff_id);
@@ -137,6 +143,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
 
           return {
             id: row.id,
+            ticketNumber:ticketNumbers.get(row.id)||null,
             studentId: row.student_id,
             studentName: "Moi",
             staffId: row.staff_id,

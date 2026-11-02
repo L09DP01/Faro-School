@@ -30,6 +30,7 @@ export interface PrivateMessage {
 }
 
 export interface Conversation {
+  ticketNumber?: string | null;
   id: string;
   studentId: string;
   studentName: string;

@@ -121,3 +121,6 @@ html[data-app-keyboard="true"] :is([data-inbox-page-heading],.admin-inbox-tabs) 
  [data-staff-inbox] :is([data-inbox-page-heading],[data-quick-replies]),
  .pwa-admin-content:has([data-staff-inbox]) .admin-inbox-tabs { display:none; }
 }
+
+/* Opaque app header: no translucent layer or shadow over the chat header. */
+html[data-app-shell="true"] .pwa-app-header { position:relative; isolation:isolate; background:var(--bg); box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }

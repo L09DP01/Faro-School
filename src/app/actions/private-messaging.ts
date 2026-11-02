@@ -309,7 +309,8 @@ export async function sendPrivateMessageAction(
   conversationId: string,
   body: string,
   clientMessageId?: string | null,
-  locale: string = "fr"
+  locale: string = "fr",
+  requestSupportTicket: boolean = false
 ): Promise<MessagingActionResult<PrivateMessage>> {
   try {
     const user = await getCurrentUser();
@@ -570,10 +571,14 @@ export async function sendPrivateMessageAction(
         contextError=!!error||!!version.error;settings=version.data?.settings||undefined;
         if(context){summary=(user.locale==='ht'?context.summary_ht||context.summary_fr:context.summary_fr||context.summary_ht).slice(0,12000);settings={...settings,enabled:context.enabled&&settings?.enabled!==false};web=context.web_search_enabled===true;}
       }
-      const result=contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system'&&m.id!==messageId).slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
+      const result=!conv.courseId&&requestSupportTicket===true?{can_answer:false,answer:'',confidence:0,escalate_reason:'explicit_support_ticket',model:'faro-handoff',inputTokens:0,outputTokens:0}:contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system'&&m.id!==messageId).slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
       const answer=result.answer.trim().slice(0,4000),safeAnswer=answer&&!(await checkStoredProfanity(answer)).blocked;
-      const meta={assistantMode:mode,assistantOwner:conv.courseId?conv.staffId:'faro-support',confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
-      if(result.can_answer&&safeAnswer){
+      const meta={supportTicketRequested:!conv.courseId&&requestSupportTicket===true,assistantMode:mode,assistantOwner:conv.courseId?conv.staffId:'faro-support',confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
+      if(!conv.courseId&&requestSupportTicket!==true&&!result.can_answer){
+        const clarification=user.locale==='ht'?'Eksplike pwoblèm ou an pou m ka ede w. Si ou vle yon administratè pran dosye a, peze « Kreye yon tikè sipò ». Pa gen tikè ki kreye pou kounye a.':'Décrivez votre problème pour que je puisse vous aider. Pour demander l’intervention d’un administrateur, appuyez sur « Créer un ticket support ». Aucun ticket n’est créé pour le moment.';
+        const {error}=await trusted.rpc('commit_assistant_reply',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_body:clarification,p_meta:meta});
+        if(error)throw Error('assistant_message_unavailable');
+      }else if(result.can_answer&&safeAnswer){
         const {error}=await trusted.rpc('commit_assistant_reply',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_body:answer,p_meta:meta});
         if(error)throw Error('assistant_message_unavailable');
       }else{
