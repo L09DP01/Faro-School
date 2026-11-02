@@ -7,8 +7,8 @@ with sync_playwright() as p:
  for locale in ['fr','ht']:
   for width in [320,390,768,1440]:
    page=browser.new_page(viewport={'width':width,'height':900})
-   page.route('**/api/video/playback?*',lambda r:r.fulfill(json={'playbackUrl':'https://iframe.mediadelivery.net/embed/123/fixture?token=local&expires=9999999999'}))
-   page.route('https://iframe.mediadelivery.net/**',lambda r:r.fulfill(content_type='text/html;charset=utf-8',body='<body style="background:#101828;color:white">Lecteur Bunny simulé pour test local</body>'))
+   page.route('**/api/video/playback?*',lambda r:r.fulfill(json={'playbackUrl':'https://player.mediadelivery.net/embed/123/fixture?token=local&expires=9999999999'}))
+   page.route('https://player.mediadelivery.net/**',lambda r:r.fulfill(content_type='text/html;charset=utf-8',body='<body style="background:#101828;color:white">Lecteur Bunny simulé pour test local</body>'))
    page.route('**/api/video/notes?*',lambda r:r.fulfill(json={'content':'Une note privée existante'}))
    page.route('**/api/video/quiz?*',lambda r:r.fulfill(json={'questions':[{'question':'Quelle est la bonne réponse ?','choices':['A','B','C','D']}]}))
    page.route('**/api/video/quiz',lambda r:r.fulfill(json={'score':100,'correct':[True]}))

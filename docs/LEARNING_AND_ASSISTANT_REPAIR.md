@@ -75,7 +75,7 @@ Captures des composants réels avec données locales dans
 éditeur facultatif, ticket en pause et popup. L'API Bunny, l'IA et les écritures sont
 simulées dans ce banc de test ; ces images ne prouvent pas une lecture Bunny réelle.
 
-Validation locale finale : 48 suites passent, typecheck, lint sans avertissement,
+Validation locale finale : 50 suites passent, typecheck, lint sans avertissement,
 contrôle des secrets propre et 32 captures FR/KR à quatre largeurs. Le build
 OpenNext est vérifié avant le push. Aucun paiement réel ni message à un autre
 compte n'a été envoyé par l'agent pendant ces tests.
@@ -92,3 +92,21 @@ compte n'a été envoyé par l'agent pendant ces tests.
    les tests hors ligne ne confirment ni ses quotas réels ni ses réponses pédagogiques.
 5. Les appels de paiement réels restent à vérifier par le propriétaire. Le correctif
    serveur du registre a été déployé séparément en priorité (`0d4e420`).
+
+
+Contrôle après premier déploiement : l'ancien hôte iframe.mediadelivery.net reste
+vide dans Chrome. Les deux endpoints acceptent la signature en lecture HTTP (200),
+mais le nouvel hôte player.mediadelivery.net identifie correctement la leçon dans
+son titre. Le fournisseur utilise désormais cet endpoint actuel, recommandé par
+Bunny pour remplacer le lecteur legacy. Les clés et réglages de bibliothèque ne
+sont pas modifiés. Le test navigateur simulé cible aussi le nouvel hôte.
+
+
+Le service worker traitait aussi des navigations et ressources de domaines tiers.
+Il exclut désormais toute origine autre que celle de Faro, et mediadelivery.net
+explicitement. Le cache passe à v5 pour éliminer les anciennes entrées. Les routes
+/app, l'authentification et les exclusions de paiement restent inchangées.
+
+La vidéo associée au cours Marketing a été contrôlée en lecture seule via l'API
+Bunny : encodage terminé (statut 4), 640×360, durée 2 secondes, variantes 240p/360p.
+Aucun réglage ni fichier distant n'a été modifié par ce contrôle.

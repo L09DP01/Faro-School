@@ -48,7 +48,7 @@ export class BunnyStreamProvider implements VideoProvider {
 
     // Return signed HLS playback playlist URL or signed Bunny iframe embed URL
     // Bunny embed player with token authentication:
-    return `https://iframe.mediadelivery.net/embed/${this.libraryId}/${access.videoId}?token=${token}&expires=${expires}`;
+    return `https://player.mediadelivery.net/embed/${this.libraryId}/${access.videoId}?token=${token}&expires=${expires}`;
   }
 
   /**

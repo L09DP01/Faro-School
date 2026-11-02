@@ -5,6 +5,8 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"PWA external media never intercepted",cmd:"npx tsx tests/pwa-external-media.test.ts"},
+  {name:"Bunny current player signature and access guards",cmd:"npx tsx tests/bunny-playback.test.ts"},
   {name:"Lesson resources: actual bytes and protected download",cmd:"npx tsx tests/lesson-resource.test.ts"},
   {name:"Optional lesson quizzes: private keys and server grades",cmd:"npx tsx tests/lesson-quiz.test.ts"},
   {name:"Assistant lifecycle, terminal tickets and timed chat sanctions",cmd:"npx tsx tests/assistant-lifecycle.test.ts"},

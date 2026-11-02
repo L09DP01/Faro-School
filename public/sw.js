@@ -3,7 +3,7 @@
  * Compatible with Next.js 15 and Cloudflare Workers (OpenNext)
  */
 
-const CACHE_NAME = "faro-pwa-v4-viewport";
+const CACHE_NAME = "faro-pwa-v5-player";
 
 const PRECACHE_ASSETS = [
   "/offline",
@@ -35,6 +35,7 @@ const NEVER_CACHE_PATTERNS = [
   /b-cdn\.net/,
   /bunnycdn\.com/,
   /mediacage/,
+  /mediadelivery\.net/,
   /video/,
   /stream/,
   /moncash/,
@@ -82,6 +83,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   const url = new URL(request.url);
+
+  // External iframes/media belong to their provider, never to the app navigation cache.
+  if (url.origin !== self.location.origin) return;
 
   // Exclude non-http(s) protocols
   if (!url.protocol.startsWith("http")) {
