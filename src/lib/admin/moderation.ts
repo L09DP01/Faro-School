@@ -267,7 +267,7 @@ export async function getMutedAndBannedUsers(): Promise<{
     const { data,error } = await supabase
       .from("profiles")
       .select("id, full_name, display_name, email, role, muted_until, banned_at")
-      .or("muted_until.is.not.null,banned_at.is.not.null");
+      .or("muted_until.not.is.null,banned_at.not.is.null");
 
     if(error)throw Error("sanctions_unavailable");
     if(data?.length===0)return{mutedUsers:[],bannedUsers:[]};

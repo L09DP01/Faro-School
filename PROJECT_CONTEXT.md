@@ -4,6 +4,12 @@
 
 ## 2. Stack
 
+Moderation/supervision repair (2026-11-02): sanctioned-account OR filters use
+PostgREST `not.is.null`; failed sections are named and never counted as zero.
+AI supervision formats tiny USD estimates without false zero, translates statuses
+and roles, and identifies the seven-day reporting window. See
+docs/MODERATION_SUPERVISION_FIX.md and tests/admin_moderation_visual.py.
+
 Admin data/video repair: profiles-to-enrollments uses an explicit user_id relation;
 read failures must be distinguished from real empty data. Course administration reads
 real tables with instructor ownership; payment RPC failures fall back to the real

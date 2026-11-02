@@ -33,6 +33,7 @@ import type {
   GlobalAiSettings,
   BreakGlassAccessLog,
 } from "@/lib/admin/messaging-supervision";
+import { formatAiDailyCost, conversationStatusLabel } from "@/lib/admin/supervision-presentation";
 import type { Conversation, PrivateMessage } from "@/lib/messaging/types";
 import type { StudentItem } from "@/lib/admin/student-types";
 
@@ -316,7 +317,7 @@ export function AdminMessagingSupervisionClient({
                   : "Toutes les réponses de l'IA sont immédiatement neutralisées. Les questions des étudiants sont acheminées directement aux formateurs par e-mail sans réponse automatique."
                 : isHt
                   ? "Asistan IA a reponn elèv yo lè fòmatè yo pa an liy, epi li fè eskalasyon lè sa nesesè."
-                  : "L'assistant IA répond automatiquement aux étudiants quand les formateurs sont hors-ligne et escalade en cas de besoin."}
+                  : "L'assistant IA répond automatiquement aux étudiants selon les réglages du support ou du cours et transmet à un intervenant si nécessaire."}
             </p>
           </div>
         </div>
@@ -340,15 +341,17 @@ export function AdminMessagingSupervisionClient({
         </button>
       </div>
 
+      <p className="text-xs text-muted-faro">{isHt ? "Estatistik sou 7 dènye jou yo. Kou a se mwayèn estime pa jou, an USD." : "Statistiques sur les 7 derniers jours. Le coût est une moyenne estimée par jour, en USD."}</p>
+
       {/* ========================================================================= */}
       {/* 2. SUPERVISION STATISTICS KPIS                                            */}
       {/* ========================================================================= */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3.5 sm:gap-4">
         {/* Median Response Time */}
-        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
+        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1 min-w-0">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-orange" />
-            <span>{isHt ? "Tan repons fòmatè" : "Délai médian formateur"}</span>
+            <span>{isHt ? "Tan repons entèvenan" : "Délai médian intervenant"}</span>
           </p>
           <p className="text-2xl font-heading font-bold text-ink">
             {stats.medianResponseTimeMinutes} <span className="text-xs font-normal text-muted-faro">min</span>
@@ -356,47 +359,47 @@ export function AdminMessagingSupervisionClient({
         </div>
 
         {/* AI Resolution Rate */}
-        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
+        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1 min-w-0">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-blue" />
             <span>{isHt ? "Diskisyon IA ap okipe" : "Discussions prises en charge par l’IA"}</span>
           </p>
-          <p className="text-2xl font-heading font-bold text-ink">{stats.aiResolutionRatePercent}%</p>
+          <p className="text-2xl font-heading font-bold text-ink">{new Intl.NumberFormat(isHt ? "ht-HT" : "fr-FR", { maximumFractionDigits: 1 }).format(stats.aiResolutionRatePercent)}%</p>
         </div>
 
         {/* Escalations Count */}
-        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
+        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1 min-w-0">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-orange" />
-            <span>{isHt ? "Eskalasyon voye" : "Escalades formateurs"}</span>
+            <span>{isHt ? "Transfè bay yon moun" : "Transferts humains"}</span>
           </p>
           <p className="text-2xl font-heading font-bold text-ink">{stats.escalationsCount}</p>
         </div>
 
         {/* Reviens plus tard cases */}
-        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
+        <div className="rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1 min-w-0">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-muted-faro" />
-            <span>&quot;Reviens plus tard&quot;</span>
+            <span>{isHt ? "Retounen pita" : "Reviens plus tard"}</span>
           </p>
           <p className="text-2xl font-heading font-bold text-ink">{stats.reviensPlusTardCount}</p>
         </div>
 
         {/* Estimated AI Cost per day */}
-        <div className="col-span-2 lg:col-span-1 rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1">
+        <div className="col-span-2 xl:col-span-1 rounded-[18px] border border-line bg-surface p-4 sm:p-5 shadow-card space-y-1 min-w-0">
           <p className="text-[11px] font-heading font-semibold text-muted-faro uppercase tracking-wider flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-ok" />
             <span>{isHt ? "Kou IA / jou" : "Coût IA estimé / jour"}</span>
           </p>
-          <p className="text-2xl font-heading font-bold text-ink">${stats.aiCostPerDayUsd}</p>
+          <p className="text-2xl font-heading font-bold text-ink">{formatAiDailyCost(stats.aiCostPerDayUsd, locale)}</p>
         </div>
       </div>
 
       {/* Tabs Switcher */}
-      <div className="flex border-b border-line gap-2 pb-1 text-xs font-heading font-semibold">
+      <div className="flex overflow-x-auto scrollbar-hide border-b border-line gap-2 pb-1 text-xs font-heading font-semibold">
         <button
           onClick={() => setActiveTab("conversations")}
-          className={`px-4 py-2 rounded-xl border-b-2 transition-all ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-xl border-b-2 transition-all ${
             activeTab === "conversations"
               ? "border-orange text-orange bg-orange/5"
               : "border-transparent text-muted-faro hover:text-ink hover:bg-surface"
@@ -407,7 +410,7 @@ export function AdminMessagingSupervisionClient({
 
         <button
           onClick={() => setActiveTab("ai_settings")}
-          className={`px-4 py-2 rounded-xl border-b-2 transition-all ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-xl border-b-2 transition-all ${
             activeTab === "ai_settings"
               ? "border-orange text-orange bg-orange/5"
               : "border-transparent text-muted-faro hover:text-ink hover:bg-surface"
@@ -418,7 +421,7 @@ export function AdminMessagingSupervisionClient({
 
         <button
           onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2 rounded-xl border-b-2 transition-all ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-xl border-b-2 transition-all ${
             activeTab === "audit"
               ? "border-orange text-orange bg-orange/5"
               : "border-transparent text-muted-faro hover:text-ink hover:bg-surface"
@@ -445,19 +448,19 @@ export function AdminMessagingSupervisionClient({
             <table className="w-full text-left text-xs">
               <thead className="border-b border-line bg-bg/50 text-muted-faro font-heading font-semibold">
                 <tr>
-                  <th scope="col" className="px-5 py-3.5">Élève</th>
-                  <th scope="col" className="px-5 py-3.5">Intervenant</th>
-                  <th scope="col" className="px-5 py-3.5">Formation / Sujet</th>
-                  <th scope="col" className="px-5 py-3.5">Statut</th>
-                  <th scope="col" className="px-5 py-3.5">Dernier échange</th>
-                  <th scope="col" className="px-5 py-3.5 text-right">Supervision</th>
+                  <th scope="col" className="px-5 py-3.5">{isHt ? "Elèv" : "Élève"}</th>
+                  <th scope="col" className="px-5 py-3.5">{isHt ? "Entèvenan" : "Intervenant"}</th>
+                  <th scope="col" className="px-5 py-3.5">{isHt ? "Fòmasyon / Sijè" : "Formation / Sujet"}</th>
+                  <th scope="col" className="px-5 py-3.5">{isHt ? "Estati" : "Statut"}</th>
+                  <th scope="col" className="px-5 py-3.5">{isHt ? "Dènye echanj" : "Dernier échange"}</th>
+                  <th scope="col" className="px-5 py-3.5 text-right">{isHt ? "Sipèvizyon" : "Supervision"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line/60">
                 {conversations.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-5 py-8 text-center text-muted-faro">
-                      Aucune conversation enregistrée.
+                      {isHt ? "Pa gen konvèsasyon anrejistre." : "Aucune conversation enregistrée."}
                     </td>
                   </tr>
                 ) : (
@@ -472,7 +475,7 @@ export function AdminMessagingSupervisionClient({
                         <td className="px-5 py-3.5 text-muted-faro">
                           <span className="font-medium text-ink">{conv.staffName}</span>
                           <span className="text-[10px] ml-1.5 uppercase font-bold text-muted-faro bg-bg px-1.5 py-0.5 rounded border border-line">
-                            {conv.staffRole}
+                            {conv.staffRole === "admin" ? (isHt ? "Administrasyon" : "Administration") : (isHt ? "Pwofesè" : "Professeur")}
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
@@ -491,7 +494,7 @@ export function AdminMessagingSupervisionClient({
                                 : "bg-line text-muted-faro border-line"
                             }`}
                           >
-                            {conv.status}
+                            {conversationStatusLabel(conv.status, locale)}
                           </span>
                         </td>
                         <td className="px-5 py-3.5 text-muted-faro text-[11px]">
@@ -526,7 +529,7 @@ export function AdminMessagingSupervisionClient({
                             {isOwnStaff ? (
                               <>
                                 <Eye className="w-3.5 h-3.5" />
-                                <span>Consulter</span>
+                                <span>{isHt ? "Konsilte" : "Consulter"}</span>
                               </>
                             ) : (
                               <>

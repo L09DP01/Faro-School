@@ -5,6 +5,7 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Supervision bounded costs and translated states",cmd:"npx tsx tests/admin-supervision-presentation.test.ts"},
   {name:"Legacy financial reporting respects caller RLS",cmd:"npx tsx tests/admin-reporting-rls.test.ts"},
   {name:"Admin accounts/payments and real TUS video bytes",cmd:"npx tsx tests/admin-data-video.test.ts"},
   {name:"Curriculum PostgreSQL write grants and author protection",cmd:"npx tsx tests/curriculum-write-access.test.ts"},

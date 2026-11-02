@@ -245,6 +245,8 @@ export function AdminModerationClient({
           isHt ? "Silans lan leve sou itilizatè sa a !" : "Mise en sourdine levée !",
           "success"
         );
+      } else {
+        showNotification(isHt ? "Aksyon an pa reyisi. Eseye ankò." : "L’action a échoué. Veuillez réessayer.", "error");
       }
     });
   };
@@ -258,6 +260,8 @@ export function AdminModerationClient({
           isHt ? "Kont itilizatè a retabli !" : "Compte utilisateur réactivé !",
           "success"
         );
+      } else {
+        showNotification(isHt ? "Aksyon an pa reyisi. Eseye ankò." : "L’action a échoué. Veuillez réessayer.", "error");
       }
     });
   };
@@ -291,6 +295,8 @@ export function AdminModerationClient({
           isHt ? "Filtè mo yo anrejistre !" : "Filtre de mots enregistré avec succès !",
           "success"
         );
+      } else {
+        showNotification(isHt ? "Aksyon an pa reyisi. Eseye ankò." : "L’action a échoué. Veuillez réessayer.", "error");
       }
     });
   };
@@ -303,13 +309,23 @@ export function AdminModerationClient({
           isHt ? "Règ kominote yo anrejistre !" : "Règles de la communauté enregistrées !",
           "success"
         );
+      } else {
+        showNotification(isHt ? "Aksyon an pa reyisi. Eseye ankò." : "L’action a échoué. Veuillez réessayer.", "error");
       }
     });
   };
 
+  const sectionLabels: Record<string, string> = {
+    reports: isHt ? "Siyalman" : "Signalements",
+    sanctions: isHt ? "Sanksyon" : "Sanctions",
+    filters: isHt ? "Filtè mo" : "Filtre de mots",
+    rules: isHt ? "Règ kominote" : "Règles communautaires",
+    flags: isHt ? "Flak otomatik" : "Flags automatiques",
+    audit: isHt ? "Jounal odit" : "Journal d’audit",
+  };
   return (
     <div className="space-y-6">
-      {unavailableSections.length>0?<p role="alert" className="rounded-xl border border-line bg-surface p-4 text-sm text-red">{isHt?'Kèk seksyon pa disponib. Done ki pa chaje yo pa ka modifye.':'Certaines sections sont indisponibles. Les données non chargées ne peuvent pas être modifiées.'} <a href={`/${locale}/admin/moderation`} className="underline">{isHt?'Eseye ankò':'Réessayer'}</a></p>:null}
+      {unavailableSections.length>0?<p role="alert" className="rounded-xl border border-line bg-surface p-4 text-sm text-red">{isHt?'Kèk seksyon pa disponib. Done ki pa chaje yo pa ka modifye.':'Certaines sections sont indisponibles. Les données non chargées ne peuvent pas être modifiées.'} {unavailableSections.map(section => sectionLabels[section] || section).join(', ')}.  <a href={`/${locale}/admin/moderation`} className="underline">{isHt?'Eseye ankò':'Réessayer'}</a></p>:null}
       {/* Toast Notification */}
       {notification && (
         <div
@@ -399,7 +415,7 @@ export function AdminModerationClient({
           <VolumeX className="w-4 h-4" />
           <span>{isHt ? "Manm Sanksyone" : "Membres sanctionnés"}</span>
           <span className="px-2 py-0.5 rounded-full bg-line text-muted-faro text-[10px]">
-            {mutedUsers.length + bannedUsers.length}
+            {unavailableSections.includes("sanctions") ? "—" : new Set([...mutedUsers, ...bannedUsers].map(user => user.id)).size}
           </span>
         </button>
 
@@ -443,6 +459,12 @@ export function AdminModerationClient({
       {/* ========================================================================= */}
       {/* TAB 1: REPORTS QUEUE                                                      */}
       {/* ========================================================================= */}
+      {unavailableSections.includes(activeTab) && (
+        <div role="status" className="rounded-xl border border-line bg-surface p-6 text-muted-faro">
+          {sectionLabels[activeTab]} : {isHt ? "Done yo pa disponib. Eseye chaje paj la ankò." : "Données indisponibles. Réessayez de charger la page."}
+        </div>
+      )}
+
       {activeTab === "reports" && !unavailableSections.includes("reports") && (
         <div className="space-y-4">
           {/* Sub-filter pills */}

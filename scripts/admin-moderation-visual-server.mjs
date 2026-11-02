@@ -1,0 +1,11 @@
+// Local component fixture only. No production credentials, database calls or messages.
+import {createServer} from 'node:http';
+import {build} from 'esbuild';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
+import {execFileSync} from 'node:child_process';
+await mkdir('tmp',{recursive:true});
+await writeFile('tmp/admin-moderation.css',(await readFile('src/styles/globals.css','utf8')).replace(/^@import[^\r\n]*[\r\n]*/gm,''));
+execFileSync(process.execPath,['node_modules/tailwindcss/lib/cli.js','-i','tmp/admin-moderation.css','-o','tmp/admin-moderation-built.css'],{windowsHide:true});
+const actions=['deleteReportedMessageAction','muteReportAuthorAction','banReportAuthorAction','dismissReportAction','unmuteUserAction','unbanUserAction','updateWordFilterAction','updateCommunityRulesAction','reviewModerationFlagAction','muteUserFromFlagAction','toggleAiKillSwitchAction','saveGlobalAiConfigAction','unlockPrivateConversationBreakGlassAction','adminStartStudentConversationAction'];
+await build({entryPoints:['tests/admin-moderation-visual.tsx'],outfile:'tmp/admin-moderation.js',bundle:true,platform:'browser',jsx:'automatic',define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'offline-actions',setup(b){b.onResolve({filter:/^@\/app\/actions\//},a=>({path:a.path,namespace:'fixture'}));b.onLoad({filter:/.*/,namespace:'fixture'},()=>({loader:'js',contents:actions.map(name=>`export const ${name}=async()=>({success:false,error:'fixture failure'});`).join('\n')}));}}]});
+createServer(async(req,res)=>{const url=new URL(req.url,'http://127.0.0.1');if(url.pathname==='/'){res.setHeader('Content-Type','text/html;charset=utf-8');return res.end('<html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css"><body><div id="root"></div><script src="/app.js"></script></body></html>');}const file={'/tokens.css':'src/styles/tokens.css','/app.css':'tmp/admin-moderation-built.css','/app.js':'tmp/admin-moderation.js'}[url.pathname];if(!file)return res.writeHead(404).end();res.setHeader('Content-Type',url.pathname.endsWith('.js')?'application/javascript':'text/css');res.end(await readFile(file));}).listen(4195,'127.0.0.1');
