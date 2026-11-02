@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import {createAdminClient} from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getPaymentProvider, type PaymentMethod } from "@/lib/payments";
@@ -18,6 +19,8 @@ const createPaymentSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  let stage="request";
+  const fail=(code:string,status:number,dbCode?:string)=>{console.error("[checkout]",JSON.stringify({stage,code,dbCode}));return NextResponse.json({error:code},{status,headers:{"Cache-Control":"no-store"}});};
   try {
     if(request.headers.get("origin")&&request.headers.get("origin")!==new URL(request.url).origin)return NextResponse.json({error:"forbidden"},{status:403});
     const ip =
@@ -138,6 +141,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    stage="order";
+    const ledger=createAdminClient({timeoutMs:15000});
     // 5. Order Idempotency: Reuse pending order if one exists for this user and course
     const { data: existingOrder } = await supabase
       .from("orders")
@@ -154,13 +159,14 @@ export async function POST(request: NextRequest) {
 
     if (existingOrder) {
       // Update amount & coupon on existing pending order
-      await supabase
+      const {error:updateError}=await ledger
         .from("orders")
         .update({
           amount_htg: finalAmountHtg,
           coupon_id: couponId,
         })
-        .eq("id", existingOrder.id);
+        .eq("id", existingOrder.id).eq("user_id",user.id).eq("status","pending");
+      if(updateError)return fail("order_write_unavailable",503,updateError.code);
       order = {
         ...existingOrder,
         amount_htg: finalAmountHtg,
@@ -208,13 +214,15 @@ export async function POST(request: NextRequest) {
     const paymentMethod: PaymentMethod =
       provider === "natcash" ? "natcash" : "moncash";
 
+    stage="payment_record";
+    // Only trusted server code writes payment rows. Order ownership was checked with user RLS above.
     // Initialize payment entry in pending state
-    const {data:pendingPayment,error:pendingPaymentError}=await supabase.from('payments').select('id').eq('order_id',order.id).eq('provider',paymentMethod).eq('status','pending').order('created_at',{ascending:false}).limit(1).maybeSingle();
-    if(pendingPaymentError)return NextResponse.json({error:'payment_lookup_unavailable'},{status:503});
+    const {data:pendingPayment,error:pendingPaymentError}=await ledger.from('payments').select('id').eq('order_id',order.id).eq('provider',paymentMethod).eq('status','pending').order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(pendingPaymentError)return fail('payment_lookup_unavailable',503,pendingPaymentError.code);
     let paymentRecord=pendingPayment;
     let paymentError:unknown=null;
     if(!paymentRecord){
-    const { data: insertedPayment, error: insertPaymentError } = await supabase
+    const { data: insertedPayment, error: insertPaymentError } = await ledger
       .from("payments")
       .insert({
         order_id: order.id,
@@ -248,6 +256,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Call Kobara provider with chosen channel (MonCash or NatCash)
+    stage="gateway";
     const kobara = getPaymentProvider();
     const resultPayment = await kobara.createPayment(
       {
@@ -265,15 +274,16 @@ export async function POST(request: NextRequest) {
       paymentMethod
     );
 
+    stage="payment_binding";
     // Update payment record with provider payment ID
     if (resultPayment.kobaraPaymentId) {
-      const {error:bindingError}=await supabase
+      const {error:bindingError}=await ledger
         .from("payments")
         .update({
           provider_txn_id: resultPayment.kobaraPaymentId,
         })
         .eq("id", paymentRecord.id);
-      if(bindingError)return NextResponse.json({error:"payment_binding_unavailable"},{status:503});
+      if(bindingError)return fail("payment_binding_unavailable",503,bindingError.code);
     }
 
     return NextResponse.json({

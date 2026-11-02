@@ -79,3 +79,18 @@ Le propriétaire a ensuite fourni une capture du résultat SQL réussi. Contrôl
 en lecture seule du site : Marketing affiche désormais « Aucun avis »,
 « 0 apprenant », un module et une leçon, ainsi que l'auteur « Lorvenson CEO ».
 Les mentions « Données indisponibles » ont disparu de ces sections.
+
+
+## Initialisation du paiement : droits serveur (2 novembre 2026)
+
+La route utilisait le client RLS de l'élève pour créer puis lier `payments`.
+Le schéma accorde à l'élève uniquement SELECT sur ce registre. Le serveur utilise
+maintenant son client de confiance pour ces seules opérations, après authentification,
+prix serveur et contrôle de propriété de la commande par le client RLS. La mise à
+jour d'une commande réutilisée reste bornée à son propriétaire et au statut pending.
+Aucun nouveau droit navigateur ni migration n'est nécessaire. Le test HTTP refuse
+explicitement tout accès à payments par le client élève. Les diagnostics ne
+journalisent que l'étape, un code fixe et le code d'erreur SQL, sans données du client
+ni contenu de la réponse du prestataire. Le paiement réel reste à vérifier par le
+propriétaire après déploiement ; un éventuel refus de configuration Kobara est
+maintenant distingué du refus d'écriture.

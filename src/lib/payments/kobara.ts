@@ -30,6 +30,10 @@ function constantTimeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+export class PaymentGatewayError extends Error {
+ constructor(public readonly code:'gateway_auth'|'gateway_validation'|'gateway_rate_limited'|'gateway_unavailable'|'gateway_configuration'){super(code);this.name='PaymentGatewayError';}
+}
+
 export class KobaraProvider implements PaymentProvider {
   private apiUrl: string;
   private secretKey: string | undefined;
@@ -131,7 +135,7 @@ export class KobaraProvider implements PaymentProvider {
       }),
     });
 
-    if (!response.ok) throw new Error("payment_gateway_unavailable");
+    if (!response.ok) throw new PaymentGatewayError(response.status===401||response.status===403?'gateway_auth':response.status===400||response.status===422?'gateway_validation':response.status===429?'gateway_rate_limited':'gateway_unavailable');
 
     const json = (await response.json()) as {
       status?: string;
