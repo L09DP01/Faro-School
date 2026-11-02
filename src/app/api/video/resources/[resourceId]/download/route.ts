@@ -43,12 +43,15 @@ export async function GET(
     const courseId = (resource.lessons as any)?.modules?.course_id;
 
     // 2. Check enrollment or admin role
-    if (user.role !== "admin") {
+    const {data:course}=await supabase.from('courses').select('instructor_id').eq('id',courseId).single();
+    const ownCourse=user.role==='instructor'&&course?.instructor_id===user.id;
+    if (user.role !== "admin" && !ownCourse) {
       const { data: enrollment } = await supabase
         .from("enrollments")
         .select("id")
         .eq("user_id", user.id)
         .eq("course_id", courseId)
+        .is("revoked_at",null)
         .maybeSingle();
 
       if (!enrollment) {
@@ -67,7 +70,7 @@ export async function GET(
       courseId
     );
 
-    return NextResponse.redirect(signedUrl);
+    return NextResponse.redirect(signedUrl,{status:307,headers:{"Cache-Control":"no-store"}});
   } catch (err: any) {
     return NextResponse.json(
       { error: "Téléchargement impossible", message: err?.message },

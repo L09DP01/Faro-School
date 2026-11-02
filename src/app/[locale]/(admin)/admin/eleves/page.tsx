@@ -1,3 +1,4 @@
+import {AdminDataUnavailable} from "@/components/admin/AdminDataUnavailable";
 import { requireStaff } from "@/lib/auth";
 import { getAdminStudentsList, getAllAvailableCourses } from "@/lib/admin/students";
 import { AdminStudentsClient } from "@/components/admin/students/AdminStudentsClient";
@@ -17,6 +18,7 @@ export default async function AdminElevesPage({ params }: AdminElevesPageProps) 
   const user = await requireStaff(locale);
   const instructorId = user.role === "instructor" ? user.id : undefined;
 
+  try {
   const [students, courses] = await Promise.all([
     getAdminStudentsList(instructorId),
     getAllAvailableCourses(instructorId),
@@ -30,4 +32,5 @@ export default async function AdminElevesPage({ params }: AdminElevesPageProps) 
       locale={locale}
     />
   );
+  } catch {return <AdminDataUnavailable locale={locale}/>;}
 }

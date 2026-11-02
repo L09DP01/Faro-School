@@ -90,6 +90,7 @@ export async function getAdminPaymentsKPIs(): Promise<AdminPaymentsKPIs> {
     const supabase = await createClient();
     const { data, error } = await supabase.rpc("get_admin_payments_kpis");
 
+    if(error||!data){if(isDemoMode())return getDemoPaymentsData().kpis;const payments=await getAdminPaymentsList();return {totalValidated:payments.filter(p=>p.status==='validated').reduce((n,p)=>n+p.amountHtg,0),awaitingCount:payments.filter(p=>p.status==='awaiting_validation').length,moncashTotal:payments.filter(p=>p.status==='validated'&&p.provider==='moncash').reduce((n,p)=>n+p.amountHtg,0),natcashTotal:payments.filter(p=>p.status==='validated'&&p.provider==='natcash').reduce((n,p)=>n+p.amountHtg,0)};}
     if (!error && data) {
       return {
         totalValidated: Math.round(Number(data.total_validated || 0)),
@@ -99,7 +100,7 @@ export async function getAdminPaymentsKPIs(): Promise<AdminPaymentsKPIs> {
       };
     }
   } catch (err) {
-    console.error("[Payments] Failed to fetch payments KPIs from database:", err);
+    if(!isDemoMode())throw Error("payments_unavailable");
   }
 
   if (isDemoMode()) {
@@ -130,6 +131,7 @@ export async function getAdminPaymentsList(
       p_search: search,
     });
 
+    if(error||!Array.isArray(data))return await readPaymentLedger(supabase,status,search);
     if (!error && data && Array.isArray(data)) {
       return data.map((p: any) => ({
         id: p.id,
@@ -154,7 +156,7 @@ export async function getAdminPaymentsList(
       }));
     }
   } catch (err) {
-    console.error("[Payments] Failed to fetch payments list from database:", err);
+    if(!isDemoMode())throw Error("payments_unavailable");
   }
 
   if (isDemoMode()) {
@@ -180,4 +182,10 @@ export async function getAdminPaymentsList(
   }
 
   return [];
+}
+
+async function readPaymentLedger(db:Awaited<ReturnType<typeof createClient>>,status:string,search:string):Promise<AdminPaymentItem[]>{
+ const {data,error}=await db.from('payments').select('id,order_id,provider,provider_txn_id,payer_phone,status,validated_at,validated_by,rejection_reason,created_at,orders!inner(id,user_id,course_id,reference,amount_htg,profiles!user_id(id,full_name,email,phone),courses(id,title_fr,title_ht))').order('created_at',{ascending:false});
+ if(error||!data)throw Error('payments_unavailable');
+ return(data as any[]).map(p=>{const o=p.orders,student=o.profiles||{},course=o.courses||{};return{id:p.id,orderId:o.id,orderReference:o.reference,studentId:o.user_id,studentName:student.full_name||'Apprenant',studentEmail:student.email||'',studentPhone:student.phone||p.payer_phone||'',courseId:o.course_id,courseTitleFr:course.title_fr||'',courseTitleHt:course.title_ht||'',provider:p.provider,providerTxnId:p.provider_txn_id||'',payerPhone:p.payer_phone||'',amountHtg:Number(o.amount_htg),status:p.status,validatedAt:p.validated_at,validatedBy:p.validated_by,rejectionReason:p.rejection_reason,createdAt:p.created_at};}).filter(p=>(status==='all'||p.status===status||(status==='failed'&&(p.status as string)==='cancelled'))&&(!search||[p.studentName,p.studentEmail,p.studentPhone,p.providerTxnId,p.orderReference,p.courseTitleFr,p.courseTitleHt].some(value=>value.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))));
 }

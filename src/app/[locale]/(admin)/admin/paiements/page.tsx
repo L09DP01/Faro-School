@@ -1,3 +1,4 @@
+import {AdminDataUnavailable} from "@/components/admin/AdminDataUnavailable";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
@@ -27,6 +28,7 @@ export default async function AdminPaymentsPage({ params }: AdminPaymentsPagePro
   const { locale } = await params;
   await requireAdmin(locale);
 
+  try {
   const [kpis, payments] = await Promise.all([
     getAdminPaymentsKPIs(),
     getAdminPaymentsList(),
@@ -39,4 +41,5 @@ export default async function AdminPaymentsPage({ params }: AdminPaymentsPagePro
       locale={locale}
     />
   );
+  } catch {return <AdminDataUnavailable locale={locale}/>;}
 }

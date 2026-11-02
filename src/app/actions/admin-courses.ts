@@ -28,6 +28,7 @@ export async function saveCourseAction(
   rawFormData: AdminCourseFormData,
   publish: boolean = false
 ): Promise<{ success: boolean; courseId?: string; slug?: string; error?: string }> {
+  let savedCourseId=rawFormData.id;
   try {
     const user = await assertCourseManager();
 
@@ -50,6 +51,7 @@ export async function saveCourseAction(
         .eq("id", courseId)
         .single();
 
+      if (!existingCourse)return{success:false,error:"Formation introuvable ou inaccessible."};
       if (existingCourse) {
         existingInstructorId = existingCourse.instructor_id;
         if (!can(user, "course.manage", { instructor_id: existingInstructorId })) {
@@ -113,7 +115,7 @@ export async function saveCourseAction(
           level: data.level,
           category: data.category,
           cover_url: data.coverUrl || null,
-          status: data.status,
+          status: "draft",
           options: data.options,
           ...certificateFields,
           instructor_id: finalInstructorId,
@@ -141,7 +143,7 @@ export async function saveCourseAction(
           level: data.level,
           category: data.category,
           cover_url: data.coverUrl || null,
-          status: data.status,
+          status: "draft",
           options: data.options,
           ...certificateFields,
           instructor_id: finalInstructorId,
@@ -156,20 +158,22 @@ export async function saveCourseAction(
         return { success: false, error: insertErr?.message || "Impossible de créer la formation." };
       }
       courseId = newCourse.id;
+      savedCourseId=courseId;
     }
 
+    const checked=async <T extends {error:unknown}>(query:PromiseLike<T>):Promise<T>=>{const result=await query;if(result.error)throw Error('Impossible d’enregistrer le programme. La formation reste en brouillon ; réessayez.');return result;};
     // 2. Sync Modules and Lessons
     // Get existing modules to delete removed ones
-    const { data: existingModules } = await supabase
+    const { data: existingModules } = await checked(supabase
       .from("modules")
       .select("id, lessons(id, lesson_resources(id))")
-      .eq("course_id", courseId);
+      .eq("course_id", courseId));
 
     const incomingModuleIds = new Set(data.modules.filter((m) => m.id).map((m) => m.id));
     const modulesToDelete = (existingModules || []).filter((m) => !incomingModuleIds.has(m.id));
 
     if (modulesToDelete.length > 0) {
-      await supabase.from("modules").delete().in("id", modulesToDelete.map((m) => m.id));
+      await checked(supabase.from("modules").delete().in("id", modulesToDelete.map((m) => m.id)));
     }
 
     // Save each incoming module
@@ -178,16 +182,16 @@ export async function saveCourseAction(
       let modId = mod.id;
 
       if (modId) {
-        await supabase
+        await checked(supabase
           .from("modules")
           .update({
             title_fr: mod.titleFr,
             title_ht: mod.titleHt || "",
             position: mIdx + 1,
           })
-          .eq("id", modId);
+          .eq("id", modId).eq("course_id",courseId).select("id").single());
       } else {
-        const { data: newMod } = await supabase
+        const { data: newMod } = await checked(supabase
           .from("modules")
           .insert({
             course_id: courseId,
@@ -196,11 +200,11 @@ export async function saveCourseAction(
             position: mIdx + 1,
           })
           .select("id")
-          .single();
+          .single());
         modId = newMod?.id;
       }
 
-      if (!modId) continue;
+      if (!modId)throw Error("Module non enregistré.");
 
       // Lessons for this module
       const existingMod = (existingModules || []).find((em) => em.id === modId);
@@ -208,7 +212,7 @@ export async function saveCourseAction(
       const lessonsToDelete = (existingMod?.lessons || []).filter((el: any) => !incomingLessonIds.has(el.id));
 
       if (lessonsToDelete.length > 0) {
-        await supabase.from("lessons").delete().in("id", lessonsToDelete.map((el: any) => el.id));
+        await checked(supabase.from("lessons").delete().in("id", lessonsToDelete.map((el: any) => el.id)));
       }
 
       for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
@@ -216,7 +220,7 @@ export async function saveCourseAction(
         let lesId = les.id;
 
         if (lesId) {
-          await supabase
+          await checked(supabase
             .from("lessons")
             .update({
               title_fr: les.titleFr,
@@ -228,9 +232,9 @@ export async function saveCourseAction(
               duration_sec: les.durationSec || 0,
               is_free_preview: les.isFreePreview,
             })
-            .eq("id", lesId);
+            .eq("id", lesId).eq("module_id",modId).select("id").single());
         } else {
-          const { data: newLes } = await supabase
+          const { data: newLes } = await checked(supabase
             .from("lessons")
             .insert({
               module_id: modId,
@@ -244,34 +248,35 @@ export async function saveCourseAction(
               is_free_preview: les.isFreePreview,
             })
             .select("id")
-            .single();
+            .single());
           lesId = newLes?.id;
         }
 
-        if (!lesId) continue;
+        if (!lesId)throw Error("Leçon non enregistrée.");
 
         // Resources
         if (les.resources && les.resources.length > 0) {
           // Delete existing resources for this lesson and re-insert
-          await supabase.from("lesson_resources").delete().eq("lesson_id", lesId);
-          await supabase.from("lesson_resources").insert(
+          await checked(supabase.from("lesson_resources").delete().eq("lesson_id", lesId));
+          await checked(supabase.from("lesson_resources").insert(
             les.resources.map((r) => ({
               lesson_id: lesId,
               name: r.name,
               file_url: r.fileUrl,
             }))
-          );
+          ));
         }
       }
     }
 
+    await checked(supabase.from('courses').update({status:data.status}).eq('id',courseId).select('id').single());
     revalidatePath("/admin/formations");
     revalidatePath(`/formations/${data.slug}`);
     revalidatePath("/formations");
 
     return { success: true, courseId, slug: data.slug };
   } catch (err: any) {
-    return { success: false, error: err.message || "Une erreur inattendue est survenue." };
+    return { success: false, courseId:savedCourseId,error: err.message || "Une erreur inattendue est survenue." };
   }
 }
 

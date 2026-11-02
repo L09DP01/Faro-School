@@ -26,15 +26,9 @@ async function runStepS1DTests() {
     delete process.env.APP_MODE;
     (process.env as any).NODE_ENV = "test";
 
-    // Payments KPIs and ledger must return zeros / empty, never mock data
-    console.log("   - checking kpis...");
-    const kpis = await getAdminPaymentsKPIs();
-    assert.strictEqual(kpis.totalValidated, 0, "Production KPIs must be 0 when no DB records, not 38000");
-    assert.strictEqual(kpis.awaitingCount, 0, "Production awaiting count must be 0");
-
-    console.log("   - checking payments list...");
-    const payments = await getAdminPaymentsList();
-    assert.deepStrictEqual(payments, [], "Production payments must be empty array, not mock transactions");
+    // A failed database read is unavailable, never a measured zero or invented ledger.
+    await assert.rejects(()=>getAdminPaymentsKPIs(),/payments_unavailable/);
+    await assert.rejects(()=>getAdminPaymentsList(),/payments_unavailable/);
 
     // Messaging must return empty array, never mock conversations
     console.log("   - checking student conversations...");

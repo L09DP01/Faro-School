@@ -1,5 +1,6 @@
 "use client";
 
+import {uploadVideoFile,validateVideoFile} from "@/lib/video/direct-upload-client";
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -66,8 +67,12 @@ export function CourseFormClient({
   const router = useRouter();
   const t = useTranslations("admin.courses.form");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoFileInputRef=useRef<HTMLInputElement>(null);
+  const selectedVideoLesson=useRef<{mIdx:number;lIdx:number}|null>(null);
+  const isHt=_locale==='ht';
 
-  const isEditing = Boolean(initialCourse?.id);
+  const [persistedCourseId,setPersistedCourseId]=useState(initialCourse?.id);
+  const isEditing = Boolean(persistedCourseId);
   const isInstructorRole = userRole === "instructor";
 
   // Form State
@@ -180,47 +185,25 @@ export function CourseFormClient({
     }
   };
 
-  // Direct video upload handler
-  const handleVideoUpload = async (mIdx: number, lIdx: number) => {
-    const lessonKey = `${mIdx}-${lIdx}`;
-    setVideoUploadingLessonId(lessonKey);
-    setVideoProgress(15);
-    setAlertError(null);
-
-    try {
-      const res = await fetch("/api/admin/video/direct-upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: modules[mIdx].lessons[lIdx].titleFr || "Leçon" }),
-      });
-
-      const uploadInfo = await res.json();
-      if (!res.ok) {
-        throw new Error(uploadInfo.error || "Impossible d'initialiser l'upload vidéo.");
-      }
-
-      // Simulate browser TUS upload progression
-      for (let p = 30; p <= 100; p += 25) {
-        await new Promise((r) => setTimeout(r, 200));
-        setVideoProgress(p);
-      }
-
-      setModules((prev) => {
-        const copy = [...prev];
-        copy[mIdx].lessons[lIdx].videoId = uploadInfo.videoId;
-        copy[mIdx].lessons[lIdx].durationSec = uploadInfo.durationSec || 720;
-        return copy;
-      });
-    } catch (err: any) {
-      setAlertError(err.message || "Erreur lors de l'envoi de la vidéo.");
-    } finally {
-      setVideoUploadingLessonId(null);
-      setVideoProgress(0);
-    }
+  // Choose a real local file; the heavy payload goes straight to Bunny, never through Workers.
+  const handleVideoUpload=(mIdx:number,lIdx:number)=>{if(videoUploadingLessonId)return;selectedVideoLesson.current={mIdx,lIdx};videoFileInputRef.current?.click();};
+  const sendSelectedVideo=async(event:React.ChangeEvent<HTMLInputElement>)=>{
+    const file=event.target.files?.[0],target=selectedVideoLesson.current;event.target.value='';if(!file||!target)return;
+    const {mIdx,lIdx}=target;setAlertError(null);
+    try{
+      validateVideoFile(file);setVideoUploadingLessonId(mIdx+'-'+lIdx);setVideoProgress(0);
+      const response=await fetch('/api/admin/video/direct-upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:modules[mIdx].lessons[lIdx].titleFr||'Leçon',courseId:persistedCourseId})});
+      const auth=await response.json();if(!response.ok)throw Error(auth.error);
+      await uploadVideoFile(file,auth,setVideoProgress);
+      setModules(previous=>previous.map((module,mi)=>mi!==mIdx?module:{...module,lessons:module.lessons.map((lesson,li)=>li!==lIdx?lesson:{...lesson,videoId:auth.videoId,durationSec:0})}));
+      setAlertSuccess(isHt?'Fichye a voye. Anrejistre kou a; Bunny ap prepare videyo a.':'Fichier envoyé. Enregistrez la formation ; Bunny prépare la lecture vidéo.');
+    }catch(error){const code=error instanceof Error?error.message:'';setAlertError(code==='video_size'?(isHt?'Chwazi yon videyo ki pa vid, jiska 2 Go.':'Choisissez une vidéo non vide de 2 Go maximum.'):code==='video_type'?(isHt?'Chwazi yon fichye videyo, pa yon PDF.':'Sélectionnez un fichier vidéo, pas un PDF.'):code==='video_not_configured'?(isHt?'Bunny Stream poko konfigire.':'Bunny Stream n’est pas configuré. Aucun fichier n’a été envoyé.'):(isHt?'Videyo a pa fin voye. Eseye ankò; ansyen videyo a rete san chanjman.':'Le transfert vidéo a échoué. Réessayez ; la vidéo précédente est conservée.'));}
+    finally{setVideoUploadingLessonId(null);setVideoProgress(0);}
   };
 
   // Module actions
   const addModule = () => {
+    if(videoUploadingLessonId)return;
     setModules((prev) => [
       ...prev,
       {
@@ -233,10 +216,12 @@ export function CourseFormClient({
   };
 
   const deleteModule = (mIdx: number) => {
+    if(videoUploadingLessonId)return;
     setModules((prev) => prev.filter((_, idx) => idx !== mIdx));
   };
 
   const moveModule = (mIdx: number, direction: "up" | "down") => {
+    if(videoUploadingLessonId)return;
     if (
       (direction === "up" && mIdx === 0) ||
       (direction === "down" && mIdx === modules.length - 1)
@@ -255,6 +240,7 @@ export function CourseFormClient({
 
   // Lesson actions
   const addLesson = (mIdx: number) => {
+    if(videoUploadingLessonId)return;
     setModules((prev) => {
       const copy = [...prev];
       const lessonCount = copy[mIdx].lessons.length;
@@ -270,6 +256,7 @@ export function CourseFormClient({
   };
 
   const deleteLesson = (mIdx: number, lIdx: number) => {
+    if(videoUploadingLessonId)return;
     setModules((prev) => {
       const copy = [...prev];
       copy[mIdx].lessons = copy[mIdx].lessons.filter((_, idx) => idx !== lIdx);
@@ -278,6 +265,7 @@ export function CourseFormClient({
   };
 
   const moveLesson = (mIdx: number, lIdx: number, direction: "up" | "down") => {
+    if(videoUploadingLessonId)return;
     if (
       (direction === "up" && lIdx === 0) ||
       (direction === "down" && lIdx === modules[mIdx].lessons.length - 1)
@@ -298,6 +286,7 @@ export function CourseFormClient({
 
   // Submit Handler
   const handleSubmit = async (publish: boolean) => {
+    if(videoUploadingLessonId)return;
     setSaving(true);
     setAlertError(null);
     setAlertSuccess(null);
@@ -353,7 +342,7 @@ export function CourseFormClient({
     setFieldErrors({});
 
     const formData: AdminCourseFormData = {
-      id: initialCourse?.id,
+      id: persistedCourseId,
       slug: slug.trim(),
       titleFr: titleFr.trim(),
       titleHt: titleHt.trim(),
@@ -389,6 +378,7 @@ export function CourseFormClient({
     const res = await saveCourseAction(formData, publish);
     setSaving(false);
 
+    if(res.courseId)setPersistedCourseId(res.courseId);
     if (res.success) {
       setAlertSuccess(publish ? t("successPublish") : t("successSave"));
       setTimeout(() => {
@@ -406,6 +396,7 @@ export function CourseFormClient({
 
   return (
     <div className="pb-20 space-y-6">
+<input ref={videoFileInputRef} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v" onChange={sendSelectedVideo} className="hidden" aria-label={isHt?"Chwazi fichye videyo a":"Choisir le fichier vidéo"}/>
       {/* Sticky Top Bar */}
       <div className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-line -mx-4 sm:-mx-8 px-4 sm:px-8 py-3.5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm transition-all">
         <div>
@@ -430,7 +421,7 @@ export function CourseFormClient({
         <div className="flex items-center gap-3 self-end sm:self-auto">
           <button
             type="button"
-            disabled={saving}
+            disabled={saving||Boolean(videoUploadingLessonId)}
             onClick={() => handleSubmit(false)}
             className="px-4 py-2.5 text-xs font-heading font-semibold rounded-xl border border-line bg-surface text-ink hover:bg-bg transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue"
           >
@@ -438,7 +429,7 @@ export function CourseFormClient({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving||Boolean(videoUploadingLessonId)}
             onClick={() => handleSubmit(true)}
             className="px-5 py-2.5 text-xs font-heading font-semibold rounded-xl bg-blue text-white hover:bg-blue/90 transition-colors disabled:opacity-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2"
           >
@@ -934,13 +925,13 @@ export function CourseFormClient({
                                 <div className="flex items-center gap-2">
                                   {les.videoId ? (
                                     <div className="inline-flex items-center gap-1.5 text-ok font-mono text-[11px] bg-ok-tint border border-ok/30 px-2.5 py-1 rounded-lg">
-                                      <span>✓ Vidéo active ({les.videoId})</span>
+                                      <span>{isHt?"Videyo asosye":"Vidéo associée"} ({les.videoId})</span>
                                       <button
                                         type="button"
                                         onClick={() => handleVideoUpload(mIdx, lIdx)}
                                         className="text-[10px] text-muted-faro hover:text-ink underline ml-1"
                                       >
-                                        Remplacer
+                                        {isHt?"Ranplase":"Remplacer"}
                                       </button>
                                     </div>
                                   ) : isUploadingThisVideo ? (
@@ -977,17 +968,17 @@ export function CourseFormClient({
               </div>
               <div>
                 <p className="text-xs font-heading font-semibold text-ink">
-                  Zone de téléversement direct de vidéos & ressources
+                  {isHt?"Videyo leson yo voye dirèkteman nan Bunny Stream":"Envoi direct des vidéos de leçon vers Bunny Stream"}
                 </p>
                 <p className="text-[11px] text-muted-faro mt-0.5">
-                  Fichiers MP4, MOV ou PDF (jusqu&apos;à 2 Go via Bunny Stream direct TUS)
+                  {isHt?"Klike sou bouton videyo leson an pou chwazi yon fichye videyo (jiska 2 Go). PDF yo se resous separe.":"Cliquez sur le bouton vidéo d’une leçon pour choisir un fichier vidéo (2 Go maximum). Les PDF sont des ressources distinctes."}
                 </p>
               </div>
 
               {videoUploadingLessonId && (
                 <div className="max-w-xs mx-auto space-y-1.5 pt-2">
                   <div className="flex items-center justify-between text-[11px] text-muted-faro font-medium">
-                    <span>Envoi vidéo en cours...</span>
+                    <span>{isHt?"Videyo a ap voye…":"Envoi vidéo en cours…"}</span>
                     <span>{videoProgress}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-blue-tint overflow-hidden">
@@ -1367,7 +1358,7 @@ export function CourseFormClient({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            disabled={saving}
+            disabled={saving||Boolean(videoUploadingLessonId)}
             onClick={() => handleSubmit(false)}
             className="px-5 py-2.5 text-xs font-heading font-semibold rounded-xl border border-line bg-surface text-ink hover:bg-bg transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue"
           >
@@ -1375,7 +1366,7 @@ export function CourseFormClient({
           </button>
           <button
             type="button"
-            disabled={saving}
+            disabled={saving||Boolean(videoUploadingLessonId)}
             onClick={() => handleSubmit(true)}
             className="px-6 py-2.5 text-xs font-heading font-semibold rounded-xl bg-blue text-white hover:bg-blue/90 transition-colors disabled:opacity-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2"
           >

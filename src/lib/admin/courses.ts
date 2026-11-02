@@ -9,34 +9,6 @@ export async function getAdminCoursesList(instructorId?: string): Promise<AdminC
   try {
     const supabase = await createClient();
 
-    // If no instructorId filter, try RPC first
-    if (!instructorId) {
-      const { data: rpcData, error: rpcError } = await supabase.rpc("get_admin_courses_list");
-
-      if (!rpcError && rpcData && Array.isArray(rpcData)) {
-        return rpcData.map((c: any) => ({
-          id: c.id,
-          slug: c.slug,
-          titleFr: c.title_fr,
-          titleHt: c.title_ht || "",
-          descriptionFr: c.description_fr || "",
-          descriptionHt: c.description_ht || "",
-          priceHtg: Math.round(Number(c.price_htg || 0)),
-          comparePriceHtg: c.compare_price_htg ? Math.round(Number(c.compare_price_htg)) : null,
-          level: c.level || "tous niveaux",
-          category: c.category || "general",
-          coverUrl: c.cover_url || null,
-          status: (c.status as "draft" | "published") || "draft",
-          createdAt: c.created_at,
-          studentsCount: Number(c.students_count || 0),
-          revenueHtg: Math.round(Number(c.revenue_htg || 0)),
-          modulesCount: Number(c.modules_count || 0),
-          lessonsCount: Number(c.lessons_count || 0),
-          instructorId: c.instructor_id || null,
-        }));
-      }
-    }
-
     // Direct table query
     let query = supabase
       .from("courses")
@@ -56,10 +28,11 @@ export async function getAdminCoursesList(instructorId?: string): Promise<AdminC
         created_at,
         instructor_id,
         enrollments (id),
-        orders (
+        ${instructorId?"":`        orders (
           amount_htg,
           payments (status)
         ),
+`}
         modules (
           id,
           lessons (id)
@@ -74,7 +47,7 @@ export async function getAdminCoursesList(instructorId?: string): Promise<AdminC
     const { data: courses, error: coursesError } = await query;
 
     if (coursesError || !courses) {
-      return [];
+      throw Error("courses_unavailable");
     }
 
     return courses.map((c: any) => {
@@ -120,7 +93,7 @@ export async function getAdminCoursesList(instructorId?: string): Promise<AdminC
       };
     });
   } catch {
-    return [];
+    throw Error("courses_unavailable");
   }
 }
 

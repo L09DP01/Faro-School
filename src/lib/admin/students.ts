@@ -269,12 +269,11 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
       .select(`
         id,
         full_name,
-        email,
-        phone,
+        ${instructorId ? "" : "email,phone,"}
         role,
         locale,
         created_at,
-        enrollments (
+        enrollments!user_id (
           id,
           course_id,
           created_at,
@@ -288,8 +287,8 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
             title_ht,
             instructor_id
           )
-        ),
-        orders (
+        )
+        ${instructorId ? "" : `,orders!user_id (
           id,
           reference,
           amount_htg,
@@ -304,14 +303,14 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
             status,
             created_at
           )
-        )
+        )`}
       `)
       .eq("role", "student")
       .order("created_at", { ascending: false });
 
     if (!error && profiles && profiles.length > 0) {
       const courseIds=Array.from(new Set<string>(profiles.flatMap((p:any)=>(p.enrollments||[]).filter((e:any)=>!e.revoked_at&&(!instructorId||e.courses?.instructor_id===instructorId)).map((e:any)=>e.course_id))));
-      const {totals,done}=await courseProgress(courseIds,profiles.map(p=>p.id));
+      const progress=await courseProgress(courseIds,profiles.map((p:any)=>p.id)).catch(()=>null);const totals=progress?.totals||new Map<string,number>(),done=progress?.done||new Map<string,number>();
       const list = profiles.map((p: any) => {
         const rawEnrollments = (p.enrollments || []).filter((e:any)=>!e.revoked_at&&(!instructorId||e.courses?.instructor_id===instructorId));
         const enrollments: any[] = rawEnrollments.map((e: any) => ({
@@ -330,8 +329,9 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
         if (p.orders && Array.isArray(p.orders)) {
           for (const ord of p.orders) {
             const pay = ord.payments && ord.payments[0];
+            if(!pay)continue;
             payments.push({
-              id: pay?.id || `pay-${ord.id}`,
+              id: pay.id,
               orderId: ord.id,
               orderReference: ord.reference,
               courseTitle: ord.courses?.title_fr || "Formation",
@@ -352,7 +352,7 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
           locale: p.locale || "fr",
           createdAt: p.created_at,
           coursesCount: enrollments.length,
-          progressPercent: enrollments.length?Math.round(enrollments.reduce((sum:number,e:any)=>sum+(totals.get(e.courseId)?Math.min(100,(done.get(p.id+':'+e.courseId)||0)/totals.get(e.courseId)!*100):0),0)/enrollments.length):0,
+          progressPercent: !progress?undefined:enrollments.length?Math.round(enrollments.reduce((sum:number,e:any)=>sum+(totals.get(e.courseId)?Math.min(100,(done.get(p.id+':'+e.courseId)||0)/totals.get(e.courseId)!*100):0),0)/enrollments.length):0,
           lastActivityAt: p.created_at,
           enrollments,
           payments,
@@ -377,11 +377,12 @@ export async function getAdminStudentsList(instructorId?: string): Promise<Stude
 
       return list;
     }
+    if(error)throw Error("students_unavailable");
     if (!error && profiles && profiles.length === 0) {
       return [];
     }
   } catch (err) {
-    console.error("[Students] Error fetching students list from database:", err);
+    if(!isDemoMode())throw Error("students_unavailable");
   }
 
   if (isDemoMode()) {

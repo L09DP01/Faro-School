@@ -4,6 +4,17 @@
 
 ## 2. Stack
 
+Admin data/video repair: profiles-to-enrollments uses an explicit user_id relation;
+read failures must be distinguished from real empty data. Course administration reads
+real tables with instructor ownership; payment RPC failures fall back to the real
+ledger under RLS. Video selection sends actual bytes directly to Bunny TUS, with
+committed-offset recovery, never fake progress or duration. Curriculum saves remain
+draft until successful; failed saves retain the course ID for retry. See
+docs/ADMIN_DATA_VIDEO_ARCHITECTURE.md. The owner confirmed both curriculum write
+and legacy reporting RLS migrations. Bunny library 793214 has signed embed/CDN
+protection and the encoding callback configured; a real technical MP4 was uploaded
+and encoded. See docs/BUNNY_LIVE_TEST.md. No remote Supabase operation by the agent.
+
 Staff inbox layout: the bounded admin shell keeps global/chat headers and composer
 outside scrolling. Only the message stream and conversation list scroll; visual
 scrollbars are hidden while keyboard/touch scrolling remains available. The admin

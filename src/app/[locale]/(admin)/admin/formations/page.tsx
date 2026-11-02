@@ -1,3 +1,4 @@
+import {AdminDataUnavailable} from "@/components/admin/AdminDataUnavailable";
 import { getTranslations } from "next-intl/server";
 import type { Metadata } from "next";
 import { requireStaff } from "@/lib/auth";
@@ -28,7 +29,9 @@ export default async function AdminCoursesPage({ params }: AdminCoursesPageProps
   const user = await requireStaff(locale);
   const instructorId = user.role === "instructor" ? user.id : undefined;
 
+  try {
   const courses = await getAdminCoursesList(instructorId);
 
   return <CourseListClient courses={courses} locale={locale} />;
+  } catch {return <AdminDataUnavailable locale={locale}/>;}
 }

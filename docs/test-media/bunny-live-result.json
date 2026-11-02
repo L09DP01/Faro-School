@@ -1,0 +1,16 @@
+{
+  "videoId": "c9951608-10eb-4a62-be4b-834d4f3bfd4f",
+  "libraryId": "793214",
+  "file": "docs/test-media/faro-school-bunny-test.mp4",
+  "sha256": "ffec70fb197069d6efebcd264b2cd1affcb31f0d46844a06b78a911daff0315b",
+  "bytes": 17637,
+  "encodingStatus": 4,
+  "encodingProgress": 100,
+  "durationSec": 2,
+  "signedPlayerAccepted": true,
+  "invalidTokenDenied": true,
+  "unsignedPlayerDenied": true,
+  "webhook": "https://faroschool.com/api/webhooks/bunny",
+  "unsignedWebhookStatus": 401,
+  "supabaseTouchedDirectly": false
+}

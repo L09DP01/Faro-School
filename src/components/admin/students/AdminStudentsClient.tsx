@@ -365,7 +365,7 @@ export function AdminStudentsClient({
                           <td className="px-5 py-3.5">
                             <div className="w-28 space-y-1">
                               <div className="flex justify-between text-[11px] font-medium text-ink">
-                                <span>{s.progressPercent ?? 0}%</span>
+                                <span>{s.progressPercent===undefined?"—":`${s.progressPercent}%`}</span>
                               </div>
                               <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
                                 <div

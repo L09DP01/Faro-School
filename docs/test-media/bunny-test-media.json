@@ -1,0 +1,8 @@
+{
+  "file": "docs\\test-media\\faro-school-bunny-test.mp4",
+  "type": "video/mp4;codecs=avc1.42001f",
+  "bytes": 17637,
+  "sha256": "ffec70fb197069d6efebcd264b2cd1affcb31f0d46844a06b78a911daff0315b",
+  "duration_seconds": 3,
+  "purpose": "Synthetic technical test, no course content"
+}

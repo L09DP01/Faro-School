@@ -9,7 +9,7 @@ export class BunnyStorage {
     this.cdnHostname =
       process.env.BUNNY_STORAGE_CDN_HOSTNAME || "cdn.faroschool.com";
     this.tokenSecurityKey =
-      process.env.BUNNY_STORAGE_TOKEN_KEY || "mock-storage-token-key";
+      process.env.BUNNY_STORAGE_TOKEN_KEY || "";
   }
 
   /**
@@ -30,6 +30,7 @@ export class BunnyStorage {
     courseId: string,
     expiresInSeconds: number = 3600
   ): Promise<string> {
+    if(!this.tokenSecurityKey)throw Error("Storage signing is not configured");
     const supabase = await createClient();
 
     // Check if admin
@@ -39,7 +40,8 @@ export class BunnyStorage {
       .eq("id", userId)
       .single();
 
-    const isAdmin = profile?.role === "admin";
+    const {data:course}=await supabase.from('courses').select('instructor_id').eq('id',courseId).single();
+    const isAdmin = profile?.role === "admin"||(profile?.role==='instructor'&&course?.instructor_id===userId);
 
     if (!isAdmin) {
       // Check enrollment
@@ -48,6 +50,7 @@ export class BunnyStorage {
         .select("id")
         .eq("user_id", userId)
         .eq("course_id", courseId)
+        .is("revoked_at",null)
         .single();
 
       if (!enrollment) {

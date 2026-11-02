@@ -151,8 +151,8 @@ function testAdminGuards() {
   for (const file of adminApiRoutes) {
     const code = fs.readFileSync(path.resolve(file), "utf-8");
     assert(
-      code.includes('role !== "admin"') || code.includes("role === 'admin'"),
-      `Admin API route '${file}' verifies role === 'admin'`
+      (file.includes('/video/direct-upload/')?code.includes("can(user,'course.manage')")&&code.includes("can(user,'course.manage',data)"):code.includes('role !== "admin"') || code.includes("role === 'admin'")),
+      `Admin API route '${file}' verifies the required admin or course-author permission`
     );
   }
 }

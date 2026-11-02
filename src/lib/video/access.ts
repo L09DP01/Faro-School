@@ -74,12 +74,15 @@ export async function checkLessonAccess(
     };
   }
 
+  if(profile?.role==='instructor'){const {data:course}=await supabase.from('courses').select('instructor_id').eq('id',courseId).single();if(course?.instructor_id===userId)return{canAccess:true,isFreePreview:false,videoId:lesson.video_id,courseId};}
+
   // Check enrollment
   const { data: enrollment } = await supabase
     .from("enrollments")
     .select("id")
     .eq("user_id", userId)
     .eq("course_id", courseId)
+        .is("revoked_at",null)
     .single();
 
   const isEnrolled = !!enrollment;

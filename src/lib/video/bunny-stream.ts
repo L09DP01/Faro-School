@@ -77,12 +77,12 @@ export class BunnyStreamProvider implements VideoProvider {
     );
 
     if (!createRes.ok) {
-      const err = await createRes.text();
-      throw new Error(`Bunny video creation failed: ${err}`);
+      throw new Error("Bunny video creation failed");
     }
 
     const videoData = (await createRes.json()) as { guid: string };
     const videoId = videoData.guid;
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(videoId))throw Error("Bunny video response invalid");
 
     // Step 2: Generate authorization signature for direct TUS / HTTP upload
     // Bunny signature format: SHA256(libraryId + apiKey + expirationTime + videoId)
@@ -90,7 +90,7 @@ export class BunnyStreamProvider implements VideoProvider {
     const rawSignature = `${this.libraryId}${this.apiKey}${expirationTime}${videoId}`;
     const authorizationSignature = await sha256Hex(rawSignature);
 
-    const uploadUrl = `https://video.bunnycdn.com/library/${this.libraryId}/videos/${videoId}`;
+    const uploadUrl = "https://video.bunnycdn.com/tusupload";
 
     return {
       videoId,

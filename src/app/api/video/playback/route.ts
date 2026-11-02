@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getVideoProvider, checkLessonAccess } from "@/lib/video";
 
 export const runtime = "nodejs";
+const json=(body:unknown,init:ResponseInit={})=>NextResponse.json(body,{...init,headers:{"Cache-Control":"no-store"}});
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     const lessonId = searchParams.get("lessonId");
 
     if (!lessonId) {
-      return NextResponse.json(
+      return json(
         { error: "Paramètre lessonId manquant" },
         { status: 400 }
       );
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     const access = await checkLessonAccess(lessonId, userId);
 
     if (!access.canAccess) {
-      return NextResponse.json(
+      return json(
         {
           error: "Accès refusé : cette leçon est réservée aux étudiants inscrits.",
           locked: true,
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
     const videoProvider = getVideoProvider();
     const playbackUrl = await videoProvider.getPlaybackUrl(lessonId, userId);
 
-    return NextResponse.json({
+    return json({
       success: true,
       playbackUrl,
       isFreePreview: access.isFreePreview,
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (err: any) {
     const status = err.message?.includes("Accès refusé") ? 403 : 500;
-    return NextResponse.json(
+    return json(
       { error: err.message || "Erreur lors de la récupération de la vidéo" },
       { status }
     );
