@@ -4,6 +4,14 @@
 
 ## 2. Stack
 
+Course commerce repair (2026-11-02): public course facts and verified enrollment
+reviews replace fabricated ratings, learner counts and author identities. Authors
+manage their own public profile/photo in Mon compte. Both MonCash and NatCash use
+Kobara checkout; manual transfer instructions are removed. Official signed,
+timestamped callbacks bind the persisted provider payment to its exact HTG order
+before the existing atomic enrollment transaction. Owner confirmed the public facts
+migration. See docs/COURSE_COMMERCE_REAL_DATA.md for validation and live checks.
+
 Course publication repair (2026-11-02): covers upload as multipart to Bunny Storage,
 not inline base64 in Server Actions. Public /api/covers serves only random artwork
 filenames from a dedicated prefix. Legacy inline covers are uploaded before saving;

@@ -5,6 +5,9 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Checkout HTTP: server price and gateway-only pending payments",cmd:"npx tsx tests/checkout-create-route.test.ts"},
+  {name:"Official Kobara MonCash/NatCash webhook contract",cmd:"npx tsx tests/kobara-official-flow.test.ts"},
+  {name:"Public course facts, verified reviews and own author profile",cmd:"npx tsx tests/public-course-facts.test.ts"},
   {name:"Course covers: real storage and oversized inline repair",cmd:"npx tsx tests/course-cover.test.ts"},
   {name:"Supervision bounded costs and translated states",cmd:"npx tsx tests/admin-supervision-presentation.test.ts"},
   {name:"Legacy financial reporting respects caller RLS",cmd:"npx tsx tests/admin-reporting-rls.test.ts"},

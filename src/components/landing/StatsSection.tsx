@@ -17,22 +17,22 @@ export function StatsSection({ stats }: StatsSectionProps) {
       ? `+${stats.studentsCount.toLocaleString()}`
       : stats.studentsCount > 0
       ? `${stats.studentsCount}`
-      : "+1 500";
+      : "0";
 
   const videoDisplay =
     stats.lessonsCount > 10
       ? `${stats.lessonsCount}+`
       : stats.lessonsCount > 0
       ? `${stats.lessonsCount}`
-      : "50+";
+      : "0";
 
   const courseDisplay =
-    stats.coursesCount > 0 ? `${stats.coursesCount}` : "6";
+    stats.coursesCount > 0 ? `${stats.coursesCount}` : "0";
 
   const satisfactionDisplay =
     stats.averageRating > 0
       ? `${Math.round((stats.averageRating / 5) * 100)}%`
-      : "98%";
+      : "—";
 
   const items = [
     {

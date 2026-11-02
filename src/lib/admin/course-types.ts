@@ -54,6 +54,7 @@ export interface AdminCourseOptions {
   guaranteeDays: number;
   moncashEnabled?: boolean;
   natcashEnabled?: boolean;
+  language?: "fr" | "ht" | "bilingue";
 }
 
 export interface AdminCourseFormData {
@@ -101,6 +102,7 @@ export const adminCourseZodSchema = z.object({
     guaranteeDays: z.number().int().default(7),
     moncashEnabled: z.boolean().default(true),
     natcashEnabled: z.boolean().default(true),
+    language: z.enum(["fr","ht","bilingue"]).default("bilingue"),
   }).default({
     certificate: true,
     lifetimeAccess: true,

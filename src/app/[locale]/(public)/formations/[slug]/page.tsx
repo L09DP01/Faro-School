@@ -1,3 +1,5 @@
+import {getPublicCourseFacts} from "@/lib/public-course-facts";
+import {CourseReviewForm} from "@/components/course/CourseReviewForm";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { localized } from "@/lib/i18n/localized";
@@ -82,7 +84,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     .from("courses")
     .select(`
       id, slug, title_fr, title_ht, description_fr, description_ht,
-      price_htg, compare_price_htg, level, category, cover_url, status, created_at,
+      price_htg, compare_price_htg, level, category, cover_url, status, created_at, instructor_id, options,
       modules (
         id, position, title_fr, title_ht,
         lessons (
@@ -105,7 +107,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
   let isEnrolled = false;
   const currentUser = await getCurrentUser();
   if (currentUser) {
-    if (currentUser.role === "admin") {
+    if (currentUser.role === "admin" || (currentUser.role === "instructor" && course.instructor_id === currentUser.id)) {
       isEnrolled = true;
     } else {
       const { data: enrollment } = await supabase
@@ -113,6 +115,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
         .select("id")
         .eq("user_id", currentUser.id)
         .eq("course_id", course.id)
+        .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
         .maybeSingle();
 
       if (enrollment) {
@@ -165,46 +168,10 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     };
   });
 
-  // 4. Fetch reviews and aggregate stats
-  let reviews: CourseReviewItem[] = [];
-  let averageRating = 4.9;
-  let studentsCount = 120; // fallback base
-
-  try {
-    const [reviewsRes, enrollmentsCountRes] = await Promise.all([
-      supabase
-        .from("reviews")
-        .select(`
-          id, rating, comment, created_at,
-          profiles ( full_name )
-        `)
-        .eq("course_id", course.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("enrollments")
-        .select("id", { count: "exact", head: true })
-        .eq("course_id", course.id),
-    ]);
-
-    if (reviewsRes.data && reviewsRes.data.length > 0) {
-      reviews = reviewsRes.data.map((r: any) => ({
-        id: r.id,
-        authorName: r.profiles?.full_name || "Étudiant Faro",
-        rating: r.rating || 5,
-        comment: r.comment || "",
-        createdAt: r.created_at,
-      }));
-
-      const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-      averageRating = Number((sum / reviews.length).toFixed(1));
-    }
-
-    if (typeof enrollmentsCountRes.count === "number" && enrollmentsCountRes.count > 0) {
-      studentsCount = enrollmentsCountRes.count;
-    }
-  } catch {
-    // Keep default fallbacks
-  }
+  const facts=(await getPublicCourseFacts([course.id])).get(course.id);
+  const reviews=facts?.reviews || [];
+  const averageRating=facts?.averageRating ?? null;
+  const studentsCount=facts?.studentsCount ?? null;
 
   // Localized title & description
   const courseTitle = localized(course, "title", locale);
@@ -230,11 +197,9 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       category: "Paid",
       url: `${appUrl}/${locale}/checkout/${course.slug}`,
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: averageRating,
-      reviewCount: Math.max(1, reviews.length),
-    },
+    ...(averageRating != null && (facts?.reviewsCount ?? 0)>0 ? {aggregateRating: {
+      "@type":"AggregateRating", ratingValue:averageRating, reviewCount:facts!.reviewsCount
+    }} : {}),
   };
 
   return (
@@ -242,7 +207,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       {/* JSON-LD Schema */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g,"\\u003c") }}
       />
 
       {/* 1. Hero Section: Dark gradient hero band (navy to navy-hero) */}
@@ -252,11 +217,12 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
         category={course.category}
         level={course.level}
         rating={averageRating}
-        reviewsCount={reviews.length}
+        reviewsCount={facts?.reviewsCount ?? null}
         studentsCount={studentsCount}
         modulesCount={curriculumModules.length}
         lessonsCount={totalLessonsCount}
         totalDurationMin={totalDurationMin}
+        language={course.options?.language}
       />
 
       {/* 2. Main Content Grid (Left column: white cards, Right column: 400px sticky purchase card) */}
@@ -275,13 +241,15 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
               />
 
               {/* 5. Instructor Card (round photo placeholder) */}
-              <CourseInstructor />
+              <CourseInstructor instructor={facts?.instructor ?? null} />
 
               {/* 6. Reviews (three tinted mini cards) */}
               <CourseReviews
                 reviews={reviews}
                 averageRating={averageRating}
+                reviewsCount={facts?.reviewsCount ?? null}
               />
+              {currentUser?.role === "student" && isEnrolled && <CourseReviewForm courseId={course.id}/> }
 
               {/* 7. FAQ */}
               <CourseFaq />

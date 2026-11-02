@@ -19,6 +19,7 @@ const createPaymentSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    if(request.headers.get("origin")&&request.headers.get("origin")!==new URL(request.url).origin)return NextResponse.json({error:"forbidden"},{status:403});
     const ip =
       request.headers.get("cf-connecting-ip") ||
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     // 2. Fetch course price from database (CRITICAL: never trust client amount)
     const { data: course, error: courseError } = await supabase
       .from("courses")
-      .select("id, title_fr, title_ht, price_htg, status")
+      .select("id, title_fr, title_ht, price_htg, status, options")
       .eq("id", courseId)
       .single();
 
@@ -77,12 +78,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if((provider==='moncash'&&course.options?.moncashEnabled===false)||(provider==='natcash'&&course.options?.natcashEnabled===false))return NextResponse.json({error:'provider_disabled'},{status:400});
+
     // 3. Verify user is not already enrolled
     const { data: existingEnrollment } = await supabase
       .from("enrollments")
       .select("id")
       .eq("user_id", user.id)
       .eq("course_id", course.id)
+      .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
       .maybeSingle();
 
     if (existingEnrollment) {
@@ -100,7 +104,7 @@ export async function POST(request: NextRequest) {
       const cleanCode = couponCode.trim().toUpperCase();
       const { data: coupon } = await supabase
         .from("coupons")
-        .select("id, code, percent_off, amount_off_htg, max_uses, used_count, expires_at")
+        .select("id, code, percent_off, amount_off_htg, max_uses, used_count, expires_at, is_active")
         .eq("code", cleanCode)
         .maybeSingle();
 
@@ -110,7 +114,7 @@ export async function POST(request: NextRequest) {
         const usesAvailable =
           coupon.max_uses === null || coupon.used_count < coupon.max_uses;
 
-        if (notExpired && usesAvailable) {
+        if (notExpired && usesAvailable && coupon.is_active !== false) {
           couponId = coupon.id;
           if (coupon.percent_off) {
             const discount = Math.round(
@@ -141,6 +145,7 @@ export async function POST(request: NextRequest) {
       .eq("user_id", user.id)
       .eq("course_id", course.id)
       .eq("status", "pending")
+      .eq("amount_htg",finalAmountHtg)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -181,7 +186,7 @@ export async function POST(request: NextRequest) {
 
       if (orderError || !newOrder) {
         return NextResponse.json(
-          { error: "Échec de création de la commande", details: orderError?.message },
+          { error: "Échec de création de la commande" },
           { status: 500 }
         );
       }
@@ -204,7 +209,12 @@ export async function POST(request: NextRequest) {
       provider === "natcash" ? "natcash" : "moncash";
 
     // Initialize payment entry in pending state
-    const { data: paymentRecord, error: paymentError } = await supabase
+    const {data:pendingPayment,error:pendingPaymentError}=await supabase.from('payments').select('id').eq('order_id',order.id).eq('provider',paymentMethod).eq('status','pending').order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(pendingPaymentError)return NextResponse.json({error:'payment_lookup_unavailable'},{status:503});
+    let paymentRecord=pendingPayment;
+    let paymentError:unknown=null;
+    if(!paymentRecord){
+    const { data: insertedPayment, error: insertPaymentError } = await supabase
       .from("payments")
       .insert({
         order_id: order.id,
@@ -220,9 +230,12 @@ export async function POST(request: NextRequest) {
       .select("id")
       .single();
 
+      paymentRecord=insertedPayment;paymentError=insertPaymentError;
+    }
+
     if (paymentError || !paymentRecord) {
       return NextResponse.json(
-        { error: "Échec d'initialisation du paiement", details: paymentError?.message },
+        { error: "Échec d'initialisation du paiement" },
         { status: 500 }
       );
     }
@@ -247,18 +260,20 @@ export async function POST(request: NextRequest) {
         customerName: profile?.full_name || user.email?.split("@")[0] || "Étudiant",
         customerEmail: user.email || undefined,
         payerPhone: formattedPhone || profile?.phone || undefined,
+        metadata:{locale:locale==="ht"?"ht":"fr"},
       },
       paymentMethod
     );
 
     // Update payment record with provider payment ID
     if (resultPayment.kobaraPaymentId) {
-      await supabase
+      const {error:bindingError}=await supabase
         .from("payments")
         .update({
           provider_txn_id: resultPayment.kobaraPaymentId,
         })
         .eq("id", paymentRecord.id);
+      if(bindingError)return NextResponse.json({error:"payment_binding_unavailable"},{status:503});
     }
 
     return NextResponse.json({
@@ -272,7 +287,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Traitement du paiement échoué", message: error?.message || "Erreur inconnue" },
+      { error: "Traitement du paiement échoué", message: "Le service de paiement est momentanément indisponible." },
       { status: 500 }
     );
   }

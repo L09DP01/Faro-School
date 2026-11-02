@@ -8,12 +8,13 @@ interface CourseHeroProps {
   description: string;
   category: string;
   level: string;
-  rating: number;
-  reviewsCount: number;
-  studentsCount: number;
+  rating: number | null;
+  reviewsCount: number | null;
+  studentsCount: number | null;
   modulesCount: number;
   lessonsCount: number;
   totalDurationMin: number;
+  language?: string;
 }
 
 export function CourseHero({
@@ -27,8 +28,10 @@ export function CourseHero({
   modulesCount,
   lessonsCount,
   totalDurationMin,
+  language,
 }: CourseHeroProps) {
   const t = useTranslations("courseDetail");
+  const facts = useTranslations("courseFacts");
 
   const hours = Math.floor(totalDurationMin / 60);
   const mins = totalDurationMin % 60;
@@ -63,7 +66,7 @@ export function CourseHero({
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-heading font-medium bg-white/10 text-white/90 border border-white/15">
               <Globe className="w-3.5 h-3.5" />
-              <span>Français & Créole</span>
+              <span>{facts(language === "fr" ? "languageFr" : language === "ht" ? "languageHt" : "languageBoth")}</span>
             </span>
           </div>
 
@@ -85,13 +88,13 @@ export function CourseHero({
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className="w-4 h-4 fill-current text-orange"
+                    className={`w-4 h-4 text-orange ${i < Math.round(rating ?? 0) ? "fill-current" : ""}`}
                   />
                 ))}
               </div>
-              <span className="text-sm">{rating.toFixed(1)}</span>
+              <span className="text-sm">{rating == null ? "—" : rating.toFixed(1)}</span>
               <span className="text-blue-tint/70 font-normal text-xs">
-                ({t("ratingStats", { rating: rating.toFixed(1), count: reviewsCount })})
+                {reviewsCount == null ? facts("unavailable") : facts("reviewCount",{count:reviewsCount})}
               </span>
             </div>
 
@@ -101,7 +104,7 @@ export function CourseHero({
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-blue-tint/70" />
               <span>
-                {t("enrolledStudents", { count: studentsCount > 0 ? studentsCount : 120 })}
+                {studentsCount == null ? facts("unavailable") : t("enrolledStudents", { count: studentsCount })}
               </span>
             </div>
 

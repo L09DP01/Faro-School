@@ -1,0 +1,11 @@
+import React from 'react';import {createRoot} from 'react-dom/client';import {NextIntlClientProvider} from 'next-intl';
+import fr from '../src/messages/fr.json';import ht from '../src/messages/ht.json';
+import {CourseCard} from '../src/components/CourseCard';import {CourseHero} from '../src/components/course/CourseHero';import {CourseInstructor} from '../src/components/course/CourseInstructor';import {CourseReviews} from '../src/components/course/CourseReviews';import {CheckoutForm} from '../src/components/checkout/CheckoutForm';import {PublicAuthorProfile} from '../src/components/admin/instructors/PublicAuthorProfile';
+const query=new URLSearchParams(location.search),locale=query.get('locale')==='ht'?'ht':'fr',mode=query.get('mode'),empty=query.has('empty');
+const author={fullName:'Élodie Paul',title:'Formatrice',bio:'Profil de test local ; aucune donnée de production.',avatarUrl:'/payments/natcash.jpg'};
+const card={id:'44444444-4444-4444-8444-444444444444',slug:'formation-test',title:'Formation de test',priceHtg:20,level:'débutant',category:'Marketing',modulesCount:1,lessonsCount:1,rating:empty?null:3,reviewsCount:empty?0:1,instructorName:author.fullName};
+createRoot(document.getElementById('root')!).render(<NextIntlClientProvider locale={locale} messages={locale==='ht'?ht:fr}><main className="bg-bg min-h-screen p-4 sm:p-8 space-y-6">
+{mode==='checkout'?<CheckoutForm courseId={card.id} courseSlug={card.slug} courseTitle={card.title} basePriceHtg={20} locale={locale} whatsappNumber=""/>:mode==='profile'?<PublicAuthorProfile locale={locale} initial={{...author,avatarUrl:''}}/>:<>
+<CourseHero title={card.title} description="Formation de test locale" category="Marketing" level="débutant" rating={card.rating} reviewsCount={card.reviewsCount} studentsCount={empty?0:1} modulesCount={1} lessonsCount={1} totalDurationMin={2} language="ht"/>
+<div className="max-w-sm"><CourseCard course={card}/></div><CourseInstructor instructor={author}/><CourseReviews averageRating={card.rating} reviewsCount={card.reviewsCount} reviews={empty?[]:[{id:'review',authorName:'Jan-Pòl Étienne',rating:3,comment:'Avis de test local réellement passé au composant.',createdAt:'2026-11-02T00:00:00Z',verified:true}]}/></>}
+</main></NextIntlClientProvider>);

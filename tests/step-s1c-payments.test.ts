@@ -116,12 +116,8 @@ async function runStepS1CTests() {
       },
     });
 
-    const validSignature = crypto
-      .createHmac("sha256", testSecret)
-      .update(rawBody)
-      .digest("hex");
-
     const nowSec = Math.floor(Date.now() / 1000);
+    const validSignature = 't='+nowSec+',v1='+crypto.createHmac('sha256',testSecret).update(nowSec+'.'+rawBody).digest('hex');
 
     // Valid signature within tolerance
     const isValid = await provider.verifyWebhookSignature(

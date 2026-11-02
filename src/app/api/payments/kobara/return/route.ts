@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const orderId = searchParams.get("orderId") || searchParams.get("order_id");
   const reference = searchParams.get("reference") || "";
+  const locale=searchParams.get("locale")==="ht"?"ht":"fr";
 
   if (!orderId && !reference) {
     return NextResponse.redirect(
@@ -40,6 +41,6 @@ export async function GET(request: NextRequest) {
 
   // Redirect student strictly to confirmation screen; confirmation reads status directly from DB
   return NextResponse.redirect(
-    new URL(`/fr/confirmation/${order.id}`, request.url)
+    new URL(`/${locale}/confirmation/${order.id}`, request.url)
   );
 }

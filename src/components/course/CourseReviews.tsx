@@ -9,41 +9,20 @@ export interface CourseReviewItem {
   rating: number;
   comment: string;
   createdAt: string;
+  verified?: boolean;
 }
 
 interface CourseReviewsProps {
   reviews: CourseReviewItem[];
-  averageRating: number;
+  averageRating: number | null;
+  reviewsCount?: number | null;
 }
 
-const FALLBACK_REVIEWS: CourseReviewItem[] = [
-  {
-    id: "f1",
-    authorName: "Jean-Baptiste R.",
-    rating: 5,
-    comment: "Explications claires et directement applicables. Le paiement par MonCash s'est fait sans aucun accroc.",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "f2",
-    authorName: "Nathalie D.",
-    rating: 5,
-    comment: "J'ai pu suivre toutes les leçons sur mon smartphone avec ma connexion mobile. Superbe plateforme !",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "f3",
-    authorName: "Marc-Antoine P.",
-    rating: 5,
-    comment: "Formation indispensable pour quiconque souhaite vendre efficacement en Haïti. Le certificat final est un vrai plus.",
-    createdAt: new Date().toISOString(),
-  },
-];
-
-export function CourseReviews({ reviews, averageRating }: CourseReviewsProps) {
+export function CourseReviews({ reviews, averageRating, reviewsCount=reviews.length }: CourseReviewsProps) {
   const t = useTranslations("courseDetail.reviews");
 
-  const displayList = reviews.length >= 3 ? reviews.slice(0, 3) : [...reviews, ...FALLBACK_REVIEWS].slice(0, 3);
+  const facts = useTranslations("courseFacts");
+  const displayList = reviews.slice(0,20);
 
   return (
     <div className="rounded-[18px] border border-line bg-surface p-6 sm:p-8 space-y-6 shadow-card">
@@ -59,16 +38,17 @@ export function CourseReviews({ reviews, averageRating }: CourseReviewsProps) {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-heading text-2xl font-black text-ink">
             <span className="text-orange">★</span>
-            <span>{averageRating.toFixed(1)}</span>
+            <span>{averageRating == null ? "—" : averageRating.toFixed(1)}</span>
             <span className="text-xs text-muted-faro font-normal">/5</span>
           </div>
           <span className="font-sans text-xs text-muted-faro">
-            ({Math.max(reviews.length, 36)} avis)
+            {reviewsCount == null ? facts("unavailable") : facts("reviewCount",{count:reviewsCount})}
           </span>
         </div>
       </div>
 
-      {/* Reviews as three tinted mini cards */}
+      {reviewsCount === 0 && <p className="text-sm text-muted-faro">{facts("noReviews")}</p>}
+      {/* Real enrolled-student reviews only */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {displayList.map((rev) => (
           <div
@@ -81,7 +61,7 @@ export function CourseReviews({ reviews, averageRating }: CourseReviewsProps) {
                 {[...Array(5)].map((_, i) => (
                   <Star
                     key={i}
-                    className="w-3.5 h-3.5 fill-current text-orange"
+                    className={`w-3.5 h-3.5 text-orange ${i < rev.rating ? "fill-current" : ""}`}
                   />
                 ))}
               </div>
@@ -101,7 +81,7 @@ export function CourseReviews({ reviews, averageRating }: CourseReviewsProps) {
                   {rev.authorName}
                 </p>
                 <p className="font-sans text-[10px] text-muted-faro">
-                  Apprenant vérifié
+                  {rev.verified ? facts("verified") : ""}
                 </p>
               </div>
             </div>

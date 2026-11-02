@@ -110,7 +110,7 @@ export function HeroSection({ stats }: HeroSectionProps) {
                 </div>
                 <div className="text-left">
                   <p className="font-heading text-xs font-bold text-ink leading-tight">
-                    +{stats.studentsCount > 0 ? stats.studentsCount.toLocaleString() : "10 000"}
+                    {stats.studentsCount.toLocaleString()}
                   </p>
                   <p className="text-[10px] text-muted-faro font-medium">Apprenants</p>
                 </div>

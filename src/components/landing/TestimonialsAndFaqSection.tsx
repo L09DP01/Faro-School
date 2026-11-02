@@ -1,5 +1,6 @@
 "use client";
 
+import {useLocale} from "next-intl";
 import { useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Container } from "@/components/Container";
@@ -21,41 +22,8 @@ interface TestimonialsAndFaqSectionProps {
 }
 
 export function TestimonialsAndFaqSection({ reviews = [] }: TestimonialsAndFaqSectionProps) {
-  // Fallbacks if database has 0 reviews
-  const defaultReviews: ReviewItem[] = [
-    {
-      id: "rev-1",
-      name: "Jean-Marc Pierre",
-      role: "Freelance & Développeur",
-      city: "Port-au-Prince",
-      courseTitle: "Développement Web Moderne",
-      rating: 5,
-      comment:
-        "Faro School a changé ma vie professionnelle. J'ai pu payer facilement avec mon compte MonCash et suivre les vidéos le soir après le travail. Aujourd'hui, je décroche mes premiers contrats clients !",
-    },
-    {
-      id: "rev-2",
-      name: "Lourdes Saint-Fleur",
-      role: "Commerçante en ligne",
-      city: "Cap-Haïtien",
-      courseTitle: "Marketing Digital & Vente",
-      rating: 5,
-      comment:
-        "Les explications sont simples, directes et adaptées aux réalités de notre pays. Le paiement NatCash a été instantané et le certificat m'a donné beaucoup de crédibilité auprès de mes partenaires.",
-    },
-    {
-      id: "rev-3",
-      name: "Samuel Desrosiers",
-      role: "Comptable junior",
-      city: "Delmas",
-      courseTitle: "Bureautique & Excel Pro",
-      rating: 5,
-      comment:
-        "La qualité des vidéos est incroyable et ça ne consomme presque rien sur mon forfait mobile. Je recommande Faro School à tous les jeunes d'Haïti qui veulent progresser rapidement.",
-    },
-  ];
-
-  const testimonialItems = reviews.length > 0 ? reviews : defaultReviews;
+  const locale=useLocale();
+  const testimonialItems=reviews;
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
   const prevTestimonial = () => {
@@ -113,7 +81,7 @@ export function TestimonialsAndFaqSection({ reviews = [] }: TestimonialsAndFaqSe
             </div>
 
             {/* Testimonial Card */}
-            <div className="relative rounded-2xl border border-line bg-surface p-6 sm:p-8 shadow-card flex flex-col justify-between min-h-[300px]">
+            {activeReview ? <div className="relative rounded-2xl border border-line bg-surface p-6 sm:p-8 shadow-card flex flex-col justify-between min-h-[300px]">
               <div className="space-y-4">
                 {/* Header: Stars + Quote Icon */}
                 <div className="flex items-center justify-between">
@@ -194,7 +162,7 @@ export function TestimonialsAndFaqSection({ reviews = [] }: TestimonialsAndFaqSe
                   />
                 ))}
               </div>
-            </div>
+            </div> : <p className="rounded-2xl border border-line bg-surface p-6 text-muted-faro">{locale === "ht" ? "Pa gen avi pou kounye a." : "Aucun avis pour le moment."}</p>}
           </div>
 
           {/* RIGHT COLUMN: FAQ Accordion (lg:col-span-6) */}

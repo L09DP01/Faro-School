@@ -1,3 +1,4 @@
+import {getPublicCourseFacts} from "@/lib/public-course-facts";
 import { createClient } from "@/lib/supabase/server";
 import { localized } from "@/lib/i18n/localized";
 import type { CourseCardData } from "@/components";
@@ -71,7 +72,7 @@ export default async function LandingPage({ params }: PageProps) {
   let studentsCount = 0;
   let coursesCount = 0;
   let lessonsCount = 0;
-  let averageRating = 4.9;
+  let averageRating = 0;
   const categoryCounts: Record<string, number> = {};
 
   try {
@@ -122,6 +123,7 @@ export default async function LandingPage({ params }: PageProps) {
     .order("created_at", { ascending: false })
     .limit(4);
 
+  const courseFacts = await getPublicCourseFacts((rawCourses || []).map((c:any)=>c.id));
   const courses: CourseCardData[] = (rawCourses || []).map((c: any) => {
     let totalLessons = 0;
     let totalDurationSec = 0;
@@ -147,40 +149,18 @@ export default async function LandingPage({ params }: PageProps) {
       level: c.level,
       category: c.category,
       coverUrl: c.cover_url,
-      modulesCount: Array.isArray(c.modules) ? c.modules.length : 3,
+      modulesCount: Array.isArray(c.modules) ? c.modules.length : 0,
       lessonsCount: totalLessons,
-      durationHours: totalDurationSec > 0 ? Math.round(totalDurationSec / 3600) : 6,
-      rating: 4.9,
-      reviewsCount: 38,
-      isPopular: true,
+      durationHours: totalDurationSec > 0 ? Math.round(totalDurationSec / 3600) : undefined,
+      rating: courseFacts.get(c.id)?.averageRating,
+      reviewsCount: courseFacts.get(c.id)?.reviewsCount,
+      instructorName: courseFacts.get(c.id)?.instructor?.fullName,
+      isPopular: (courseFacts.get(c.id)?.studentsCount ?? 0) >= 10,
+
     };
   });
 
-  // 3. Fetch reviews / testimonials from database
-  let testimonials: ReviewItem[] = [];
-  try {
-    const { data: rawReviews } = await supabase
-      .from("reviews")
-      .select(`
-        id, rating, comment, created_at,
-        profiles ( full_name ),
-        courses ( title_fr, title_ht )
-      `)
-      .order("created_at", { ascending: false })
-      .limit(6);
-
-    if (rawReviews && rawReviews.length > 0) {
-      testimonials = rawReviews.map((r: any) => ({
-        id: r.id,
-        name: r.profiles?.full_name || "Étudiant Faro",
-        courseTitle: localized(r.courses, "title", locale) || "Formation Pro",
-        rating: r.rating || 5,
-        comment: r.comment || "",
-      }));
-    }
-  } catch {
-    testimonials = [];
-  }
+  const testimonials: ReviewItem[] = (rawCourses || []).flatMap((c:any)=>(courseFacts.get(c.id)?.reviews || []).map(r=>({id:r.id,name:r.authorName,courseTitle:localized(c,"title",locale),rating:r.rating,comment:r.comment}))).slice(0,6);
 
   const stats = {
     studentsCount,

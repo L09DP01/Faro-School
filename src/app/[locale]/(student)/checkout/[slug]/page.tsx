@@ -55,7 +55,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
   const supabase = await createClient();
   const { data: course, error } = await supabase
     .from("courses")
-    .select("id, slug, title_fr, title_ht, cover_url, price_htg, compare_price_htg, status")
+    .select("id, slug, title_fr, title_ht, cover_url, price_htg, compare_price_htg, status, options")
     .eq("slug", slug)
     .maybeSingle();
 
@@ -70,6 +70,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
     .select("id")
     .eq("user_id", user.id)
     .eq("course_id", course.id)
+    .is("revoked_at",null).or("expires_at.is.null,expires_at.gt."+new Date().toISOString())
     .maybeSingle();
 
   if (enrollment) {
@@ -88,7 +89,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           {/* Chip 1: Compte (green with check) */}
           <div className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-ok-tint text-ok border border-ok/20 font-heading text-xs font-bold shadow-subtle">
             <Check className="w-3.5 h-3.5 stroke-[3]" />
-            <span>Compte</span>
+            <span>{locale==='ht'?'Kont':'Compte'}</span>
           </div>
 
           <div className="h-0.5 w-6 sm:w-10 bg-ok/40" />
@@ -96,7 +97,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           {/* Chip 2: Paiement (blue, current) */}
           <div className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-blue text-white font-heading text-xs font-bold shadow-subtle">
             <CreditCard className="w-3.5 h-3.5" />
-            <span>Paiement</span>
+            <span>{locale==='ht'?'Peman':'Paiement'}</span>
           </div>
 
           <div className="h-0.5 w-6 sm:w-10 bg-line" />
@@ -104,7 +105,7 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           {/* Chip 3: Confirmation (muted) */}
           <div className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full bg-surface text-muted-faro border border-line font-heading text-xs font-medium">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Confirmation</span>
+            <span>{locale==='ht'?'Konfimasyon':'Confirmation'}</span>
           </div>
         </div>
 
@@ -119,6 +120,8 @@ export default async function CheckoutPage({ params }: CheckoutPageProps) {
           defaultPhone={user.phone}
           locale={locale}
           whatsappNumber={whatsappNumber}
+          moncashEnabled={course.options?.moncashEnabled !== false}
+          natcashEnabled={course.options?.natcashEnabled !== false}
         />
       </Container>
     </div>

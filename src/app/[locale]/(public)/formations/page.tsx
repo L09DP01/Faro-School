@@ -1,3 +1,4 @@
+import {getPublicCourseFacts} from "@/lib/public-course-facts";
 import { createClient } from "@/lib/supabase/server";
 import { localized } from "@/lib/i18n/localized";
 import {
@@ -140,6 +141,7 @@ export default async function CatalogPage({ params, searchParams }: FormationsPa
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Map courses to CourseCardData
+  const courseFacts = await getPublicCourseFacts((rawCourses || []).map((c:any)=>c.id));
   const courses: CourseCardData[] = (rawCourses || []).map((c: any) => {
     let totalLessons = 0;
     let totalDurationSec = 0;
@@ -165,9 +167,13 @@ export default async function CatalogPage({ params, searchParams }: FormationsPa
       level: c.level,
       category: c.category,
       coverUrl: c.cover_url,
+      modulesCount: Array.isArray(c.modules) ? c.modules.length : 0,
       lessonsCount: totalLessons,
       durationMin: totalDurationSec > 0 ? Math.round(totalDurationSec / 60) : undefined,
-      rating: 4.9,
+      rating: courseFacts.get(c.id)?.averageRating,
+      reviewsCount: courseFacts.get(c.id)?.reviewsCount,
+      instructorName: courseFacts.get(c.id)?.instructor?.fullName,
+      isPopular: (courseFacts.get(c.id)?.studentsCount ?? 0) >= 10,
     };
   });
 

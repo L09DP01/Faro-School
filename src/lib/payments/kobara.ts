@@ -101,6 +101,7 @@ export class KobaraProvider implements PaymentProvider {
         Accept: "application/json",
         "Content-Type": "application/json",
         Authorization: `Bearer ${this.secretKey}`,
+        "Idempotency-Key": `${order.orderId}:${method}:${order.amountHtg}`,
       },
       body: JSON.stringify({
         amount: order.amountHtg,
@@ -115,10 +116,10 @@ export class KobaraProvider implements PaymentProvider {
         },
         success_url: `${appUrl}/api/payments/kobara/return?orderId=${encodeURIComponent(
           order.orderId
-        )}&reference=${encodeURIComponent(order.reference)}`,
+        )}&locale=${order.metadata?.locale === "ht" ? "ht" : "fr"}&reference=${encodeURIComponent(order.reference)}`,
         cancel_url: `${appUrl}/api/payments/kobara/return?orderId=${encodeURIComponent(
           order.orderId
-        )}&reference=${encodeURIComponent(order.reference)}`,
+        )}&locale=${order.metadata?.locale === "ht" ? "ht" : "fr"}&reference=${encodeURIComponent(order.reference)}`,
         metadata: {
           order_id: order.orderId,
           course_id: order.courseId,
@@ -130,10 +131,7 @@ export class KobaraProvider implements PaymentProvider {
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Kobara API error (${response.status}): ${errorText}`);
-    }
+    if (!response.ok) throw new Error("payment_gateway_unavailable");
 
     const json = (await response.json()) as {
       status?: string;
@@ -156,11 +154,14 @@ export class KobaraProvider implements PaymentProvider {
 
     if (!checkoutUrl) {
       throw new Error(
-        `Kobara did not return a valid checkout URL: ${JSON.stringify(json)}`
+        "payment_checkout_unavailable"
       );
     }
 
+    const target=new URL(checkoutUrl);
+    if(target.protocol!=="https:"||target.username||target.password)throw Error("payment_checkout_invalid");
     const kobaraId = json.data?.id || json.id;
+    if(!kobaraId)throw Error("payment_id_missing");
 
     return {
       redirectUrl: checkoutUrl,
@@ -259,52 +260,13 @@ export class KobaraProvider implements PaymentProvider {
       return false;
     }
 
-    // 1. Verify timestamp if provided (tolerance: 5 minutes = 300 seconds)
-    if (timestampHeader) {
-      const ts = Number(timestampHeader);
-      if (isNaN(ts) || ts <= 0) {
-        return false;
-      }
-      const nowSec = Math.floor(Date.now() / 1000);
-      const tsSec = ts > 1e11 ? Math.floor(ts / 1000) : ts;
-      if (Math.abs(nowSec - tsSec) > 300) {
-        // Timestamp is too far in the past or future (replay attack guard)
-        return false;
-      }
-    }
-
-    try {
-      // Clean signature string
-      let sigToCompare = signature.trim();
-      if (sigToCompare.includes("v1=")) {
-        const part = sigToCompare.split(",").find((p) => p.trim().startsWith("v1="));
-        if (part) {
-          sigToCompare = part.trim().substring(3);
-        }
-      } else if (sigToCompare.startsWith("sha256=")) {
-        sigToCompare = sigToCompare.substring(7);
-      }
-
-      // Compute expected HMAC SHA-256 over raw payload
-      const expectedHex = await computeHmacSha256(this.webhookSecret, rawBody);
-      if (constantTimeEqual(sigToCompare.toLowerCase(), expectedHex.toLowerCase())) {
-        return true;
-      }
-
-      // If timestamp header was supplied, also verify if signed payload was `${timestamp}.${rawBody}`
-      if (timestampHeader) {
-        const expectedHexWithTs = await computeHmacSha256(
-          this.webhookSecret,
-          `${timestampHeader}.${rawBody}`
-        );
-        if (constantTimeEqual(sigToCompare.toLowerCase(), expectedHexWithTs.toLowerCase())) {
-          return true;
-        }
-      }
-
-      return false;
-    } catch {
-      return false;
-    }
+    // Official Kobara contract: t=<seconds>,v1=HMAC(secret, t + "." + rawBody).
+    const match=/^t=(\d+),v1=([a-f0-9]{64})$/i.exec(signature.trim());
+    if(!match)return false;
+    const timestamp=Number(match[1]);
+    if(!Number.isSafeInteger(timestamp)||Math.abs(Math.floor(Date.now()/1000)-timestamp)>300)return false;
+    if(timestampHeader&&timestampHeader!==match[1])return false;
+    const expected=await computeHmacSha256(this.webhookSecret,match[1]+"."+rawBody);
+    return constantTimeEqual(match[2].toLowerCase(),expected);
   }
 }

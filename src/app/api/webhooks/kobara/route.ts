@@ -8,10 +8,12 @@ export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
     const signature =
+      request.headers.get("kobara-signature") ||
       request.headers.get("x-kobara-signature") ||
       request.headers.get("x-signature") ||
       "";
     const timestamp =
+      request.headers.get("kobara-timestamp") ||
       request.headers.get("x-kobara-timestamp") ||
       request.headers.get("x-timestamp") ||
       null;
@@ -49,8 +51,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const eventType = event.event || event.type || "";
+    const eventType = event.event_type || event.event || event.type || "";
     const paymentData = event.data || event.payload || event;
+    const environment=request.headers.get('kobara-environment');
+    if(environment!==(process.env.KOBARA_MODE||'live')||event.environment!==environment||paymentData.environment!==environment)
+      return NextResponse.json({error:'environment_mismatch'},{status:400});
+    if(request.headers.get('kobara-event')&&request.headers.get('kobara-event')!==eventType)return NextResponse.json({error:'event_mismatch'},{status:400});
+
 
     const providerTxnId =
       paymentData.id || paymentData.payment_id || paymentData.transaction_id;
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
       paymentData.reference;
 
     // 3. Strict rejection of events missing provider_transaction_id or order_reference
-    if (!providerTxnId || !orderReference) {
+    if (!providerTxnId) {
       console.error("[Kobara Webhook] Rejected: Missing required identifiers", {
         hasProviderTxnId: Boolean(providerTxnId),
         hasOrderReference: Boolean(orderReference),
@@ -75,7 +82,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const currency = (paymentData.currency || "HTG").toUpperCase();
+    const currency = String(paymentData.currency || "").toUpperCase();
     if (currency !== "HTG") {
       console.error(`[Kobara Webhook] Rejected: Unsupported currency ${currency}`);
       return NextResponse.json(
@@ -86,21 +93,11 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = createAdminClient();
 
-    // 4. Resolve exact order by ID or reference — NEVER fetch latest payment blindly
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        String(orderReference)
-      );
-
-    let orderQuery = supabaseAdmin
-      .from("orders")
-      .select("id, reference, amount_htg, status, user_id, course_id");
-
-    if (isUuid) {
-      orderQuery = orderQuery.eq("id", orderReference);
-    } else {
-      orderQuery = orderQuery.eq("reference", orderReference);
-    }
+    // Bind the provider transaction to the persisted payment first. Kobara's public
+    // reference is not our order reference; metadata may be absent in a webhook.
+    const {data:binding,error:bindingError}=await supabaseAdmin.from('payments').select('id,order_id,provider,status,provider_txn_id').eq('provider_txn_id',String(providerTxnId)).maybeSingle();
+    if(bindingError||!binding)return NextResponse.json({error:'payment_not_bound'},{status:404});
+    const orderQuery=supabaseAdmin.from('orders').select('id, reference, amount_htg, status, user_id, course_id').eq('id',binding.order_id);
 
     const { data: order, error: orderErr } = await orderQuery.maybeSingle();
 
@@ -130,14 +127,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Match by transaction ID first, then active pending payment
-    let targetPayment =
-      payments.find((p) => p.provider_txn_id === String(providerTxnId)) ||
-      payments.find((p) => p.status === "validated") ||
-      payments.find(
-        (p) => p.status === "pending" || p.status === "awaiting_validation"
-      ) ||
-      payments[0];
+    const targetPayment=payments.find(p=>p.id===binding.id && p.provider_txn_id===String(providerTxnId));
+    if(!targetPayment || paymentData.provider!==binding.provider)return NextResponse.json({error:'payment_mismatch'},{status:400});
+    if(paymentData.metadata?.order_id && paymentData.metadata.order_id!==order.id)return NextResponse.json({error:'order_mismatch'},{status:400});
 
     // 6. Idempotency: If already validated, return 200 immediately
     if (targetPayment.status === "validated" || order.status === "paid") {
@@ -154,9 +146,8 @@ export async function POST(request: NextRequest) {
       eventType === "payment.validated" ||
       eventType === "charge.success"
     ) {
-      const rawAmount = paymentData.amount || paymentData.amount_htg;
-      const expectedAmount =
-        rawAmount !== undefined ? Math.round(Number(rawAmount)) : order.amount_htg;
+      const expectedAmount=Number(paymentData.amount ?? paymentData.amount_htg);
+      if(!Number.isSafeInteger(expectedAmount)||expectedAmount!==Number(order.amount_htg))return NextResponse.json({error:'amount_mismatch'},{status:400});
 
       // Mask sensitive metadata (remove tokens, mask phone numbers)
       const sanitizedMetadata = maskSensitiveData({
