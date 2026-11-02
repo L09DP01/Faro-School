@@ -1,5 +1,6 @@
 "use client";
 import Script from 'next/script';
+import {disposeBunnyPlayer} from '@/lib/video/bunny-player-lifecycle';
 import {useEffect,useRef,useState} from 'react';
 
 interface PlayerApi{on(event:string,callback:(data:any)=>void):void;off(event:string):void;pause():void;getDuration(callback:(duration:number)=>void):void;setCurrentTime(seconds:number):void}
@@ -11,9 +12,9 @@ export function BunnyEmbedPlayer({src,title,initialPositionSec,paused,onProgress
   player.on('ready',()=>{if(!alive)return;player.getDuration(duration=>{if(!alive)return;if(position.current>0&&position.current<duration-3)player.setCurrentTime(position.current);callback.current(position.current,duration,false);});
    player.on('timeupdate',data=>{if(!alive||!Number.isFinite(data?.seconds)||!Number.isFinite(data?.duration))return;position.current=data.seconds;const save=Date.now()-lastSave.current>=10000;if(save)lastSave.current=Date.now();callback.current(data.seconds,data.duration,save);});
    player.on('pause',()=>{if(alive)callback.current(position.current,0,true);});
-   player.on('ended',()=>{if(alive)player.getDuration(duration=>callback.current(duration,duration,true));});
+   player.on('ended',()=>{if(alive)player.getDuration(duration=>{if(alive)callback.current(duration,duration,true);});});
   });
-  return()=>{alive=false;for(const event of ['ready','timeupdate','pause','ended'])player.off(event);api.current=null;};
+  return()=>{alive=false;if(api.current===player)api.current=null;disposeBunnyPlayer(player);};
  },[src,scriptReady]);
  useEffect(()=>{if(paused)api.current?.pause();},[paused]);
  let safe=false;try{const url=new URL(src);safe=url.protocol==='https:'&&['iframe.mediadelivery.net','player.mediadelivery.net'].includes(url.hostname)&&url.pathname.startsWith('/embed/');}catch{}
