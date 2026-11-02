@@ -1,7 +1,8 @@
+import {bunnyStorageConnection} from '@/lib/bunny-storage';
 /** Public artwork prefix; private learning resources must never be stored here. */
 export function coverStorage(){
-  const zone=process.env.BUNNY_STORAGE_ZONE_NAME,key=process.env.BUNNY_STORAGE_API_KEY;
-  return zone&&key?{url:`https://storage.bunnycdn.com/${encodeURIComponent(zone)}/courses/covers`,key}:null;
+  const storage=bunnyStorageConnection();
+  return storage?{url:`${storage.url}/courses/covers`,key:storage.key}:null;
 }
 export function validCoverBytes(bytes:Uint8Array,type:string):'png'|'jpg'|'webp'|null{
   if(type==='image/png'&&bytes.length>=33&&[137,80,78,71,13,10,26,10].every((v,i)=>bytes[i]===v))return 'png';

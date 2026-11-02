@@ -4,6 +4,7 @@ import {mkdir} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 import {prepareCourseCover} from '../src/lib/video/prepare-course-cover';
+import {bunnyStorageConnection} from '../src/lib/bunny-storage';
 async function main(){
  await mkdir('tmp/cover-tests',{recursive:true});
  const g=globalThis as any;g.coverUser={id:'admin',role:'admin'};
@@ -14,7 +15,12 @@ async function main(){
  g.coverUser.role='student';assert.equal((await upload.POST(request())).status,403);
  g.coverUser.role='admin';delete process.env.BUNNY_STORAGE_API_KEY;assert.equal((await upload.POST(request())).status,503);
  process.env.BUNNY_STORAGE_ZONE_NAME='fixture';process.env.BUNNY_STORAGE_API_KEY='test-cover-key';
- let calls=0;g.fetch=async(url:any,init:any)=>{calls++;assert(String(url).startsWith('https://storage.bunnycdn.com/fixture/courses/covers/'));assert.equal(init.headers.AccessKey,'test-cover-key');assert.equal(init.body.byteLength,bytes.length);return new Response(null,{status:201});};
+ delete process.env.BUNNY_STORAGE_REGION;
+ assert.equal(bunnyStorageConnection()?.url,'https://ny.storage.bunnycdn.com/fixture');
+ process.env.BUNNY_STORAGE_REGION='de';assert.equal(bunnyStorageConnection()?.url,'https://storage.bunnycdn.com/fixture');
+ process.env.BUNNY_STORAGE_REGION='evil.example';assert.equal(bunnyStorageConnection(),null);
+ process.env.BUNNY_STORAGE_REGION='ny';
+ let calls=0;g.fetch=async(url:any,init:any)=>{calls++;assert(String(url).startsWith('https://ny.storage.bunnycdn.com/fixture/courses/covers/'));assert.equal(init.headers.AccessKey,'test-cover-key');assert.equal(init.body.byteLength,bytes.length);return new Response(null,{status:201});};
  const response=await upload.POST(request()),result=await response.json();assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'no-store');assert(result.url.startsWith('/api/covers/'));assert(result.url.length<100);assert(!JSON.stringify(result).includes('test-cover-key'));
  assert.equal((await upload.POST(request('image/svg+xml'))).status,400);assert.equal(calls,1);
  g.coverUser.role='instructor';assert.equal((await upload.POST(request())).status,200);

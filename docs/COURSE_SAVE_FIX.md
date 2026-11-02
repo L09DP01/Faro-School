@@ -36,10 +36,16 @@ Référence : https://nextjs.org/docs/app/api-reference/config/next-config-js/se
   simulée du Server Action, boutons réactivés, titre conservé, puis succès au nouvel
   essai sans deuxième upload. Aucun cours de production créé par le test.
 - Captures locales : `docs/screenshots/course-save/`.
-- Un appel en lecture seule avec la configuration **locale** Bunny Storage a retourné
-  401. Cela ne prouve pas la validité ou l’invalidité des secrets Cloudflare : vérifier
-  `BUNNY_STORAGE_ZONE_NAME` et `BUNNY_STORAGE_API_KEY` (mot de passe Storage en écriture)
-  dans les variables d’exécution Production. Ne pas utiliser la clé Stream.
+- Diagnostic régional confirmé ensuite dans le tableau de bord Bunny : zone
+  `faro-storage` (2022731), **New York**, endpoint
+  `https://ny.storage.bunnycdn.com/faro-storage`. L’ancien endpoint européen renvoyait
+  401 ; avec exactement la même clé, New York répond 200 en lecture et 201 lors d’un
+  vrai upload d’image technique de 134 octets. Le propriétaire a confirmé les valeurs
+  Production du nom de zone et de la clé Storage.
+- La connexion Storage est centralisée pour couvertures et uploads de signature.
+  `BUNNY_STORAGE_REGION` vaut `ny` par défaut pour cette zone existante ; `de` permet
+  une zone européenne dans un autre environnement. Seuls les codes régionaux pris
+  en charge sont acceptés : aucune clé ne part vers un hostname arbitraire.
 - Aucune opération Supabase distante. Aucune migration nécessaire.
 - Le formulaire déjà ouvert utilise l’ancien JavaScript : l’utilisateur conserve
   lui-même sa saisie avant de recharger. Il a refusé une copie locale de ses champs.

@@ -59,6 +59,7 @@ export const serverEnvSchema = z.object({
 
   // Bunny Storage CDN
   BUNNY_STORAGE_ZONE_NAME: z.string().default("faro-storage"),
+  BUNNY_STORAGE_REGION: z.enum(['de','ny','la','sg','syd','uk','se','jh']).default('ny'),
   BUNNY_STORAGE_API_KEY: z.string().optional(),
   BUNNY_STORAGE_CDN_HOSTNAME: z.string().default("cdn.faroschool.com"),
   BUNNY_STORAGE_TOKEN_KEY: z.string().optional(),

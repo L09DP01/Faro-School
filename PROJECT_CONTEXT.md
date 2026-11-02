@@ -8,7 +8,10 @@ Course publication repair (2026-11-02): covers upload as multipart to Bunny Stor
 not inline base64 in Server Actions. Public /api/covers serves only random artwork
 filenames from a dedicated prefix. Legacy inline covers are uploaded before saving;
 transport exceptions always release saving controls and preserve entered fields.
-See docs/COURSE_SAVE_FIX.md. Storage credentials require verification in Production.
+See docs/COURSE_SAVE_FIX.md. Owner confirmed Production zone/key. Bunny dashboard
+confirms zone faro-storage is in New York: use BUNNY_STORAGE_REGION=ny (default).
+The old European endpoint returned 401 with the same valid key; New York GET=200
+and a real technical cover PUT=201. No secret rotation is required by this fix.
 
 Moderation/supervision repair (2026-11-02): sanctioned-account OR filters use
 PostgREST `not.is.null`; failed sections are named and never counted as zero.
