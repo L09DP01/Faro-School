@@ -110,3 +110,9 @@ explicitement. Le cache passe à v5 pour éliminer les anciennes entrées. Les r
 La vidéo associée au cours Marketing a été contrôlée en lecture seule via l'API
 Bunny : encodage terminé (statut 4), 640×360, durée 2 secondes, variantes 240p/360p.
 Aucun réglage ni fichier distant n'a été modifié par ce contrôle.
+
+Confirmation réelle du propriétaire après déploiement et actualisation :
+« Le lecteur apparaît et la vidéo joue » sur son iPhone. La lecture réelle est
+donc confirmée sur cet appareil. Le navigateur automatisé du poste restait vide ;
+ses limites ne doivent pas être présentées comme un échec reproduit sur l'iPhone.
+Le parcours à deux comptes pour les assistants reste un contrôle manuel distinct.
