@@ -11,6 +11,7 @@ import {
   type AdminCourseFormData,
   type AdminModuleForm,
 } from "@/lib/admin/course-types";
+import {prepareCourseCover} from "@/lib/video/prepare-course-cover";
 import { saveCourseAction } from "@/app/actions/admin-courses";
 
 interface CourseFormClientProps {
@@ -163,10 +164,11 @@ export function CourseFormClient({
       const res = await fetch("/api/admin/upload/cover", {
         method: "POST",
         body: formData,
+        signal: AbortSignal.timeout(30000),
       });
 
       const data = await res.json();
-      if (res.ok && data.url) {
+      if (res.ok && typeof data.url === "string" && !data.url.startsWith("data:")) {
         setCoverUrl(data.url);
         if (fieldErrors.coverUrl) {
           setFieldErrors((prev) => {
@@ -176,7 +178,7 @@ export function CourseFormClient({
           });
         }
       } else {
-        setAlertError(data.error || "Erreur de téléversement de l'image.");
+        setAlertError(isHt ? "Imaj la pa fin voye. Verifye konfigirasyon Bunny Storage la epi eseye ankò." : "L’image n’a pas été envoyée. Vérifiez la configuration Bunny Storage puis réessayez.");
       }
     } catch {
       setAlertError("Erreur de téléversement de l'image.");
@@ -286,11 +288,12 @@ export function CourseFormClient({
 
   // Submit Handler
   const handleSubmit = async (publish: boolean) => {
-    if(videoUploadingLessonId)return;
+    if(videoUploadingLessonId||coverUploading||saving)return;
     setSaving(true);
     setAlertError(null);
     setAlertSuccess(null);
     setPublishPrerequisites([]);
+    try {
     const errors: { [key: string]: string } = {};
 
     // Validate locally for publication if publish is requested
@@ -375,6 +378,8 @@ export function CourseFormClient({
       })),
     };
 
+    formData.coverUrl = await prepareCourseCover(formData.coverUrl);
+    setCoverUrl(formData.coverUrl);
     const res = await saveCourseAction(formData, publish);
     setSaving(false);
 
@@ -385,7 +390,12 @@ export function CourseFormClient({
         router.push(publish&&res.courseId?`/admin/assistant-ia?tab=courses&courseId=${res.courseId}`:"/admin/formations");
       }, 1200);
     } else {
-      setAlertError(res.error || "Erreur lors de l'enregistrement.");
+      setAlertError(res.error || (isHt ? "Anrejistreman an pa reyisi." : "Erreur lors de l’enregistrement."));
+    }
+    } catch {
+      setAlertError(isHt ? "Anrejistreman an pa fini. Done ou yo rete nan fòm nan. Verifye koneksyon an epi eseye ankò." : "L’enregistrement n’a pas abouti. Vos champs sont conservés. Vérifiez la connexion puis réessayez.");
+    } finally {
+      setSaving(false);
     }
   };
 

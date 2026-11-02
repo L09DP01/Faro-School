@@ -4,6 +4,12 @@
 
 ## 2. Stack
 
+Course publication repair (2026-11-02): covers upload as multipart to Bunny Storage,
+not inline base64 in Server Actions. Public /api/covers serves only random artwork
+filenames from a dedicated prefix. Legacy inline covers are uploaded before saving;
+transport exceptions always release saving controls and preserve entered fields.
+See docs/COURSE_SAVE_FIX.md. Storage credentials require verification in Production.
+
 Moderation/supervision repair (2026-11-02): sanctioned-account OR filters use
 PostgREST `not.is.null`; failed sections are named and never counted as zero.
 AI supervision formats tiny USD estimates without false zero, translates statuses

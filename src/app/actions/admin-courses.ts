@@ -39,6 +39,7 @@ export async function saveCourseAction(
     }
 
     const data = parseResult.data;
+    if(data.coverUrl.startsWith("data:")||data.coverUrl.length>2048)return {success:false,error:"Veuillez téléverser à nouveau l’image de couverture."};
     const supabase = await createClient();
 
     let courseId = data.id;
