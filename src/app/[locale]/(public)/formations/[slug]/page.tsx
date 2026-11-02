@@ -168,6 +168,8 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
     };
   });
 
+  const firstLesson=curriculumModules.flatMap(module=>module.lessons)[0];
+  const continueHref=firstLesson?`/dashboard/learn/${course.slug}/${firstLesson.id}`:'/dashboard';
   const facts=(await getPublicCourseFacts([course.id])).get(course.id);
   const reviews=facts?.reviews || [];
   const averageRating=facts?.averageRating ?? null;
@@ -260,6 +262,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
                 priceHtg={course.price_htg}
                 comparePriceHtg={course.compare_price_htg}
                 isEnrolled={isEnrolled}
+                continueHref={continueHref}
               />
             </div>
 
@@ -272,6 +275,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
                 coverUrl={course.cover_url}
                 title={courseTitle}
                 isEnrolled={isEnrolled}
+                continueHref={continueHref}
                 firstPreviewLessonId={firstPreviewLessonId}
               />
             </div>

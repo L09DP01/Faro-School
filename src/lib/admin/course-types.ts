@@ -38,6 +38,7 @@ export interface AdminLessonForm {
   durationSec?: number;
   isFreePreview: boolean;
   resources: AdminResourceForm[];
+  quiz?: {question:string;choices:string[];correctIndex:number}[];
 }
 
 export interface AdminModuleForm {
@@ -127,6 +128,7 @@ export const adminCourseZodSchema = z.object({
           videoId: z.string().optional().default(""),
           durationSec: z.number().int().default(0),
           isFreePreview: z.boolean().default(false),
+          quiz: z.array(z.object({question:z.string().trim().min(5).max(1000),choices:z.array(z.string().trim().min(1).max(500)).length(4),correctIndex:z.number().int().min(0).max(3)})).max(20).optional().default([]),
           resources: z.array(
             z.object({
               id: z.string().optional(),

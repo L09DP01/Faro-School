@@ -20,13 +20,15 @@ export function StaffAvailabilityToggle({
   useEffect(() => {
     void getStaffAvailabilityAction().then(r=>{if(r.success&&r.data)setIsAvailable(r.data.available);});
     // Send immediate heartbeat on mount
-    staffHeartbeatAction();
+    const beat=()=>{if(document.visibilityState==="visible")void staffHeartbeatAction();};
+    beat();
 
     const interval = setInterval(() => {
-      staffHeartbeatAction();
+      beat();
     }, 30000);
 
-    return () => clearInterval(interval);
+    document.addEventListener("visibilitychange",beat);
+    return () => {clearInterval(interval);document.removeEventListener("visibilitychange",beat);};
   }, []);
 
   const handleToggle = () => {

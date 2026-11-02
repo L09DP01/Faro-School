@@ -93,6 +93,10 @@ export function StudentStaffChatView({
   },[currentUserId,isStaffView,router]);
 
   const activeReadId=activeConversation?.id;
+  const composerPaused=activeConversation?.status==='closed'||(!activeConversation?.courseId&&activeConversation?.status==='waiting_staff');
+  useEffect(()=>{setMessages(initialMessages);},[initialMessages,activeReadId]);
+  useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')router.refresh();};const timer=setInterval(refresh,5000);return()=>clearInterval(timer);},[activeReadId,router]);
+
   // Read receipts are sent only while the conversation is visible.
   useEffect(()=>{const mark=()=>{if(activeReadId&&document.visibilityState==='visible')void markConversationReadAction(activeReadId).then(r=>{if(r.success)window.dispatchEvent(new Event('faro:unread-changed'));}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[activeReadId,messages.length]);
 
@@ -143,7 +147,7 @@ export function StudentStaffChatView({
                   senderId: newRow.sender_id,
                   senderName:
                     newRow.sender_type === "ai"
-                      ? `Assistant IA de ${convStaffName}`
+                      ? (activeConversation?.courseId ? `Assistant pédagogique de ${convStaffName}` : 'Assistant support Faro School')
                       : newRow.sender_id === currentUserId
                       ? currentUserName
                       : isStaffView
@@ -201,7 +205,7 @@ export function StudentStaffChatView({
 
   // Handle message submission
   const handleSendMessage = () => {
-    if (isSendingRef.current || isPending) return;
+    if (isSendingRef.current || isPending || composerPaused) return;
     const trimmed = inputText.trim();
     if (!trimmed || !activeConversation) return;
 
@@ -646,11 +650,14 @@ export function StudentStaffChatView({
                 </div>
               )}
 
+              {composerPaused&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Tikè a ap tann repons ekip sipò a. Saisie a an poz.':'Votre ticket attend la réponse du support. La saisie est suspendue.'}</p>}
+              {activeConversation.courseId&&activeConversation.status==='waiting_staff'&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Yon kesyon ap tann pwofesè a. Ou ka poze asistan pedagojik la yon lòt kesyon.':'Une question attend le professeur. Vous pouvez poser une autre question à son assistant pédagogique.'}</p>}
               {/* Composer */}
               <footer data-chat-composer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-2 sm:gap-2.5 w-full">
                   <div className="flex-1 min-w-0 bg-slate-panel rounded-full px-3.5 sm:px-4 py-1.5 sm:py-2 flex items-center gap-2 border border-transparent focus-within:border-orange/40 focus-within:bg-white focus-within:ring-2 focus-within:ring-orange/20 transition-all">
                     <input
+                      disabled={composerPaused}
                       type="text"
                       placeholder={
                         isHt
@@ -671,7 +678,7 @@ export function StudentStaffChatView({
 
                   <button
                     onClick={handleSendMessage}
-                    disabled={isPending || !inputText.trim()}
+                    disabled={composerPaused || isPending || !inputText.trim()}
                     className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-orange hover:bg-orange-hover text-white shadow-orange flex items-center justify-center shrink-0 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
                     title={isHt ? "Voye mesaj la" : "Envoyer le message"}
                     aria-label="Envoyer le message"

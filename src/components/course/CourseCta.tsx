@@ -6,6 +6,7 @@ interface CourseCtaProps {
   priceHtg: number;
   comparePriceHtg?: number | null;
   isEnrolled: boolean;
+  continueHref?: string;
 }
 
 export function CourseCta({
@@ -13,6 +14,7 @@ export function CourseCta({
   priceHtg,
   comparePriceHtg,
   isEnrolled,
+  continueHref="/dashboard",
 }: CourseCtaProps) {
   const t = useTranslations("courseDetail.cta");
   const tCard = useTranslations("courseDetail.priceCard");
@@ -52,7 +54,7 @@ export function CourseCta({
 
         {isEnrolled ? (
           <Link
-            href="/dashboard"
+            href={continueHref}
             className="w-full sm:w-auto h-12 px-7 flex items-center justify-center rounded-xl bg-orange text-white font-heading font-semibold text-sm hover:bg-orange-strong shadow-orange transition-all"
           >
             {tCard("continueLearning")} →

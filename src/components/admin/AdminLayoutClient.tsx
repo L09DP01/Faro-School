@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/brand/Logo";
+import {AssistantTakeoverPrompt} from "@/components/messaging/AssistantTakeoverPrompt";
 import { StaffAvailabilityToggle } from "@/components/messaging/StaffAvailabilityToggle";
 import type { CurrentUser } from "@/lib/auth";
 import type { ReactNode } from "react";
@@ -240,6 +241,7 @@ export function AdminLayoutClient({
 
   return (
     <div className="pwa-admin-shell overflow-hidden bg-bg flex flex-col md:flex-row font-sans">
+      <AssistantTakeoverPrompt locale={locale}/>
       {/* ========================================================= */}
       {/* 1. PERSISTENT 260px NAVY SIDEBAR (Fixed 100dvh on Desktop)*/}
       {/* ========================================================= */}

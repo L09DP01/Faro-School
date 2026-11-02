@@ -88,11 +88,11 @@ export async function createConversationAction(
       const supabase = await createClient();
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("banned_at")
+        .select("banned_at,muted_until")
         .eq("id", user.id)
         .single();
 
-      if (userProfile?.banned_at) {
+      if ((!userProfile&&!isDemoMode()) || userProfile?.banned_at || (userProfile?.muted_until && Date.parse(userProfile.muted_until)>Date.now())) {
         return {
           success: false,
           error: "Votre compte est suspendu. Vous ne pouvez pas envoyer de messages.",
@@ -322,11 +322,11 @@ export async function sendPrivateMessageAction(
       const supabase = await createClient();
       const { data: userProfile } = await supabase
         .from("profiles")
-        .select("banned_at")
+        .select("banned_at,muted_until")
         .eq("id", user.id)
         .single();
 
-      if (userProfile?.banned_at) {
+      if ((!userProfile&&!isDemoMode()) || userProfile?.banned_at || (userProfile?.muted_until && Date.parse(userProfile.muted_until)>Date.now())) {
         return {
           success: false,
           error: "Votre compte est suspendu. Vous ne pouvez pas envoyer de messages.",
@@ -480,6 +480,7 @@ export async function sendPrivateMessageAction(
     const isStaff = user.id === conv.staffId;
     if (!isStudent && !isStaff) return {success:false,error:"forbidden"};
     if (conv.status === "closed") return {success:false,error:locale === "ht" ? "Konvèsasyon sa a fèmen." : "Cette discussion est clôturée."};
+    if(isStudent&&!conv.courseId&&conv.status==='waiting_staff')return{success:false,error:locale==='ht'?'Tikè a ap tann ekip sipò a. Ou pa ka ekri pou kounye a.':'Votre ticket attend le support. La saisie est suspendue.'};
     const senderType = isStudent ? "student" : "staff";
 
     // Create user message
@@ -557,9 +558,8 @@ export async function sendPrivateMessageAction(
       const trusted=createAdminClient();
       const {data:pending,error:pendingError}=await trusted.from('escalations').select('id').eq('conversation_id',conversationId).is('resolved_at',null).limit(1).maybeSingle();
       if(pendingError)throw Error('handoff_state_unavailable');
-      if(pending)await trusted.from('conversations').update({status:'waiting_staff'}).eq('id',conversationId);
       const staffOnline=await isStaffOnline(conv.staffId);
-      if(staffOnline&&(conv.courseId||pending||conv.status==='staff_replied'))return{success:true,data:studentMessage};
+      if((!conv.courseId&&pending)||(staffOnline&&conv.status==='staff_replied'))return{success:true,data:studentMessage};
       const {data:staff}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();
       if(staff){conv.staffName=staff.full_name||staff.display_name||'Faro School';conv.staffRole=staff.role;}
       const mode=conv.courseId?'course':'support';
@@ -570,19 +570,23 @@ export async function sendPrivateMessageAction(
         contextError=!!error||!!version.error;settings=version.data?.settings||undefined;
         if(context){summary=(user.locale==='ht'?context.summary_ht||context.summary_fr:context.summary_fr||context.summary_ht).slice(0,12000);settings={...settings,enabled:context.enabled&&settings?.enabled!==false};web=context.web_search_enabled===true;}
       }
-      const result=contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system').slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
+      const result=contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system'&&m.id!==messageId).slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
       const answer=result.answer.trim().slice(0,4000),safeAnswer=answer&&!(await checkStoredProfanity(answer)).blocked;
-      const meta={assistantMode:mode,confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
+      const meta={assistantMode:mode,assistantOwner:conv.courseId?conv.staffId:'faro-support',confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
       if(result.can_answer&&safeAnswer){
-        const {error}=await trusted.from('messages').insert({id:crypto.randomUUID(),conversation_id:conversationId,sender_type:'ai',sender_id:null,body:answer,meta});
+        const {error}=await trusted.rpc('commit_assistant_reply',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_body:answer,p_meta:meta});
         if(error)throw Error('assistant_message_unavailable');
-        await trusted.from('conversations').update({status:pending?'waiting_staff':'ai_handling'}).eq('id',conversationId);
       }else{
         const destination=conv.courseId?conv.staffName:(user.locale==='ht'?'ekip sipò Faro School':'l’équipe support Faro School');
-        const notice=user.locale==='ht'?'Mwen transmèt demann ou a bay '+destination+'. Ou ka ajoute detay isit la pandan w ap tann repons lan.':'Je transmets votre demande à '+destination+'. Vous pouvez ajouter des précisions ici en attendant sa réponse.';
+        const notice=conv.courseId?(user.locale==='ht'?'Mwen transmèt kesyon sa a bay '+destination+'. Tann repons pwofesè a. Pandan tan sa a, ou ka poze mwen yon lòt kesyon.':'Je transmets cette question à '+destination+'. Attendez sa réponse ; vous pouvez me poser une autre question pendant ce temps.'):(user.locale==='ht'?'Mwen kreye yon tikè pou ekip sipò a. Saisie a an poz pandan w ap tann repons yon administratè.':'Je crée un ticket pour l’équipe support. La saisie est suspendue en attendant la réponse d’un administrateur.');
         const {data:handoff,error}=await trusted.rpc('queue_assistant_handoff',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_reason:result.escalate_reason||'human_help_required',p_notice:(safeAnswer?answer+'\n\n':'')+notice,p_meta:meta});
         if(error)throw Error('handoff_unavailable');
         if(handoff?.email_id)await processOutbox(handoff.email_id);
+        if(conv.courseId&&handoff?.created===false){
+          const waiting=user.locale==='ht'?'Kesyon an toujou ap tann pwofesè a. Mwen pa gen yon repons ase sèten pou pwen sa a. Ou ka poze yon lòt kesyon pandan w ap tann.':'Cette question attend toujours le professeur. Je ne dispose pas d’une réponse assez fiable sur ce point. Vous pouvez poser une autre question pendant l’attente.';
+          const {error:noticeError}=await trusted.rpc('commit_assistant_reply',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_body:waiting,p_meta:meta});
+          if(noticeError)throw Error('waiting_notice_unavailable');
+        }
       }
     }catch{console.error('[messaging] assistant_or_handoff_unavailable');}
     try{revalidatePath('/[locale]/dashboard/messages','page');revalidatePath('/[locale]/admin/messages','page');}catch{}
@@ -649,9 +653,10 @@ export async function closeConversationAction(
       return { success: false, error: "Non autorisé." };
     }
 
-    if(!['closed','open'].includes(newStatus))return{success:false,error:'invalid_status'};
-    const db=await createClient();let query=db.from('conversations').update({status:newStatus}).eq('id',conversationId);query=user.role==='admin'?query.or(`staff_id.eq.${user.id},course_id.is.null`):query.eq('staff_id',user.id);const {data,error}=await query.select('id').single();
-    if(error||!data)return{success:false,error:'forbidden'};
+    if(newStatus!=='closed')return{success:false,error:'conversation_closed'};
+    const db=await createClient();const {error}=await db.rpc('set_conversation_control',{p_conversation:conversationId,p_control:'closed'});
+    if(error)return{success:false,error:'forbidden'};
+    const trusted=createAdminClient();await trusted.from('messages').update({read_at:new Date().toISOString()}).eq('conversation_id',conversationId).is('read_at',null);await trusted.from('notifications').update({read_at:new Date().toISOString()}).eq('payload->>conversationId',conversationId).is('read_at',null);
     revalidatePath('/[locale]/admin/messages','page');return{success:true};
   }catch{return{success:false,error:'unavailable'};}
 }
@@ -683,4 +688,19 @@ export async function getStaffAvailabilityAction():Promise<MessagingActionResult
  const user=await getCurrentUser();if(!user||!['instructor','admin'].includes(user.role))return{success:false,error:'forbidden'};
  const db=await createClient();const {data,error}=await db.from('profiles').select('staff_available').eq('id',user.id).single();
  return error||!data?{success:false,error:'availability_unavailable'}:{success:true,data:{available:data.staff_available}};
+}
+
+/** Explicit takeover: online presence alone never silences the course assistant. */
+export async function takeConversationControlAction(conversationId:string,control:'human'|'ai'='human'):Promise<MessagingActionResult>{
+ const user=await getCurrentUser();if(!user||!['admin','instructor'].includes(user.role)||!['human','ai'].includes(control))return{success:false,error:'forbidden'};
+ const db=await createClient();const {error}=await db.rpc('set_conversation_control',{p_conversation:conversationId,p_control:control});
+ if(error)return{success:false,error:'forbidden'};
+ revalidatePath('/[locale]/admin/messages','page');return{success:true};
+}
+export async function loadAssistantTakeoversAction():Promise<MessagingActionResult<Conversation[]>>{
+ const user=await getCurrentUser();if(!user||!['admin','instructor'].includes(user.role))return{success:false,error:'forbidden'};
+ const db=await createClient();const {data:profile,error}=await db.from('profiles').select('staff_available').eq('id',user.id).single();
+ if(error||!profile)return{success:false,error:'unavailable'};if(!profile.staff_available)return{success:true,data:[]};
+ const {getStaffConversations}=await import('@/lib/messaging/data');const conversations=await getStaffConversations(user.id,false,user.role==='admin');
+ return{success:true,data:conversations.filter(c=>c.courseId&&c.staffId===user.id&&['open','ai_handling','waiting_staff'].includes(c.status)).slice(0,10)};
 }

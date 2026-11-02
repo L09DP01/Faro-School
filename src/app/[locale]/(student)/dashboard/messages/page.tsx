@@ -1,3 +1,4 @@
+import {chatRestriction,ChatRestrictionNotice} from "@/components/messaging/ChatRestrictionNotice";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { setRequestLocale } from "next-intl/server";
@@ -30,6 +31,9 @@ export default async function StudentMessagesPage({
   if (!user) {
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/messages`);
   }
+  const restriction=await chatRestriction(user.id);
+  if(restriction.blocked)return <ChatRestrictionNotice locale={locale} until={restriction.until}/>;
+
 
   const [conversations, enrolledCourses, systemNotifications] = await Promise.all([
     getStudentConversations(user.id),

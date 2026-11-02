@@ -13,6 +13,7 @@ interface StickyPurchaseCardProps {
   coverUrl?: string | null;
   title: string;
   isEnrolled: boolean;
+  continueHref?: string;
   onPreviewClick?: () => void;
   firstPreviewLessonId?: string | null;
 }
@@ -24,6 +25,7 @@ export function StickyPurchaseCard({
   coverUrl,
   title,
   isEnrolled,
+  continueHref="/dashboard",
   onPreviewClick,
   firstPreviewLessonId,
 }: StickyPurchaseCardProps) {
@@ -112,7 +114,7 @@ export function StickyPurchaseCard({
                   <span>{t("enrolledAlert")}</span>
                 </div>
                 <Link
-                  href="/dashboard"
+                  href={continueHref}
                   className="w-full h-12 flex items-center justify-center rounded-xl bg-orange text-white font-heading font-semibold text-base hover:bg-orange-strong shadow-orange transition-all"
                 >
                   {t("continueLearning")} →
@@ -213,7 +215,7 @@ export function StickyPurchaseCard({
           <div>
             {isEnrolled ? (
               <Link
-                href="/dashboard"
+                href={continueHref}
                 className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-orange text-white font-heading font-semibold text-xs shadow-orange hover:bg-orange-strong"
               >
                 {t("continueLearning")} →

@@ -28,6 +28,7 @@ export class BunnyStreamProvider implements VideoProvider {
     userId: string,
     expiresInSeconds: number = 3600
   ): Promise<string> {
+    if(!this.libraryId||!this.tokenAuthKey)throw Error("Video playback configuration unavailable");
     const access = await checkLessonAccess(lessonId, userId);
 
     if (!access.canAccess || !access.videoId) {

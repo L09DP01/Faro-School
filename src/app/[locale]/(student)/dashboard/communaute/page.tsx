@@ -1,3 +1,4 @@
+import {chatRestriction,ChatRestrictionNotice} from "@/components/messaging/ChatRestrictionNotice";
 import {hasCommunityAccess} from "@/lib/community/access";
 import {Link} from "@/i18n/navigation";
 import {getTranslations} from "next-intl/server";
@@ -31,6 +32,9 @@ export default async function StudentCommunityPage({ params }: CommunityPageProp
   if (!user) {
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/communaute`);
   }
+  const restriction=await chatRestriction(user.id);
+  if(restriction.blocked)return <ChatRestrictionNotice locale={locale} until={restriction.until}/>;
+
 
   if(!await hasCommunityAccess(user)){
     const t=await getTranslations({locale,namespace:'communityAccess'});

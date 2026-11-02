@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import {LessonQuiz} from "./LessonQuiz";
+import {BunnyEmbedPlayer} from "./BunnyEmbedPlayer";
+import {openStaffConversationAction} from "@/app/actions/student-messaging";
 import { CertificateCelebration } from "@/components/certificates/StudentCertificates";
 import { Link } from "@/i18n/navigation";
 import {
@@ -64,6 +67,8 @@ interface ModuleItem {
 }
 
 interface LessonPlayerClientProps {
+  courseId?: string;
+  instructorName?: string;
   courseSlug: string;
   courseTitle: string;
   lessonId: string;
@@ -82,6 +87,8 @@ interface LessonPlayerClientProps {
 }
 
 export function LessonPlayerClient({
+  courseId,
+  instructorName,
   courseSlug,
   courseTitle,
   lessonId,
@@ -128,10 +135,13 @@ export function LessonPlayerClient({
   const [courseCompletedCertCode, setCourseCompletedCertCode] = useState<string | null>(null);
 
   // Tabs & Notes State
-  const [activeTab, setActiveTab] = useState<"description" | "resources" | "questions" | "notes">("description");
+  const [activeTab, setActiveTab] = useState<"description" | "resources" | "questions" | "notes" | "quiz">("description");
   const [notesContent, setNotesContent] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [notesDirty,setNotesDirty]=useState(false);
+  const [notesError,setNotesError]=useState(false);
+  const [notesLoaded,setNotesLoaded]=useState(false);
 
   // Mobile drawer state
   const [curriculumDrawerOpen, setCurriculumDrawerOpen] = useState(false);
@@ -191,7 +201,7 @@ export function LessonPlayerClient({
   // 2. Dynamic Watermark Movement (moves every 15-30 seconds)
   useEffect(() => {
     const moveWatermark = () => {
-      const top = Math.floor(15 + Math.random() * 65);
+      const top = Math.floor(12 + Math.random() * 35);
       const left = Math.floor(10 + Math.random() * 60);
       setWatermarkPos({ top, left });
     };
@@ -361,7 +371,7 @@ export function LessonPlayerClient({
       if (countdown === 1) {
         setCountdown(null);
         if (nextLesson) {
-          router.push(`/dashboard/learn/${courseSlug}/${nextLesson.id}`);
+          router.push(`/${locale}/dashboard/learn/${courseSlug}/${nextLesson.id}`);
         }
       } else {
         setCountdown(countdown - 1);
@@ -369,7 +379,7 @@ export function LessonPlayerClient({
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [countdown, nextLesson, router, courseSlug]);
+  }, [countdown, nextLesson, router, courseSlug, locale]);
 
   // 9. Manual "Mark as Complete" Action
   const handleToggleComplete = async () => {
@@ -390,11 +400,13 @@ export function LessonPlayerClient({
       try {
         const res = await fetch(`/api/video/notes?lessonId=${lessonId}`);
         const data = await res.json();
+        if(!res.ok)throw Error();
         if (isMounted && data.content !== undefined) {
+          setNotesLoaded(true);
           setNotesContent(data.content);
         }
       } catch {
-        // Silently ignore
+        if(isMounted)setNotesError(true);
       }
     };
     fetchNotes();
@@ -405,25 +417,26 @@ export function LessonPlayerClient({
 
   const handleNotesChange = (text: string) => {
     setNotesContent(text);
-    setNotesSaved(false);
+    setNotesSaved(false);setNotesDirty(true);setNotesError(false);
   };
 
   useEffect(() => {
-    if (!notesContent) return;
+    if (!notesDirty) return;
     setNotesSaving(true);
     const timeout = setTimeout(async () => {
       try {
-        await saveLessonNoteAction(lessonId, notesContent);
+        const result=await saveLessonNoteAction(lessonId, notesContent);
+        if(!result.success)throw Error();
         setNotesSaving(false);
         setNotesSaved(true);
         setTimeout(() => setNotesSaved(false), 2500);
       } catch {
-        setNotesSaving(false);
+        setNotesSaving(false);setNotesError(true);
       }
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [notesContent, lessonId]);
+  }, [notesContent, lessonId, notesDirty]);
 
   // 11. Play/Pause toggle handler
   const handlePlayToggle = () => {
@@ -488,14 +501,14 @@ export function LessonPlayerClient({
       } else if (e.key === "n" || e.key === "N") {
         if (nextLesson) {
           e.preventDefault();
-          router.push(`/dashboard/learn/${courseSlug}/${nextLesson.id}`);
+          router.push(`/${locale}/dashboard/learn/${courseSlug}/${nextLesson.id}`);
         }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [nextLesson, router, courseSlug]);
+  }, [nextLesson, router, courseSlug, locale]);
 
   const handleSpeedChange = (rate: number) => {
     setPlaybackRate(rate);
@@ -526,7 +539,7 @@ export function LessonPlayerClient({
   const watermarkText = `${user.name || "Étudiant Faro"} • ${user.phone || ""}`.trim();
 
   return (
-    <div className="pwa-lesson-shell bg-bg flex flex-col font-sans">
+    <div className="pwa-lesson-shell bg-bg flex flex-col font-sans w-full min-w-0 overflow-x-hidden">
       {/* ========================================================= */}
       {/* 1. SLIM WHITE TOP BAR                                     */}
       {/* ========================================================= */}
@@ -650,10 +663,12 @@ export function LessonPlayerClient({
             <div
               style={{
                 top: `${watermarkPos.top}%`,
-                left: `${watermarkPos.left}%`,
+                left: `${Math.min(watermarkPos.left,55)}%`,
+                maxWidth: "44%",
+                transform: "translateX(-25%)",
                 transition: "all 1.5s ease-in-out",
               }}
-              className="absolute z-30 pointer-events-none select-none text-[10px] sm:text-xs font-mono font-bold tracking-wider text-white/35 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] px-2.5 py-1 rounded bg-black/10 backdrop-blur-[1px]"
+              className="absolute z-10 pointer-events-none select-none break-words overflow-hidden max-h-12 text-[8px] sm:text-xs font-mono font-bold tracking-wider text-white/35 drop-shadow-[0_1px_3px_rgba(0,0,0,0.85)] px-2.5 py-1 rounded bg-black/10 backdrop-blur-[1px]"
             >
               {watermarkText}
             </div>
@@ -687,145 +702,8 @@ export function LessonPlayerClient({
               </div>
             ) : (
               <>
-                <video
-                  ref={videoRef}
-                  src={playbackUrl || undefined}
-                  poster={posterUrl || undefined}
-                  controlsList="nodownload"
-                  disablePictureInPicture
-                  playsInline
-                  onClick={handlePlayToggle}
-                  className="w-full h-full object-contain cursor-pointer"
-                />
+                {playbackUrl&&<BunnyEmbedPlayer src={playbackUrl} title={lessonTitle} initialPositionSec={currentTime} paused={deviceBlocked} onProgress={(seconds,total,save)=>{setCurrentTime(seconds);if(total>0)setDuration(total);if(save)void saveProgress(seconds,false);if(total>0&&seconds/total>=0.9&&!autoCompleteTriggered&&!isCurrentCompleted){setAutoCompleteTriggered(true);setCompletedIds(ids=>ids.includes(lessonId)?ids:[...ids,lessonId]);void saveProgress(seconds,true);if(nextLesson)setCountdown(5);}}}/>}
 
-                {/* Centered Translucent Round Play Button (before starting or when paused) */}
-                {!isPlaying && (
-                  <button
-                    type="button"
-                    onClick={handlePlayToggle}
-                    className="absolute z-20 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-surface/20 hover:bg-surface/30 backdrop-blur-md text-white flex items-center justify-center transition-all transform hover:scale-105 shadow-xl border border-white/20"
-                    aria-label="Lire la vidéo"
-                  >
-                    <Play className="w-8 h-8 sm:w-10 sm:h-10 ml-1 fill-white" />
-                  </button>
-                )}
-
-                {/* Custom Control Bar at the Bottom */}
-                <div
-                  className={`absolute bottom-0 inset-x-0 z-20 bg-gradient-to-t from-navy-deep/95 via-navy-deep/70 to-transparent p-3 sm:p-4 space-y-2 transition-opacity duration-300 ${
-                    controlsVisible || !isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"
-                  }`}
-                >
-                  {/* Thin Amber Progress Line */}
-                  <div
-                    ref={progressBarRef}
-                    onClick={handleSeek}
-                    className="w-full h-1.5 sm:h-2 rounded-full bg-white/25 cursor-pointer relative group/bar hover:h-2.5 transition-all"
-                  >
-                    <div
-                      className="h-full rounded-full bg-orange relative transition-all"
-                      style={{
-                        width: duration > 0 ? `${(currentTime / duration) * 100}%` : "0%",
-                      }}
-                    >
-                      <span className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white shadow opacity-0 group-hover/bar:opacity-100 transition-opacity" />
-                    </div>
-                  </div>
-
-                  {/* Controls Row */}
-                  <div className="flex items-center justify-between text-white text-xs pt-1">
-                    {/* Left Controls: Play/Pause, Replay 5s, Time */}
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handlePlayToggle}
-                        className="p-1.5 hover:text-orange transition-colors"
-                        aria-label={isPlaying ? "Pause" : "Lecture"}
-                      >
-                        {isPlaying ? (
-                          <Pause className="w-4 h-4 fill-current" />
-                        ) : (
-                          <Play className="w-4 h-4 fill-current ml-0.5" />
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
-                          }
-                        }}
-                        className="p-1 hover:text-orange transition-colors text-white/80"
-                        title="Reculer de 5s"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (videoRef.current) {
-                            videoRef.current.muted = !videoRef.current.muted;
-                            setIsMuted(videoRef.current.muted);
-                          }
-                        }}
-                        className="p-1 hover:text-orange transition-colors text-white/80"
-                        title={isMuted ? "Activer le son" : "Couper le son"}
-                      >
-                        {isMuted ? (
-                          <VolumeX className="w-4 h-4 text-orange" />
-                        ) : (
-                          <Volume2 className="w-4 h-4" />
-                        )}
-                      </button>
-
-                      <span className="font-mono text-[11px] text-white/80 select-none">
-                        {formatTime(currentTime)} / {formatTime(duration)}
-                      </span>
-                    </div>
-
-                    {/* Right Controls: Speed, Language Pill, Fullscreen */}
-                    <div className="flex items-center gap-2.5">
-                      {/* Speed Selector */}
-                      <div className="flex items-center gap-1 bg-white/10 rounded-lg p-0.5 text-[10px] font-heading font-semibold">
-                        {[0.75, 1, 1.25, 1.5].map((rate) => (
-                          <button
-                            key={rate}
-                            type="button"
-                            onClick={() => handleSpeedChange(rate)}
-                            className={`px-1.5 py-0.5 rounded ${
-                              playbackRate === rate
-                                ? "bg-orange text-white"
-                                : "text-white/70 hover:text-white"
-                            }`}
-                          >
-                            {rate}x
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Language pill */}
-                      <span className="text-[10px] font-heading font-bold px-2 py-0.5 rounded bg-white/10 text-white/80 uppercase">
-                        {locale === "ht" ? "KR" : "FR"}
-                      </span>
-
-                      {/* Fullscreen Button */}
-                      <button
-                        type="button"
-                        onClick={handleFullscreenToggle}
-                        className="p-1 hover:text-orange transition-colors text-white/90"
-                        title={isFullscreen ? "Quitter le plein écran" : "Plein écran"}
-                      >
-                        {isFullscreen ? (
-                          <Minimize2 className="w-4 h-4" />
-                        ) : (
-                          <Maximize2 className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </>
             )}
 
@@ -842,7 +720,7 @@ export function LessonPlayerClient({
                       onClick={() => {
                         setCountdown(null);
                         if (nextLesson) {
-                          router.push(`/dashboard/learn/${courseSlug}/${nextLesson.id}`);
+                          router.push(`/${locale}/dashboard/learn/${courseSlug}/${nextLesson.id}`);
                         }
                       }}
                       className="flex-1 py-2.5 rounded-xl bg-orange hover:bg-orange-strong text-white text-xs font-heading font-bold shadow-orange transition-all"
@@ -913,15 +791,15 @@ export function LessonPlayerClient({
                   <span>{isCurrentCompleted ? t("next") : "Terminer & suivant"}</span>
                   <span>→</span>
                 </Link>
-              ) : (
+              ) : courseCompletedCertCode ? (
                 <Link
                   href="/certificats"
                   className="px-5 py-2.5 rounded-xl bg-orange hover:bg-orange-strong text-white font-heading font-bold text-xs sm:text-sm transition-all shadow-orange flex items-center gap-2"
                 >
-                  <span>Voir mon certificat</span>
+                  <span>{locale==="ht"?"Jwenn sètifika mwen":"Obtenir mon certificat"}</span>
                   <span>→</span>
                 </Link>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -929,7 +807,7 @@ export function LessonPlayerClient({
           {/* TABS WITH BLUE UNDERLINE: Description, Ressources, Notes */}
           {/* ======================================================= */}
           <div className="space-y-5">
-            <div className="flex border-b border-line gap-6 text-sm font-heading">
+            <div className="grid grid-cols-2 sm:flex border-b border-line gap-2 sm:gap-6 text-sm font-heading min-w-0">
               <button
                 type="button"
                 onClick={() => setActiveTab("description")}
@@ -981,8 +859,10 @@ export function LessonPlayerClient({
                 <Edit3 className="w-4 h-4" />
                 <span>{t("tabs.notes")}</span>
               </button>
+              <button type="button" onClick={()=>setActiveTab('quiz')} className={`pb-3 border-b-2 text-sm font-semibold ${activeTab==='quiz'?'border-blue text-blue':'border-transparent text-muted-faro'}`}>{locale==='ht'?'Tès opsyonèl':'Test facultatif'}</button>
             </div>
 
+            {activeTab==='quiz'&&<LessonQuiz lessonId={lessonId} locale={locale}/>}
             {/* Tab 1: Description */}
             {activeTab === "description" && (
               <div className="text-sm text-ink leading-relaxed font-sans bg-surface rounded-[18px] border border-line p-6 shadow-subtle">
@@ -1039,21 +919,9 @@ export function LessonPlayerClient({
                   Une question sur cette leçon ?
                 </h3>
                 <p className="text-muted-faro text-xs leading-relaxed">
-                  Notre équipe pédagogique et l&apos;instructeur Jean-Marc Joseph répondent directement à vos questions pratiques pour vous aider à progresser.
+                  {locale==='ht'?`Asistan pedagojik la ak ${instructorName||'otè kou a'} ka ede ou sou leson sa a.`:`L’assistant pédagogique et ${instructorName||'l’auteur du cours'} peuvent vous aider sur cette leçon.`}
                 </p>
-                <div className="pt-2">
-                  <a
-                    href={`https://wa.me/50936000000?text=${encodeURIComponent(
-                      `Bonjour Faro School, j'ai une question sur la leçon "${lessonTitle}" (${courseTitle}).`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-ok hover:bg-ok/90 text-white font-heading font-bold text-xs transition-colors shadow-sm"
-                  >
-                    <span>Poser ma question sur WhatsApp</span>
-                    <span>→</span>
-                  </a>
-                </div>
+                <div className="pt-2"><button type="button" className="min-h-11 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange text-white font-heading font-bold text-sm" onClick={async()=>{if(!courseId)return;const result=await openStaffConversationAction(courseId,locale);if(result.success&&result.data)router.push(`/${locale}/dashboard/messages/${result.data.conversationId}`);else setVideoError(locale==='ht'?'Mesaj yo pa disponib.':'La messagerie est indisponible.');}}>{locale==='ht'?'Poze kesyon mwen':'Poser ma question'} →</button></div>
               </div>
             )}
 
@@ -1061,6 +929,8 @@ export function LessonPlayerClient({
             {activeTab === "notes" && (
               <div className="space-y-2.5 bg-surface rounded-[18px] border border-line p-6 shadow-subtle">
                 <textarea
+                  disabled={!notesLoaded}
+                  maxLength={20000}
                   value={notesContent}
                   onChange={(e) => handleNotesChange(e.target.value)}
                   placeholder={t("notesPlaceholder")}
@@ -1068,7 +938,7 @@ export function LessonPlayerClient({
                   className="w-full p-4 rounded-xl border-[1.5px] border-line bg-surface text-ink text-sm focus:outline-none focus:border-orange focus:ring-2 focus:ring-orange/20 transition-all resize-y font-sans leading-relaxed"
                 />
                 <div className="flex justify-end text-xs font-sans text-muted-faro">
-                  {notesSaving ? (
+                  {notesError?<span className="text-red">{locale==="ht"?"Nòt la pa sove. Eseye ankò.":"La note n’a pas été enregistrée. Réessayez."}</span>:notesSaving ? (
                     <span className="flex items-center gap-1 text-orange">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       <span>{t("notesSaving")}</span>
@@ -1076,7 +946,7 @@ export function LessonPlayerClient({
                   ) : notesSaved ? (
                     <span className="text-ok font-semibold">✓ {t("notesSaved")}</span>
                   ) : (
-                    <span>Notes privées enregistrées automatiquement.</span>
+                    <span>{locale==="ht"?"Nòt prive ou yo sove otomatikman.":"Notes privées enregistrées automatiquement."}</span>
                   )}
                 </div>
               </div>

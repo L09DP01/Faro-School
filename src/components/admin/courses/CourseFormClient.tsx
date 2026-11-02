@@ -1,4 +1,5 @@
 "use client";
+import {LessonExtrasEditor} from "./LessonExtrasEditor";
 
 import {uploadVideoFile,validateVideoFile} from "@/lib/video/direct-upload-client";
 import { useState, useRef } from "react";
@@ -70,6 +71,7 @@ export function CourseFormClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoFileInputRef=useRef<HTMLInputElement>(null);
   const selectedVideoLesson=useRef<{mIdx:number;lIdx:number}|null>(null);
+  const [resourceUploadCount,setResourceUploadCount]=useState(0);
   const isHt=_locale==='ht';
 
   const [persistedCourseId,setPersistedCourseId]=useState(initialCourse?.id);
@@ -288,7 +290,7 @@ export function CourseFormClient({
 
   // Submit Handler
   const handleSubmit = async (publish: boolean) => {
-    if(videoUploadingLessonId||coverUploading||saving)return;
+    if(videoUploadingLessonId||coverUploading||saving||resourceUploadCount>0)return;
     setSaving(true);
     setAlertError(null);
     setAlertSuccess(null);
@@ -912,6 +914,7 @@ export function CourseFormClient({
                                 </button>
                               </div>
 
+                              <LessonExtrasEditor lesson={les} locale={_locale} onUploadStateChange={delta=>setResourceUploadCount(count=>Math.max(0,count+delta))} onChange={patch=>setModules(items=>items.map((mod,mi)=>mi===mIdx?{...mod,lessons:mod.lessons.map((item,li)=>li===lIdx?{...item,...patch}:item)}:mod))}/>
                               {/* Lesson Controls & Video Badge */}
                               <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-[11px] border-t border-line/60">
                                 <label className="inline-flex items-center gap-2 text-muted-faro cursor-pointer">

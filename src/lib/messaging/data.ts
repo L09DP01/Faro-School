@@ -122,6 +122,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
         )
       `)
       .eq("student_id", studentId)
+      .neq("status","closed")
       .order("last_message_at", { ascending: false });
 
     if (!error && data && data.length > 0) {
@@ -299,6 +300,7 @@ export async function getConversationById(
 
     if (!error && row) {
       const rowData: any = row;
+      if(currentUserId===rowData.student_id&&rowData.status==="closed")return null;
       // Permission check
       if (
         currentUserRole !== "admin" &&

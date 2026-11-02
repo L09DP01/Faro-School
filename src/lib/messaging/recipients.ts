@@ -7,8 +7,8 @@ export class RecipientError extends Error { constructor(public code:'courseUnava
 export async function resolveStudentRecipient(user:CurrentUser,courseId:string|null){
  if(user.role!=='student'||!user.emailVerified)throw new RecipientError('forbidden');
  const db=createAdminClient({timeoutMs:10000});
- const {data:actor,error:actorError}=await db.from('profiles').select('id,role,email_verified_at,banned_at').eq('id',user.id).single();
- if(actorError||actor?.role!=='student'||!actor.email_verified_at||actor.banned_at)throw new RecipientError('forbidden');
+ const {data:actor,error:actorError}=await db.from('profiles').select('id,role,email_verified_at,banned_at,muted_until').eq('id',user.id).single();
+ if(actorError||actor?.role!=='student'||!actor.email_verified_at||actor.banned_at||(actor.muted_until&&Date.parse(actor.muted_until)>Date.now()))throw new RecipientError('forbidden');
  let staffId:string|undefined,courseTitle:string|null=null;
  if(courseId){
   if(!z.string().uuid().safeParse(courseId).success)throw new RecipientError('courseUnavailable');

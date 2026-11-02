@@ -1,4 +1,5 @@
-import { redirect, notFound } from "next/navigation";
+import {chatRestriction,ChatRestrictionNotice} from "@/components/messaging/ChatRestrictionNotice";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { setRequestLocale } from "next-intl/server";
 import {
@@ -29,6 +30,9 @@ export default async function StudentConversationPage({
   if (!user) {
     redirect(`/${locale}/connexion?next=/${locale}/dashboard/messages/${id}`);
   }
+  const restriction=await chatRestriction(user.id);
+  if(restriction.blocked)return <ChatRestrictionNotice locale={locale} until={restriction.until}/>;
+
 
   const [conversations, activeConversation, initialMessages, enrolledCourses, systemNotifications] =
     await Promise.all([
@@ -40,7 +44,7 @@ export default async function StudentConversationPage({
     ]);
 
   if (!activeConversation) {
-    notFound();
+    redirect(`/${locale}/dashboard/messages`);
   }
 
   return (

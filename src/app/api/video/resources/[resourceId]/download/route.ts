@@ -1,3 +1,4 @@
+import {bunnyStorageConnection} from "@/lib/bunny-storage";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -62,6 +63,13 @@ export async function GET(
       }
     }
 
+    if(/^lesson-resources\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf$/i.test(resource.file_url)){
+      const connection=bunnyStorageConnection();if(!connection)return NextResponse.json({error:'storage_unavailable'},{status:503});
+      const file=await fetch(connection.url+'/'+resource.file_url,{headers:{AccessKey:connection.key},signal:AbortSignal.timeout(30000)});
+      if(!file.ok||!file.body)return NextResponse.json({error:'resource_unavailable'},{status:404});
+      const filename=encodeURIComponent(resource.name.replace(/[\r\n]/g,'').slice(0,180));
+      return new Response(file.body,{headers:{'Content-Type':'application/pdf','Content-Disposition':"attachment; filename*=UTF-8''"+filename,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+    }
     // 3. Generate signed URL or redirect
     const storage = new BunnyStorage();
     const signedUrl = await storage.getSignedResourceUrl(

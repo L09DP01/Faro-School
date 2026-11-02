@@ -255,10 +255,11 @@ export async function saveCourseAction(
 
         if (!lesId)throw Error("Leçon non enregistrée.");
 
-        // Resources
+        if(les.quiz?.length){await checked(supabase.from('lesson_quizzes').upsert({lesson_id:lesId,questions:les.quiz,updated_at:new Date().toISOString()},{onConflict:'lesson_id'}));}
+        else {await checked(supabase.from('lesson_quizzes').delete().eq('lesson_id',lesId));}
+        // Deleting the last attachment must also persist an empty list.
+        await checked(supabase.from("lesson_resources").delete().eq("lesson_id", lesId));
         if (les.resources && les.resources.length > 0) {
-          // Delete existing resources for this lesson and re-insert
-          await checked(supabase.from("lesson_resources").delete().eq("lesson_id", lesId));
           await checked(supabase.from("lesson_resources").insert(
             les.resources.map((r) => ({
               lesson_id: lesId,

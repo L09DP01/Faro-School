@@ -105,6 +105,9 @@ export async function saveLessonNoteAction(
       return { success: false, error: "Non autorisé" };
     }
 
+    if(typeof content!=='string'||content.length>20000)return{success:false,error:'invalid_note'};
+    const {checkLessonAccess}=await import('@/lib/video/access');
+    if(!(await checkLessonAccess(lessonId,user.id)).canAccess)return{success:false,error:'forbidden'};
     const supabase = await createClient();
     const { error } = await supabase
       .from("lesson_notes")

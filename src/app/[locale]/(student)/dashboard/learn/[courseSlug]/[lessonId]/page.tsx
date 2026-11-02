@@ -61,6 +61,9 @@ export default async function LessonPlayerPage({
       slug,
       title_fr,
       title_ht,
+      description_fr,
+      description_ht,
+      instructor_id,
       status,
       modules (
         id,
@@ -94,6 +97,7 @@ export default async function LessonPlayerPage({
     notFound();
   }
 
+  if(access.courseId!==course.id)notFound();
   if (!access.canAccess) {
     redirect(`/${locale}/formations/${courseSlug}`);
   }
@@ -169,7 +173,9 @@ export default async function LessonPlayerPage({
 
   const courseTitle = localized(course, "title", locale as "fr" | "ht");
   const lessonTitle = localized(currentLesson, "title", locale as "fr" | "ht");
-  const lessonDescription = localized(currentLesson, "description", locale as "fr" | "ht");
+  const lessonDescription = localized(currentLesson, "description", locale as "fr" | "ht") || localized(course,"description",locale as "fr"|"ht");
+  const {getPublicCourseFacts}=await import("@/lib/public-course-facts");
+  const facts=await getPublicCourseFacts([course.id]);
 
   const resourcesList = (currentLesson.lesson_resources || []).map((r) => ({
     id: r.id,
@@ -179,6 +185,8 @@ export default async function LessonPlayerPage({
 
   return (
     <LessonPlayerClient
+      courseId={course.id}
+      instructorName={facts.get(course.id)?.instructor?.fullName}
       courseSlug={course.slug}
       courseTitle={courseTitle}
       lessonId={currentLesson.id}

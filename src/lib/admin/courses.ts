@@ -153,6 +153,8 @@ export async function getAdminCourseById(id: string): Promise<AdminCourseFormDat
       return null;
     }
 
+    const {data:quizzes,error:quizError}=await supabase.from('lesson_quizzes').select('lesson_id,questions').in('lesson_id',(course.modules||[]).flatMap((m:any)=>(m.lessons||[]).map((l:any)=>l.id)));
+    if(quizError)throw Error('quiz_unavailable');
     const modules = (course.modules || [])
       .sort((a: any, b: any) => (a.position || 0) - (b.position || 0))
       .map((m: any) => ({
@@ -172,6 +174,7 @@ export async function getAdminCourseById(id: string): Promise<AdminCourseFormDat
             videoId: l.video_id || "",
             durationSec: l.duration_sec || 0,
             isFreePreview: Boolean(l.is_free_preview),
+            quiz:quizzes?.find((q:any)=>q.lesson_id===l.id)?.questions||[],
             resources: (l.lesson_resources || []).map((r: any) => ({
               id: r.id,
               name: r.name,

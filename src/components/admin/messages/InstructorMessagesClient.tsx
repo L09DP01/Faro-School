@@ -22,6 +22,7 @@ import {
   sendPrivateMessageAction,
   loadStaffInboxAction,
   closeConversationAction,
+  takeConversationControlAction,
   startInstructorConversationAction,
   markConversationReadAction,
 } from "@/app/actions/private-messaging";
@@ -153,7 +154,7 @@ export function InstructorMessagesClient({
 
   // Send reply handler
   const handleSendReply = () => {
-    if (!activeId || !inputText.trim() || isPending) return;
+    if (!activeId || !inputText.trim() || isPending || activeConversation?.status==="closed") return;
 
     const trimmed = inputText.trim();
     const nowIso = new Date().toISOString();
@@ -203,9 +204,9 @@ export function InstructorMessagesClient({
 
   // Close or Reopen conversation
   const handleToggleClose = () => {
-    if (!activeConversation || isPending) return;
-    const isCurrentlyClosed = activeConversation.status === "closed";
-    const newStatus = isCurrentlyClosed ? "open" : "closed";
+    if (!activeConversation || isPending || activeConversation.status==="closed") return;
+    const isCurrentlyClosed = false;
+    const newStatus = "closed";
 
     startTransition(async () => {
       const res = await closeConversationAction(activeConversation.id, newStatus);
@@ -555,11 +556,13 @@ export function InstructorMessagesClient({
                   </div>
                 </div>
 
+                {/* Explicit control, independent of online presence. */}
+                {activeConversation.courseId&&activeConversation.status!=='closed'&&<button disabled={isPending} className="min-h-11 rounded-xl border border-line px-3 text-xs text-ink" onClick={()=>startTransition(async()=>{const control=activeConversation.status==='staff_replied'?'ai':'human';const r=await takeConversationControlAction(activeConversation.id,control);if(r.success)setConversations(items=>items.map(c=>c.id===activeConversation.id?{...c,status:control==='human'?'staff_replied':'ai_handling'}:c));else showNotification(isHt?'Echèk pran relè a.':'Prise de relais indisponible.','error');})}>{activeConversation.status==='staff_replied'?(isHt?'Remèt bay IA a':'Rendre la main à l’IA'):(isHt?'Pran relè a':'Prendre le relais')}</button>}
                 {/* Actions */}
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={handleToggleClose}
-                    disabled={isPending}
+                    disabled={isPending || activeConversation.status==="closed"}
                     className={`px-3 py-1.5 rounded-xl text-xs font-heading font-semibold border transition-colors ${
                       activeConversation.status === "closed"
                         ? "border-line bg-bg text-ink hover:bg-line/40"
@@ -568,11 +571,11 @@ export function InstructorMessagesClient({
                   >
                     {activeConversation.status === "closed"
                       ? isHt
-                        ? "Relouvri"
-                        : "Rouvrir"
+                        ? "Fèmen"
+                        : "Clôturé"
                       : isHt
                         ? "Fèmen diskisyon an"
-                        : "Clôturer la discussion"}
+                        : activeConversation.courseId ? "Clôturer la discussion" : "Résoudre et fermer le ticket"}
                   </button>
                 </div>
               </div>
@@ -673,6 +676,7 @@ export function InstructorMessagesClient({
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <textarea
+                      disabled={activeConversation.status==="closed"}
                       rows={2}
                       placeholder={
                         isHt
@@ -693,7 +697,7 @@ export function InstructorMessagesClient({
 
                   <button
                     onClick={handleSendReply}
-                    disabled={isPending || !inputText.trim()}
+                    disabled={isPending || !inputText.trim() || activeConversation.status==="closed"}
                     className={`min-h-11 min-w-11 p-3 rounded-xl bg-orange text-white font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                       !inputText.trim()
                         ? "opacity-40 cursor-not-allowed"

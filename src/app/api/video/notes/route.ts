@@ -1,8 +1,11 @@
+import {checkLessonAccess} from "@/lib/video/access";
+import {saveLessonNoteAction} from "@/app/actions/video";
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+export const dynamic="force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,18 +20,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "lessonId manquant" }, { status: 400 });
     }
 
+    if(!(await checkLessonAccess(lessonId,user.id)).canAccess)return NextResponse.json({error:"forbidden"},{status:403});
     const supabase = await createClient();
-    const { data: note } = await supabase
+    const { data: note,error } = await supabase
       .from("lesson_notes")
       .select("content, updated_at")
       .eq("user_id", user.id)
       .eq("lesson_id", lessonId)
       .maybeSingle();
 
+    if(error)return NextResponse.json({error:"note_unavailable"},{status:503,headers:{"Cache-Control":"no-store"}});
     return NextResponse.json({
       content: note?.content || "",
       updatedAt: note?.updated_at || null,
-    });
+    },{headers:{"Cache-Control":"no-store"}});
   } catch (err: any) {
     return NextResponse.json(
       { error: "Erreur serveur", message: err?.message },
@@ -50,25 +55,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "lessonId manquant" }, { status: 400 });
     }
 
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from("lesson_notes")
-      .upsert(
-        {
-          user_id: user.id,
-          lesson_id: lessonId,
-          content: String(content),
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,lesson_id" }
-      );
-
-    if (error) {
-      return NextResponse.json(
-        { error: "Échec de sauvegarde de note", details: error.message },
-        { status: 500 }
-      );
-    }
+    const result=await saveLessonNoteAction(lessonId,content);
+    if(!result.success)return NextResponse.json({error:'note_unavailable'},{status:400});
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

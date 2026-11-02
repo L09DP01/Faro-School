@@ -7,7 +7,7 @@ export async function openStaffConversationAction(courseId:string|null,locale:st
  try{
   const user=await getCurrentUser();if(!user)return{success:false,error:'forbidden'};
   const recipient=await resolveStudentRecipient(user,courseId),db=await createClient();
-  let query=db.from('conversations').select('id').eq('student_id',user.id).eq('staff_id',recipient.staffId).neq('status','closed');
+  let query=db.from('conversations').select('id').eq('student_id',user.id).neq('status','closed');
   query=courseId?query.eq('course_id',courseId):query.is('course_id',null);
   const {data:existing,error:lookupError}=await query.order('created_at',{ascending:false}).limit(1).abortSignal(AbortSignal.timeout(10000)).maybeSingle();
   if(lookupError)throw new Error('unavailable');

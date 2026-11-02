@@ -8,8 +8,8 @@ import { can } from '@/lib/permissions';
 export const hasCommunityAccess=cache(async(user: CurrentUser | null): Promise<boolean> => {
   if(!user?.emailVerified)return false;
   const db=createAdminClient({timeoutMs:10000});
-  const {data:profile,error:profileError}=await db.from('profiles').select('banned_at').eq('id',user.id).maybeSingle();
-  if(profileError||!profile||profile.banned_at)return false;
+  const {data:profile,error:profileError}=await db.from('profiles').select('banned_at,muted_until').eq('id',user.id).maybeSingle();
+  if(profileError||!profile||profile.banned_at||(profile.muted_until&&Date.parse(profile.muted_until)>Date.now()))return false;
   if(user.role==='admin'||user.role==='instructor')return can(user,'community.access');
   const {data,error}=await db.from('enrollments').select('id').eq('user_id',user.id).is('revoked_at',null).limit(1).maybeSingle();
   return !error&&can(user,'community.access',{hasActiveEnrollment:!!data});
