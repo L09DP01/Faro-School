@@ -596,7 +596,7 @@ export function InstructorMessagesClient({
                     return (
                       <div key={msg.id} className="flex justify-center my-2">
                         <span className="px-3 py-1 rounded-full bg-line/60 text-muted-faro text-[11px] font-medium text-center max-w-md">
-                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale} showSources={!!activeConversation.courseId}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
                         </span>
                       </div>
                     );
@@ -649,7 +649,7 @@ export function InstructorMessagesClient({
                               : "bg-surface border border-line text-ink rounded-bl-sm"
                         }`}
                       >
-                        {msg.body}<MessageSources meta={msg.meta} locale={locale}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
+                        {msg.body}<MessageSources meta={msg.meta} locale={locale} showSources={!!activeConversation.courseId}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
 
                         {isAiSender && (
                           <div className="mt-2 pt-2 border-t border-blue/15 flex items-center justify-between text-[10px] text-muted-faro">

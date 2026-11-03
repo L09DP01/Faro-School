@@ -565,7 +565,7 @@ export function StudentStaffChatView({
                     return (
                       <div key={msg.id} className="flex justify-center my-3">
                         <div className="max-w-md px-4 py-1.5 rounded-full bg-slate-100 border border-line/60 text-xs text-muted-faro text-center break-words shadow-2xs leading-relaxed font-medium">
-                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale} showSources={!!activeConversation.courseId}/>
                         </div>
                       </div>
                     );
@@ -587,7 +587,7 @@ export function StudentStaffChatView({
 
                           {/* Bubble */}
                           <div className="p-4 rounded-2xl rounded-tl-sm bg-orange-tint/70 border border-orange/30 text-ink shadow-xs text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                            {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
+                            {msg.body}<MessageSources meta={msg.meta} locale={locale} showSources={!!activeConversation.courseId}/>
 
                             <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-muted-faro">
                               <span>
@@ -635,7 +635,7 @@ export function StudentStaffChatView({
                               : "bg-white border border-line/40 rounded-tl-sm text-ink"
                           }`}
                         >
-                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale} showSources={!!activeConversation.courseId}/>
 
                           <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-muted-faro">
                             <span>
