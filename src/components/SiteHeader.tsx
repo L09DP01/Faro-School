@@ -4,17 +4,18 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { Container } from "./Container";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { Logo } from "./brand/Logo";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { usePwa } from "@/lib/pwa/use-pwa";
 import { navigationConfig } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-import { signOut } from "next-auth/react";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { ArrowLeft } from "lucide-react";
 
 export function SiteHeader() {
   const tNav = useTranslations("nav");
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const { isStandalone } = usePwa();
@@ -34,18 +35,6 @@ export function SiteHeader() {
         setIsAuthenticated(false);
       });
   }, []);
-
-  const handleSignOut = async () => {
-    closeMenu();
-    try {
-      await signOut({ redirect: false });
-      setIsAuthenticated(false);
-      router.push("/connexion");
-      router.refresh();
-    } catch (err) {
-      console.error("Sign out error:", err);
-    }
-  };
 
   const navLinks = [
     ...navigationConfig.links.map((link) => ({
@@ -173,12 +162,12 @@ export function SiteHeader() {
                 >
                   {tNav("dashboard")}
                 </Link>
-                <button
-                  onClick={handleSignOut}
+                <LogoutButton
+                  locale={locale}
                   className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-line bg-surface px-4 py-2 text-sm font-semibold text-ink hover:bg-bg transition-colors"
                 >
                   {tNav("logout")}
-                </button>
+                </LogoutButton>
               </>
             ) : (
               <>
@@ -252,12 +241,12 @@ export function SiteHeader() {
                 >
                   {tNav("dashboard")}
                 </Link>
-                <button
-                  onClick={handleSignOut}
+                <LogoutButton
+                  locale={locale}
                   className="w-full py-3 rounded-xl border border-line text-center font-semibold text-ink hover:bg-bg text-sm"
                 >
                   {tNav("logout")}
-                </button>
+                </LogoutButton>
               </>
             ) : (
               <>
