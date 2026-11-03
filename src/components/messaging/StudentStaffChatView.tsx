@@ -1,6 +1,6 @@
 "use client";
 import {MessageDeliveryStatus} from './MessageDeliveryStatus';
-import {mergeMessages} from '@/lib/messaging/merge-messages';
+import {mergeMessages,mergeConversations} from '@/lib/messaging/merge-messages';
 import {useStaffOnline} from '@/lib/messaging/use-staff-online';
 import {MessageSources} from "@/components/messaging/MessageSources";
 import {scrollMessagePane} from "@/lib/messaging/scroll";
@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { initAuthenticatedRealtimeClient } from "@/lib/supabase/client";
 import {
+  loadPrivateMessageAction,
   sendPrivateMessageAction,
   loadStudentInboxAction,
   loadStaffInboxAction,
@@ -68,7 +69,7 @@ export function StudentStaffChatView({
   useEffect(()=>{setActiveConversation(initialConversation);},[initialConversation]);
   const [conversations,setConversations] = useState<Conversation[]>(initialConversations);
   const router=useRouter();
-  useEffect(()=>{setConversations(initialConversations);},[initialConversations]);
+  useEffect(()=>{setConversations(prev=>mergeConversations(prev,initialConversations));},[initialConversations]);
   const t=useTranslations('messagingFlow');
   const [inboxFilter,setInboxFilter]=useState<'all'|'tickets'|'courses'|'system'|'closed'>(initialConversation?.status==='closed'?'closed':'all');
   useEffect(()=>{if(inboxFilter==='system')void markSystemNotificationsReadAction().catch(()=>{});},[inboxFilter]);
@@ -98,16 +99,17 @@ export function StudentStaffChatView({
       const result=await (isStaffView?loadStaffInboxAction:loadStudentInboxAction)(selectedConversationId);
       if(activeConversationIdRef.current!==selectedConversationId)return;
       if(result.success&&result.data){
-        setConversations(result.data.conversations);
+        setConversations(prev=>mergeConversations(prev,result.data!.conversations));
         if(selectedConversationId){
           const updated=result.data.conversations.find(c=>c.id===selectedConversationId);
-          if(updated)setActiveConversation(updated);
+          if(updated)setActiveConversation(prev=>prev?.status==='closed'?{...updated,status:'closed'}:updated);
           setMessages(prev=>mergeMessages(prev,result.data!.messages));
         }
       }else if(result.error)setErrorMessage(locale==='ht'?'Koneksyon an pa disponib. Istorik la rete konsève.':'Connexion indisponible. L’historique affiché est conservé.');
     }catch{setErrorMessage(locale==='ht'?'Koneksyon an pa disponib. Istorik la rete konsève.':'Connexion indisponible. L’historique affiché est conservé.');}
     finally{refreshingInbox.current=false;}
   },[selectedConversationId,isStaffView,locale]);
+  useEffect(()=>{const refresh=()=>void refreshInbox();window.addEventListener('faro:inbox-refresh',refresh);return()=>window.removeEventListener('faro:inbox-refresh',refresh);},[refreshInbox]);
   // Refresh the inbox when its own conversations/system notifications change.
   useEffect(()=>{
     if(isStaffView)return;
@@ -147,13 +149,21 @@ export function StudentStaffChatView({
     let channel: any = null;
     let isCancelled = false;
 
+    const pendingIds=new Set<string>(),repeatIds=new Set<string>();
+    const receiveId=async(id:string)=>{if(pendingIds.has(id)){repeatIds.add(id);return;}pendingIds.add(id);try{
+      const result=await loadPrivateMessageAction(id);
+      if(!isCancelled&&activeConversationIdRef.current===convId&&result.success&&result.data){setMessages(prev=>mergeMessages(prev,[result.data!]));void acknowledgeConversationDeliveryAction(convId).catch(()=>{});if(nearBottom.current)setTimeout(()=>scrollMessagePane(messagesEndRef.current,"smooth"),30);}
+    }catch{}finally{pendingIds.delete(id);if(repeatIds.delete(id)&&!isCancelled)void receiveId(id);}};
+    const fromWorker=(event:Event)=>{const data=(event as CustomEvent).detail;if(data?.conversationId===convId&&typeof data.messageId==='string')void receiveId(data.messageId);};
+    window.addEventListener('faro:message',fromWorker);
     async function setupRealtime() {
       try {
         const supabase = await initAuthenticatedRealtimeClient();
         if (isCancelled) return;
 
         channel = supabase
-          .channel(`private-conv-${convId}`)
+          .channel(`private-conv-${convId}`,{config:{private:true}})
+          .on('broadcast',{event:'message-change'},(event:any)=>{const id=event.payload?.messageId;if(typeof id==='string')void receiveId(id);})
           .on(
             "postgres_changes",
             {
@@ -163,37 +173,7 @@ export function StudentStaffChatView({
               filter: `conversation_id=eq.${convId}`,
             },
             (payload: any) => {
-              const newRow = payload.new;
-              if(!newRow?.id||activeConversationIdRef.current!==convId)return;
-              setMessages((prev) => {
-                const mappedMsg: PrivateMessage = {
-                  id: newRow.id,
-                  conversationId: newRow.conversation_id,
-                  senderType: newRow.sender_type,
-                  senderId: newRow.sender_id,
-                  senderName:
-                    newRow.sender_type === "ai"
-                      ? (activeConversation?.courseId ? `Assistant pédagogique de ${convStaffName}` : 'Assistant support Faro School')
-                      : newRow.sender_id === currentUserId
-                      ? currentUserName
-                      : isStaffView
-                      ? convStudentName
-                      : convStaffName,
-                  senderRole: newRow.sender_type === "student" ? "student" : "instructor",
-                  body: newRow.body,
-                  meta: newRow.meta || {},
-                  createdAt: newRow.created_at,
-                  readAt: newRow.read_at,
-                  deliveredAt:newRow.delivered_at,
-                  clientMessageId:newRow.client_message_id,
-                };
-
-                return mergeMessages(prev,[mappedMsg]);
-              });
-
-              setTimeout(() => {
-                if(nearBottom.current)scrollMessagePane(messagesEndRef.current,"smooth");
-              }, 50);
+              const id=payload.new?.id;if(typeof id==='string')void receiveId(id);
             }
           )
           .subscribe();
@@ -204,6 +184,7 @@ export function StudentStaffChatView({
 
     return () => {
       isCancelled = true;
+      window.removeEventListener('faro:message',fromWorker);
       if (channel) {
         channel.unsubscribe();
       }
@@ -519,7 +500,7 @@ export function StudentStaffChatView({
                             staffOnline ? "text-ok font-semibold" : "text-muted-faro"
                           }
                         >
-                          {staffOnline
+                          {staffOnline===null?(isHt?'Verifikasyon…':'Vérification…'):staffOnline
                             ? isHt
                               ? "An liy"
                               : "En ligne"

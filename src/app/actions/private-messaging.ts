@@ -22,6 +22,8 @@ import { checkStoredProfanity } from "@/lib/community/stored-word-filter";
 import { checkMessageModeration } from "@/lib/moderation";
 import { recordModerationFlag } from "@/lib/moderation/flag-service";
 
+async function notifyMessagePush(conversationId:string){try{const{dispatchMessagePush}=await import('../../lib/push/dispatch');await dispatchMessagePush(conversationId);}catch{console.error('[push] dispatch_unavailable');}}
+
 export type MessagingActionResult<T = any> = {
   success: boolean;
   data?: T;
@@ -559,6 +561,7 @@ export async function sendPrivateMessageAction(
         revalidatePath(`/[locale]/dashboard/messages/${conversationId}`, "page");
         revalidatePath(`/[locale]/admin/messages/${conversationId}`, "page");
       } catch {}
+      await scheduleAssistant(()=>notifyMessagePush(conversationId));
       return { success: true, data: studentMessage };
     }
 
@@ -606,6 +609,7 @@ export async function sendPrivateMessageAction(
           if(noticeError)throw Error('waiting_notice_unavailable');
         }
       }
+      await notifyMessagePush(conversationId);
     }catch{console.error('[messaging] assistant_or_handoff_unavailable');}});
     try{revalidatePath('/[locale]/dashboard/messages','page');revalidatePath('/[locale]/admin/messages','page');}catch{}
     return { success: true, data: studentMessage };
@@ -677,6 +681,7 @@ export async function closeConversationAction(
     const {data:closed,error:verifyError}=await db.from('conversations').select('id,status,assistance_mode').eq('id',conversationId).single();
     if(verifyError||closed?.status!=='closed')return{success:false,error:'closure_unconfirmed'};
     revalidatePath('/[locale]/admin/messages','page');revalidatePath('/[locale]/dashboard/messages','page');
+    await scheduleAssistant(()=>notifyMessagePush(conversationId));
     return{success:true,data:{conversationId,status:'closed',assistanceMode:closed.assistance_mode}};
   }catch{return{success:false,error:'unavailable'};}
 }
@@ -730,4 +735,15 @@ export async function acknowledgeConversationDeliveryAction(conversationId:strin
 /** Failed refreshes are explicit: never replace a loaded history with an empty list. */
 export async function loadStudentInboxAction(conversationId?:string):Promise<MessagingActionResult<{conversations:Conversation[];messages:PrivateMessage[]}>>{
  try{const user=await getCurrentUser();if(!user)return{success:false,error:'forbidden'};const {getStudentConversations,getConversationMessages}=await import('@/lib/messaging/data');const conversations=await getStudentConversations(user.id);if(conversationId&&!conversations.some(c=>c.id===conversationId))return{success:false,error:'not_found'};return{success:true,data:{conversations,messages:conversationId?await getConversationMessages(conversationId):[]}};}catch{return{success:false,error:'history_unavailable'};}
+}
+
+/** Fetch one persisted message with current authentication and conversation RLS. */
+export async function loadPrivateMessageAction(messageId:string):Promise<MessagingActionResult<PrivateMessage>>{
+ try{
+  if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(messageId))return{success:false,error:'invalid'};
+  const user=await getCurrentUser();if(!user)return{success:false,error:'forbidden'};
+  const db=await createClient();const{data:row,error}=await db.from('messages').select('id,conversation_id,sender_type,sender_id,body,meta,created_at,read_at,delivered_at,client_message_id,profiles(full_name,role,avatar_url)').eq('id',messageId).single();
+  if(error||!row)return{success:false,error:'message_unavailable'};const profile=Array.isArray(row.profiles)?row.profiles[0]:row.profiles;
+  return{success:true,data:{id:row.id,conversationId:row.conversation_id,senderType:row.sender_type,senderId:row.sender_id,senderName:profile?.full_name,senderRole:profile?.role,senderAvatarUrl:profile?.avatar_url,body:row.body,meta:row.meta||{},createdAt:row.created_at,readAt:row.read_at,deliveredAt:row.delivered_at,clientMessageId:row.client_message_id}};
+ }catch{return{success:false,error:'message_unavailable'};}
 }

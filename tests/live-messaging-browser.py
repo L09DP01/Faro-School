@@ -5,6 +5,7 @@ with sync_playwright() as p:
   page=browser.new_page(viewport={'width':393,'height':852})
   errors=[]
   page.on('pageerror',lambda e:errors.append(str(e)))
+  page.route('**/api/messaging/presence?*',lambda route:route.fulfill(json={'online':page.evaluate("Object.values(window.__staffPresence||{}).flat().some(s=>s.active&&Date.parse(s.expiresAt)>Date.now())")}))
   page.goto('http://127.0.0.1:4198/?mode=ticket&locale='+locale)
   composer=page.locator('[data-chat-composer] input')
   assert not composer.is_disabled(),'Human support must accept more details'
@@ -16,6 +17,8 @@ with sync_playwright() as p:
   assert page.get_by_text('An liy' if locale=='ht' else 'En ligne',exact=True).is_visible()
   page.evaluate("window.__staffPresence={};window.__rtHandlers.filter(h=>h.type==='presence').forEach(h=>h.cb())")
   page.get_by_text('Pa an liy' if locale=='ht' else 'Hors ligne',exact=True).wait_for()
+  page.evaluate("const row={id:'instant',conversation_id:'conv',sender_id:'teacher',sender_type:'staff',body:'Instant private broadcast',created_at:new Date().toISOString()};window.__messageRows={instant:row};window.__rtHandlers.filter(h=>h.filter.event==='message-change').forEach(h=>h.cb({payload:{messageId:'instant',conversationId:'conv'}}))")
+  page.get_by_text('Instant private broadcast',exact=False).wait_for(timeout=1200)
   page.evaluate('window.__failMessage=true;window.__sendDelay=200')
   composer.fill('Local retry message');composer.press('Enter')
   page.get_by_label('Ap voye' if locale=='ht' else 'Envoi en cours',exact=True).wait_for()
@@ -28,10 +31,10 @@ with sync_playwright() as p:
   page.get_by_label('Resevwa' if locale=='ht' else 'Distribué',exact=True).wait_for()
   page.evaluate("window.__receipt.read_at=new Date().toISOString();window.__rtHandlers.filter(h=>h.filter.table==='messages').forEach(h=>h.cb({new:window.__receipt}))")
   page.get_by_label('Li' if locale=='ht' else 'Lu',exact=True).wait_for()
-  page.evaluate("for(let i=0;i<70;i++){const row={id:'history-'+i,conversation_id:'conv',sender_id:'teacher',sender_type:'staff',body:'Historical message '+i,created_at:new Date(Date.now()+i*1000).toISOString()};window.__rtHandlers.filter(h=>h.filter.table==='messages').forEach(h=>h.cb({new:row}))}")
+  page.evaluate("for(let i=0;i<70;i++){const row={id:'history-'+i,conversation_id:'conv',sender_id:'teacher',sender_type:'staff',body:'Historical message '+i,created_at:new Date(Date.now()+i*1000).toISOString()};(window.__messageRows||(window.__messageRows={}))[row.id]=row;window.__rtHandlers.filter(h=>h.filter.table==='messages').forEach(h=>h.cb({new:row}))}")
   page.wait_for_function("document.querySelector('[data-message-stream]').scrollHeight>document.querySelector('[data-message-stream]').clientHeight+200")
   page.locator('[data-message-stream]').evaluate("pane=>{pane.scrollTop=0;pane.dispatchEvent(new Event('scroll',{bubbles:true}))}")
-  page.evaluate("const row={id:'new-after-scroll',conversation_id:'conv',sender_id:'teacher',sender_type:'staff',body:'Latest while reading history',created_at:new Date(Date.now()+100000).toISOString()};window.__rtHandlers.filter(h=>h.filter.table==='messages').forEach(h=>h.cb({new:row}))")
+  page.evaluate("const row={id:'new-after-scroll',conversation_id:'conv',sender_id:'teacher',sender_type:'staff',body:'Latest while reading history',created_at:new Date(Date.now()+100000).toISOString()};(window.__messageRows||(window.__messageRows={}))[row.id]=row;window.__rtHandlers.filter(h=>h.filter.table==='messages').forEach(h=>h.cb({new:row}))")
   page.get_by_text('Latest while reading history',exact=False).wait_for()
   assert page.locator('[data-message-stream]').evaluate('pane=>pane.scrollTop')<10,'New arrival must not move a reader away from history'
   assert not errors,errors

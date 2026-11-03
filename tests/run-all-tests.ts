@@ -5,6 +5,12 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Realtime token refresh and logout fencing",cmd:"npx tsx tests/realtime-client.test.ts"},
+  {name:"Web Push RFC encryption and VAPID signatures",cmd:"npx tsx tests/web-push-crypto.test.ts"},
+  {name:"Live private delivery and Push SQL authorization",cmd:"npx tsx tests/live-message-push-sql.test.ts"},
+  {name:"Device Push API validation and ownership",cmd:"npx tsx tests/message-push-api.test.ts"},
+  {name:"Push dispatch leases, read suppression and retries",cmd:"npx tsx tests/message-push-dispatch.test.ts"},
+  {name:"PWA Push notification and safe click",cmd:"npx tsx tests/message-push-worker.test.ts"},
   {name:"Support ticket terminal resolution and preserved history",cmd:"npx tsx tests/support-ticket-closure.test.ts"},
   {name:"Logout session cookies and safe login redirect",cmd:"npx tsx tests/logout-account.test.ts"},
   {name:"Support source provenance across deployment platforms",cmd:"npx tsx tests/support-provenance.test.ts"},

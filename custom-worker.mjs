@@ -18,13 +18,12 @@ export default {
     if (!secret) throw new Error('email_cron_secret_missing');
     // Internal dispatch: no public network round trip and no secret in the URL.
     // Authentication and SKIP LOCKED claiming remain in the existing route/RPC.
-    const response = await handler.fetch(new Request('https://faroschool.com/api/cron/email-outbox', {
-      headers: { Authorization: 'Bearer ' + secret },
-    }), env, ctx);
-    if (!response.ok) {
-      await response.body?.cancel();
-      throw new Error('email_cron_failed_' + response.status);
+    const failures=[];
+    for(const path of ['/api/cron/email-outbox','/api/cron/message-push']){
+      try{const response=await handler.fetch(new Request('https://faroschool.com'+path,{headers:{Authorization:'Bearer '+secret}}),env,ctx);
+        if(!response.ok)failures.push(response.status);await response.body?.cancel();
+      }catch{failures.push(503);}
     }
-    await response.body?.cancel();
+    if(failures.length)throw new Error('background_cron_failed_'+failures.join('_'));
   },
 };

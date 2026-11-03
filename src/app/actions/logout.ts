@@ -5,8 +5,11 @@ import {signOut} from '@/auth';
 
 /** Complete logout before allowing the client to navigate to the login page. */
 export async function logoutAccountAction(locale: string = 'fr') {
+  const existing=await cookies(),pushId=existing.get?.('faro_push_subscription')?.value;
+  if(pushId&&/^[a-f0-9-]{36}$/i.test(pushId)){try{const{removeDevicePushSubscription}=await import('../../lib/push/logout');await removeDevicePushSubscription(pushId);}catch{console.error('[push] unsubscribe_unavailable');}}
   await signOut({redirect: false});
   const store = await cookies();
+  if(pushId)store.delete('faro_push_subscription');
   // Also expire legacy/chunked cookies that may coexist after an auth migration.
   const names = new Set([
     'authjs.session-token', '__Secure-authjs.session-token',

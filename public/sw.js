@@ -3,7 +3,7 @@
  * Compatible with Next.js 15 and Cloudflare Workers (OpenNext)
  */
 
-const CACHE_NAME = "faro-pwa-v5-player";
+const CACHE_NAME = "faro-pwa-v6-message-push";
 
 const PRECACHE_ASSETS = [
   "/offline",
@@ -69,6 +69,7 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  if(event.data?.type==="FARO_FEATURES"){event.ports?.[0]?.postMessage({push:true,version:"message-push-v1"});}
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
@@ -147,4 +148,31 @@ self.addEventListener("fetch", (event) => {
   }
 
   // For other requests, pass through to network
+});
+
+
+// Native Web Push: always display a user-visible notification (including Safari).
+self.addEventListener('push',event=>{
+ event.waitUntil((async()=>{
+  let data={};try{data=event.data?.json()||{};}catch{}
+  const validId=value=>typeof value==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(value);
+  const valid=data.type==='faro-message'&&validId(data.messageId)&&validId(data.conversationId);
+  const locale=data.locale==='ht'?'ht':'fr';const url='/'+locale+'/dashboard/messages'+(valid?'/'+data.conversationId:'');
+  const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  if(valid)for(const client of windows)client.postMessage({type:'FARO_MESSAGE',conversationId:data.conversationId,messageId:data.messageId});
+  await self.registration.showNotification('Faro School',{
+   body:valid?(locale==='ht'?'Ou resevwa yon nouvo mesaj.':'Vous avez reçu un nouveau message.'):(locale==='ht'?'Ouvri Faro School pou wè notifikasyon ou yo.':'Ouvrez Faro School pour consulter vos notifications.'),
+   icon:'/icons/icon-192.png',badge:'/icons/icon-192.png',tag:valid?'faro-message-'+data.messageId:'faro-update',renotify:false,
+   data:{url,conversationId:data.conversationId,messageId:data.messageId},
+  });
+ })());
+});
+self.addEventListener('notificationclick',event=>{
+ event.notification.close();event.waitUntil((async()=>{
+  const data=event.notification.data||{};let target='/fr/dashboard/messages';
+  if(typeof data.url==='string'&&/^\/(fr|ht)\/dashboard\/messages\/[a-f0-9-]{36}$/.test(data.url))target=data.url;
+  const absolute=new URL(target,self.location.origin).href;const windows=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+  const current=windows.find(client=>new URL(client.url).origin===self.location.origin);
+  if(current){if(current.url!==absolute&&current.navigate)await current.navigate(absolute);await current.focus();current.postMessage({type:'FARO_MESSAGE',conversationId:data.conversationId,messageId:data.messageId});}else await self.clients.openWindow(absolute);
+ })());
 });

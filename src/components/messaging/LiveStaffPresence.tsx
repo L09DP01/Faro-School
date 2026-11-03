@@ -1,19 +1,36 @@
 "use client";
 import {useEffect} from 'react';
 import {usePathname} from 'next/navigation';
-import {initAuthenticatedRealtimeClient,getSupabaseToken} from '@/lib/supabase/client';
+import {initAuthenticatedRealtimeClient} from '@/lib/supabase/client';
 export function LiveStaffPresence(){
  const pathname=usePathname();
- useEffect(()=>{let disposed=false,channel:any=null,client:any=null;const sessionId=crypto.randomUUID();let busy=false,eligible:boolean|null=null;
- const stop=()=>{if(!channel)return;void channel?.untrack();navigator.sendBeacon('/api/messaging/presence',new Blob([JSON.stringify({sessionId,active:false})],{type:'application/json'}));};
- const beat=async()=>{if(busy||disposed||eligible===false)return;if(document.visibilityState!=='visible'||!navigator.onLine){stop();return;}busy=true;try{
-  const info=await fetch('/api/messaging/presence',{cache:'no-store'});if(!info.ok){if(info.status===401)eligible=false;stop();return;}const staff=await info.json();if(!staff.staff){eligible=false;return;}eligible=true;
-  if(!channel){client=await initAuthenticatedRealtimeClient();if(disposed)return;channel=client.channel('staff-live:'+staff.userId,{config:{private:true,presence:{key:sessionId}}});channel.subscribe((status:string)=>{if(status==='SUBSCRIBED')void beat();});}
-  const res=await fetch('/api/messaging/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId,active:true}),cache:'no-store'});
-  if(res.ok&&!disposed){const lease=await res.json();await channel.track({sessionId,active:true,available:staff.available,expiresAt:lease.expiresAt});}
- }catch{void channel?.untrack();}finally{busy=false;}};
- void beat();const timer=setInterval(()=>void beat(),20000);const refresh=setInterval(()=>{void getSupabaseToken().then(token=>{if(token&&client)void client.realtime.setAuth(token);});},40*60*1000);
- const wake=()=>{eligible=null;void beat();};window.addEventListener('faro:logout',stop);window.addEventListener('pagehide',stop);window.addEventListener('offline',stop);window.addEventListener('online',wake);window.addEventListener('faro:availability',wake);window.addEventListener('faro:presence-probe',wake);document.addEventListener('visibilitychange',wake);
- return()=>{disposed=true;stop();void channel?.unsubscribe();clearInterval(timer);clearInterval(refresh);window.removeEventListener('faro:logout',stop);window.removeEventListener('pagehide',stop);window.removeEventListener('offline',stop);window.removeEventListener('online',wake);window.removeEventListener('faro:availability',wake);window.removeEventListener('faro:presence-probe',wake);document.removeEventListener('visibilitychange',wake);};
- },[]);useEffect(()=>{window.dispatchEvent(new Event('faro:presence-probe'));},[pathname]);return null;
+ useEffect(()=>{
+  let disposed=false,busy=false,eligible:boolean|null=null,channel:any=null,joining=false,subscribed=false,latest:any=null;
+  const sessionId=crypto.randomUUID();
+  const stop=()=>{void channel?.untrack();if(eligible!==true)return;navigator.sendBeacon('/api/messaging/presence',new Blob([JSON.stringify({sessionId,active:false})],{type:'application/json'}));};
+  const track=()=>{if(subscribed&&latest&&!disposed)void channel.track(latest);};
+  const connect=(staffId:string)=>{if(channel||joining)return;joining=true;void initAuthenticatedRealtimeClient().then(client=>{
+   if(disposed)return;channel=client.channel('staff-live:'+staffId,{config:{private:true,presence:{key:sessionId}}});
+   channel.subscribe((status:string)=>{subscribed=status==='SUBSCRIBED';if(subscribed)track();});
+  }).catch(()=>{}).finally(()=>{joining=false;});};
+  const beat=async()=>{
+   if(busy||disposed||eligible===false)return;
+   if(document.visibilityState!=='visible'||!navigator.onLine){stop();return;}
+   busy=true;try{
+    const info=await fetch('/api/messaging/presence',{cache:'no-store'});if(!info.ok){if(info.status===401)eligible=false;stop();return;}
+    const staff=await info.json();if(!staff.staff){eligible=false;return;}eligible=true;
+    // The authoritative HTTP lease never waits for a WebSocket connection.
+    const response=await fetch('/api/messaging/presence',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId,active:true}),cache:'no-store'});
+    if(!response.ok)return;const lease=await response.json();if(disposed||document.visibilityState!=='visible'||!navigator.onLine){stop();return;}
+    latest={sessionId,active:true,available:staff.available,expiresAt:lease.expiresAt};connect(staff.userId);track();
+   }catch{}finally{busy=false;}
+  };
+  const wake=()=>{if(document.visibilityState!=='visible'||!navigator.onLine){stop();return;}eligible=null;void beat();};
+  void beat();const timer=setInterval(()=>void beat(),15000);
+  for(const event of ['faro:logout','pagehide','offline'])window.addEventListener(event,stop);
+  for(const event of ['online','focus','faro:availability','faro:presence-probe'])window.addEventListener(event,wake);
+  document.addEventListener('visibilitychange',wake);
+  return()=>{disposed=true;stop();void channel?.unsubscribe();clearInterval(timer);for(const event of ['faro:logout','pagehide','offline'])window.removeEventListener(event,stop);for(const event of ['online','focus','faro:availability','faro:presence-probe'])window.removeEventListener(event,wake);document.removeEventListener('visibilitychange',wake);};
+ },[]);
+ useEffect(()=>{window.dispatchEvent(new Event('faro:presence-probe'));},[pathname]);return null;
 }

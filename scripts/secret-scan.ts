@@ -79,7 +79,7 @@ const PATTERNS: SecretPattern[] = [
   },
   {
     name: 'High-Entropy Secret in Assignment',
-    regex: /(?:SUPABASE_SERVICE_ROLE_KEY|KOBARA_API_KEY|KOBARA_SECRET_KEY|BUNNY_STREAM_API_KEY|BUNNY_STORAGE_API_KEY|CRON_SECRET|GEMINI_API_KEY|ANTHROPIC_API_KEY)\s*[:=]\s*["']([^"'\r\n]{16,})["']/,
+    regex: /(?:SUPABASE_SERVICE_ROLE_KEY|KOBARA_API_KEY|KOBARA_SECRET_KEY|BUNNY_STREAM_API_KEY|BUNNY_STORAGE_API_KEY|CRON_SECRET|GEMINI_API_KEY|ANTHROPIC_API_KEY|VAPID_PRIVATE_KEY)\s*[:=]\s*["']([^"'\r\n]{16,})["']/,
     validate: (match) => {
       const val = match.split(/[:=]/)[1]?.trim().replace(/^["']|["']$/g, '') || '';
       return !isPlaceholder(val);

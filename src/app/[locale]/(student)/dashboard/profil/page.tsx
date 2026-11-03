@@ -1,3 +1,4 @@
+import {MessageNotificationControls} from '@/components/pwa/MessageNotificationControls';
 import {supportContact} from "@/lib/support-contact";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { getTranslations } from "next-intl/server";
@@ -141,6 +142,7 @@ export default async function StudentProfilePage({ params }: ProfilePageProps) {
 
           {/* PWA Mobile App Install Action */}
           <PwaInstallButton locale={locale} />
+          <MessageNotificationControls locale={locale} />
 
           {/* Sign Out Action */}
           <LogoutButton

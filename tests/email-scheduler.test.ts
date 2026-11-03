@@ -19,7 +19,8 @@ async function main() {
   } }] });
   const worker = createRequire(resolve('package.json'))(resolve('tmp/email-scheduler/worker.cjs')).default;
   await worker.scheduled({}, bindings, context);
-  assert.equal(requests.length, 1);
+  assert.equal(requests.length, 2);
+  assert.equal(new URL(requests[1].url).pathname, "/api/cron/message-push");
   assert.equal(new URL(requests[0].url).pathname, '/api/cron/email-outbox');
   assert.equal(new URL(requests[0].url).search, '');
   assert.equal(requests[0].headers.get('authorization'), 'Bearer ' + bindings.CRON_SECRET);
@@ -38,7 +39,7 @@ async function main() {
   await worker.fetch(secure,bindings,context); assert.equal(requests.at(-1),secure,'No HTTPS redirect loop');
   const local = new Request('http://localhost:8787/fr/connexion');
   await worker.fetch(local,bindings,context); assert.equal(requests.at(-1),local,'Local development stays available');
-  status = 503; await assert.rejects(() => worker.scheduled({}, bindings, context), /email_cron_failed_503/);
+  status = 503; await assert.rejects(() => worker.scheduled({}, bindings, context), /background_cron_failed_503_503/);
   const before: number = requests.length;
   await assert.rejects(() => worker.scheduled({}, {}, context), /email_cron_secret_missing/);
   assert.equal(requests.length, before);
