@@ -70,8 +70,10 @@ export function StudentStaffChatView({
   const router=useRouter();
   useEffect(()=>{setConversations(initialConversations);},[initialConversations]);
   const t=useTranslations('messagingFlow');
-  const [inboxFilter,setInboxFilter]=useState<'all'|'tickets'|'courses'|'system'>('all');
+  const [inboxFilter,setInboxFilter]=useState<'all'|'tickets'|'courses'|'system'|'closed'>(initialConversation?.status==='closed'?'closed':'all');
   useEffect(()=>{if(inboxFilter==='system')void markSystemNotificationsReadAction().catch(()=>{});},[inboxFilter]);
+
+  useEffect(()=>{if(activeConversation?.status==='closed')setInboxFilter('closed');},[activeConversation?.id,activeConversation?.status]);
 
   const [messages, setMessages] = useState<PrivateMessage[]>(initialMessages);
   const [inputText, setInputText] = useState("");
@@ -124,7 +126,7 @@ export function StudentStaffChatView({
   const activeReadId=activeConversation?.id;
   const composerPaused=activeConversation?.status==='closed';
   const staffOnline=useStaffOnline(activeConversation?.staffId);
-  const humanSupport=activeConversation?.assistanceMode==='HUMAN_SUPPORT';
+  const humanSupport=!composerPaused&&activeConversation?.assistanceMode==='HUMAN_SUPPORT';
   const nearBottom=useRef(true);
   const messageConversation=useRef(activeReadId);
   useEffect(()=>{if(messageConversation.current!==activeReadId){messageConversation.current=activeReadId;nearBottom.current=true;setMessages(initialMessages);}else setMessages(prev=>mergeMessages(prev,initialMessages));},[initialMessages,activeReadId]);
@@ -215,7 +217,7 @@ export function StudentStaffChatView({
 
   // Filtered conversations list
   const filteredConversations = useMemo(() => {
-    const eligible=conversations.filter(c=>inboxFilter==='all'||(inboxFilter==='tickets'?!!c.ticketNumber:inboxFilter==='courses'?!!c.courseId:false));
+    const eligible=conversations.filter(c=>inboxFilter==='closed'?c.status==='closed':c.status!=='closed'&&(inboxFilter==='all'||(inboxFilter==='tickets'?!!c.ticketNumber:inboxFilter==='courses'?!!c.courseId:false)));
     if (!searchQuery.trim()) return eligible;
     const q = searchQuery.toLowerCase();
     return eligible.filter(
@@ -368,7 +370,7 @@ export function StudentStaffChatView({
                 )}
               </div>
 
-              {!isStaffView&&<div role="tablist" aria-label={t('inbox')} className="flex gap-1 overflow-x-auto pb-1">{(['all','tickets','courses','system'] as const).map(filter=><button type="button" role="tab" key={filter} aria-selected={inboxFilter===filter} onClick={()=>setInboxFilter(filter)} className={`min-h-11 shrink-0 rounded-full px-3 text-xs font-semibold ${inboxFilter===filter?'bg-navy-deep text-white':'bg-bg text-muted-faro'}`}>{t(filter)}</button>)}</div>}
+              {!isStaffView&&<div role="tablist" aria-label={t('inbox')} className="flex gap-1 overflow-x-auto pb-1">{(['all','tickets','courses','system','closed'] as const).map(filter=><button type="button" role="tab" key={filter} aria-selected={inboxFilter===filter} onClick={()=>{setInboxFilter(filter);if(filter!=='closed'&&activeConversation?.status==='closed'){setActiveConversation(null);router.push('/dashboard/messages');}}} className={`min-h-11 shrink-0 rounded-full px-3 text-xs font-semibold ${inboxFilter===filter?'bg-navy-deep text-white':'bg-bg text-muted-faro'}`}>{filter==='closed'?(isHt?'Fèmen':'Clôturés'):t(filter)}</button>)}</div>}
               {/* Search bar */}
               <div className="relative">
                 <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted-faro" />
@@ -666,6 +668,7 @@ export function StudentStaffChatView({
               {activeConversation.ticketNumber&&<p className="shrink-0 px-4 py-2 text-xs break-all text-navy-deep bg-blue-tint">{isHt?'Tikè sipò':'Ticket support'} : {activeConversation.ticketNumber}</p>}
               {humanSupport&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Sipò imen ap pran swen tikè a. Ou ka kontinye ekri.':'Support humain : vous pouvez continuer à écrire pendant le traitement du ticket.'}</p>}
               {activeConversation.courseId&&activeConversation.status==='waiting_staff'&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Yon kesyon ap tann pwofesè a. Ou ka poze asistan pedagojik la yon lòt kesyon.':'Une question attend le professeur. Vous pouvez poser une autre question à son assistant pédagogique.'}</p>}
+              {composerPaused&&!activeConversation.courseId&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Tikè a rezoud epi fèmen. Ou ka li ansyen mesaj yo.':'Ticket résolu et clôturé. Vous pouvez consulter les anciens messages.'}</p>}
               {/* Composer */}
               <footer data-chat-composer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-2 sm:gap-2.5 w-full">

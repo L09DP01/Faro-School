@@ -9,7 +9,7 @@ async function main(){
  const modules:Record<string,string>={
  '@/lib/support/service':`export const handleSupportMessage=async input=>{globalThis.flow.calls.push({mode:'support',courseContextSummary:'',...input});};`,
   '@/lib/messaging/background':`export const scheduleAssistant=async work=>{if(globalThis.queueAi){globalThis.aiTasks.push(work);}else await work();};`,
-  '@/lib/auth/get-user':`export const getCurrentUser=async()=>({id:'student',role:'student',fullName:'Student',locale:'fr'});`,
+  '@/lib/auth/get-user':`export const getCurrentUser=async()=>({id:'student',role:globalThis.flow.actorRole||'student',fullName:'Student',locale:'fr'});`,
   '@/lib/supabase/admin':`export const createAdminClient=()=>globalThis.flowDb;`,
   '@/lib/supabase/server':`export const createClient=async()=>globalThis.flowDb;`,
   '@/lib/config':`export const isDemoMode=()=>false;`,
@@ -42,6 +42,7 @@ async function main(){
  reset();await actions.sendPrivateMessageAction('conversation','Salut');assert.equal(g.flow.calls[0].mode,'support');assert.equal(g.flow.rpc.length,0,'Support delegates to isolated backend');
  reset();g.flow.result={...g.flow.result,can_answer:true,answer:'Useful answer'};g.queueAi=true;g.aiTasks=[];response=await actions.sendPrivateMessageAction('conversation','Question before a ticket opens');assert(response.success);assert.equal(g.flow.calls.length,0,'Persistence acknowledged before background AI');g.flow.pending=true;await g.aiTasks[0]();assert.equal(g.flow.calls.length,0,'Ticket opened before generation suppresses provider call');g.queueAi=false;g.flow.pending=false;
  reset();g.flow.muted=true;response=await actions.sendPrivateMessageAction('conversation','Interdit');assert(!response.success);assert.equal(g.flow.writes.length,0);
+ reset();g.flow.actorRole='admin';g.flow.muted=false;g.flow.status='waiting_staff';let close=await actions.closeConversationAction('conversation');assert.equal(close.success,false);assert.equal(close.error,'closure_unconfirmed');g.flow.status='closed';close=await actions.closeConversationAction('conversation');assert.equal(close.success,true);assert.equal(close.data.status,'closed');
  console.log('PASS actions: multi-turn course assistant, same author context, presence vs explicit takeover, offline resume, pending course questions, continuous human support, correct handoff and timed mute.');
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

@@ -163,12 +163,12 @@
     "language": "fr",
     "description": "L’assistant support explique les procédures vérifiées et peut lire les informations autorisées du compte courant.",
     "procedure": "Décrire le problème. Si une action administrative est nécessaire, demander un transfert. Le bouton Créer un ticket support déclenche une demande explicite ; le numéro n’est annoncé qu’après enregistrement confirmé.",
-    "conditions": "Pendant un ticket actif, l’IA s’arrête et l’élève peut continuer à écrire au support humain. Résoudre le ticket autorise la reprise de l’IA. Les conversations et leurs messages ne sont pas supprimés.",
+    "conditions": "Pendant un ticket actif, l’IA s’arrête et l’élève peut continuer à écrire au support humain. Résoudre le ticket clôture définitivement cette discussion. Son historique reste consultable en lecture seule. Une nouvelle demande utilise une nouvelle conversation ; un ticket clôturé ne se rouvre pas.",
     "known_errors": "",
     "solutions": "Un administrateur peut répondre plus tard s’il est hors ligne. Ne pas affirmer qu’un message a été lu ou qu’un e-mail a été livré sans accusé correspondant.",
     "source_refs": [
       "src/app/actions/private-messaging.ts",
-      "supabase/migrations/20261102230000_live_messaging_sessions.sql"
+      "supabase/migrations/20261103020000_close_resolved_support_tickets.sql"
     ],
     "system_version": "support-kb-v1",
     "links": [

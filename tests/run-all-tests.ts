@@ -5,6 +5,7 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Support ticket terminal resolution and preserved history",cmd:"npx tsx tests/support-ticket-closure.test.ts"},
   {name:"Logout session cookies and safe login redirect",cmd:"npx tsx tests/logout-account.test.ts"},
   {name:"Support source provenance across deployment platforms",cmd:"npx tsx tests/support-provenance.test.ts"},
   {name:"Support multi-turn orchestration and human transfer",cmd:"npx tsx tests/support-flow.test.ts"},

@@ -72,10 +72,10 @@ export function InstructorMessagesClient({
 }: InstructorMessagesClientProps) {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [activeId, setActiveId] = useState<string | null>(
-    initialActiveId || (initialConversations.length > 0 ? initialConversations[0].id : null)
+    initialActiveId || initialConversations.find(c=>c.status!=='closed')?.id || null
   );
   const [messagesMap, setMessagesMap] = useState<Record<string, PrivateMessage[]>>({});
-  const [statusFilter, setStatusFilter] = useState<"all" | "waiting" | "ai" | "replied" | "closed">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "waiting" | "ai" | "replied" | "closed">(initialConversations.find(c=>c.id===initialActiveId)?.status==="closed"?"closed":"all");
   const [search, setSearch] = useState("");
   const [inputText, setInputText] = useState("");
   const nearBottom=useRef(true);
@@ -105,6 +105,12 @@ export function InstructorMessagesClient({
     return enrolledStudents.find((s) => s.id === activeConversation.studentId) || null;
   }, [activeConversation, enrolledStudents]);
 
+  useEffect(()=>{if(activeConversation?.status==='closed')setStatusFilter('closed');},[activeConversation?.id,activeConversation?.status]);
+  const selectStatusFilter=(next:typeof statusFilter)=>{
+    setStatusFilter(next);
+    if(activeConversation&&((next==='closed')!==(activeConversation.status==='closed')))setActiveId(null);
+  };
+
   const activeMessages = useMemo(
     () => (activeId ? messagesMap[activeId] || [] : []),
     [activeId, messagesMap]
@@ -124,6 +130,8 @@ export function InstructorMessagesClient({
   // Filtered conversations
   const filteredConversations = useMemo(() => {
     return conversations.filter((c) => {
+      // Closed threads live only in the archive filter.
+      if (statusFilter !== "closed" && c.status === "closed") return false;
       // Status filter
       if (statusFilter === "waiting") {
         if (c.status !== "waiting_staff" && c.status !== "open") return false;
@@ -151,7 +159,7 @@ export function InstructorMessagesClient({
   // Counts for tabs
   const counts = useMemo(() => {
     return {
-      all: conversations.length,
+      all: conversations.filter(c=>c.status!=="closed").length,
       waiting: conversations.filter((c) => c.status === "waiting_staff" || c.status === "open").length,
       ai: conversations.filter((c) => c.status === "ai_handling").length,
       replied: conversations.filter((c) => c.status === "staff_replied").length,
@@ -212,32 +220,23 @@ export function InstructorMessagesClient({
     });
   };
 
-  // Close or Reopen conversation
+  // A resolved support ticket is closed, with its history retained.
   const handleToggleClose = () => {
-    if (!activeConversation || isPending || activeConversation.status==="closed") return;
-    const isCurrentlyClosed = false;
-    const newStatus = "closed";
-
+    if (!activeConversation || isPending || activeConversation.status === "closed") return;
+    const conversationId = activeConversation.id;
     startTransition(async () => {
-      const res = await closeConversationAction(activeConversation.id, newStatus);
-      if (res.success) {
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === activeConversation.id ? { ...c, status: c.courseId?newStatus:"ai_handling",assistanceMode:c.courseId?c.assistanceMode:"AI_RESUMED" } : c
-          )
-        );
-        showNotification(
-          isCurrentlyClosed
-            ? isHt
-              ? "Konvèsasyon an relouvri."
-              : "Discussion rouverte avec succès."
-            : isHt
-              ? "Konvèsasyon an make kòm fèmen."
-              : activeConversation.courseId?"Discussion clôturée avec succès.":"Ticket résolu. L’historique reste disponible et l’IA reprend.",
-          "success"
-        );
-      } else {
-        showNotification(res.error || "Erreur lors de l'opération.", "error");
+      try {
+        const res = await closeConversationAction(conversationId, "closed");
+        if (!res.success || res.data?.status !== "closed") {
+          showNotification(isHt ? "Fèmti a pa konfime. Rafrechi epi eseye ankò." : "Clôture non confirmée. Actualisez puis réessayez.", "error");
+          return;
+        }
+        setConversations(prev => prev.map(c => c.id === conversationId ? {...c, status: "closed", assistanceMode: res.data.assistanceMode || c.assistanceMode} : c));
+        setStatusFilter('closed');
+        window.dispatchEvent(new Event('faro:inbox-refresh'));
+        showNotification(activeConversation.courseId ? (isHt ? "Diskisyon an fèmen." : "Discussion clôturée.") : (isHt ? "Tikè a rezoud epi fèmen. Istorik la konsève." : "Ticket résolu et clôturé. L’historique est conservé."), "success");
+      } catch {
+        showNotification(isHt ? "Fèmti a pa konfime. Eseye ankò." : "Clôture non confirmée. Réessayez.", "error");
       }
     });
   };
@@ -387,7 +386,7 @@ export function InstructorMessagesClient({
             {/* Filter pills */}
             <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 text-[11px] no-scrollbar">
               <button
-                onClick={() => setStatusFilter("all")}
+                onClick={() => selectStatusFilter("all")}
                 className={`px-2.5 py-1 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   statusFilter === "all"
                     ? "bg-ink text-surface"
@@ -397,7 +396,7 @@ export function InstructorMessagesClient({
                 {isHt ? "Tout" : "Tous"} ({counts.all})
               </button>
               <button
-                onClick={() => setStatusFilter("waiting")}
+                onClick={() => selectStatusFilter("waiting")}
                 className={`px-2.5 py-1 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   statusFilter === "waiting"
                     ? "bg-orange text-white"
@@ -407,7 +406,7 @@ export function InstructorMessagesClient({
                 {isHt ? "Ap tann" : "En attente"} ({counts.waiting})
               </button>
               <button
-                onClick={() => setStatusFilter("ai")}
+                onClick={() => selectStatusFilter("ai")}
                 className={`px-2.5 py-1 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   statusFilter === "ai"
                     ? "bg-blue text-white"
@@ -417,7 +416,7 @@ export function InstructorMessagesClient({
                 {isHt ? "IA" : "IA a répondu"} ({counts.ai})
               </button>
               <button
-                onClick={() => setStatusFilter("replied")}
+                onClick={() => selectStatusFilter("replied")}
                 className={`px-2.5 py-1 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   statusFilter === "replied"
                     ? "bg-ok text-white"
@@ -427,7 +426,7 @@ export function InstructorMessagesClient({
                 {isHt ? "Reponn" : "Répondu"} ({counts.replied})
               </button>
               <button
-                onClick={() => setStatusFilter("closed")}
+                onClick={() => selectStatusFilter("closed")}
                 className={`px-2.5 py-1 rounded-lg font-medium transition-colors whitespace-nowrap ${
                   statusFilter === "closed"
                     ? "bg-muted-faro text-white"

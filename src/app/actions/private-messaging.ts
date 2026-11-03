@@ -659,7 +659,7 @@ export async function markConversationReadAction(conversationId:string):Promise<
 }
 
 /**
- * Closes or reopens a conversation (Staff only).
+ * Permanently closes a conversation (staff only), with persisted-state verification.
  */
 export async function closeConversationAction(
   conversationId: string,
@@ -674,8 +674,10 @@ export async function closeConversationAction(
     if(newStatus!=='closed')return{success:false,error:'conversation_closed'};
     const db=await createClient();const {error}=await db.rpc('set_conversation_control',{p_conversation:conversationId,p_control:'closed'});
     if(error)return{success:false,error:'forbidden'};
-
-    revalidatePath('/[locale]/admin/messages','page');return{success:true};
+    const {data:closed,error:verifyError}=await db.from('conversations').select('id,status,assistance_mode').eq('id',conversationId).single();
+    if(verifyError||closed?.status!=='closed')return{success:false,error:'closure_unconfirmed'};
+    revalidatePath('/[locale]/admin/messages','page');revalidatePath('/[locale]/dashboard/messages','page');
+    return{success:true,data:{conversationId,status:'closed',assistanceMode:closed.assistance_mode}};
   }catch{return{success:false,error:'unavailable'};}
 }
 
