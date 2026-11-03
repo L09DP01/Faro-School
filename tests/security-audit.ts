@@ -135,6 +135,7 @@ function testAdminGuards() {
   for (const file of actionFiles) {
     const code = fs.readFileSync(path.resolve(file), "utf-8");
     assert(
+      (file.endsWith('admin-promotions.ts') && code.includes('getCurrentUser()') && /user\.role\s*!==\s*['"]admin['"]/.test(code) && code.includes("!can(user,'promotions.manage')") && code.includes('manage_promotion_coupon')) ||
       (code.includes("assertAdmin()") && code.includes('role !== "admin"')) ||
         (code.includes("assertCourseManager()") && code.includes('can(user, "course.manage")')),
       `Server action file '${file}' asserts role privileges`

@@ -62,15 +62,17 @@
     "category": "payments",
     "language": "fr",
     "description": "MonCash et NatCash passent par Kobara pour les moyens activés sur la formation. Le backend valide le montant et crée une commande pending.",
-    "procedure": "Depuis le catalogue, choisir Acheter, se connecter avec un e-mail vérifié, sélectionner le moyen activé puis suivre la redirection sécurisée Kobara. La confirmation fiable vient du backend. Pour une erreur, identifier le cours, l’étape avant/pendant/après paiement, le texte exact et si l’utilisateur indique un débit.",
-    "conditions": "Ne pas recommander de payer à nouveau si un débit est signalé. Un débit déclaré n’est pas une confirmation backend. L’IA ne valide aucun paiement et n’accorde aucun accès. Les opérations de remboursement ou de correction nécessitent un administrateur.",
+    "procedure": "Depuis le catalogue, choisir Acheter, se connecter avec un e-mail vérifié, sélectionner le moyen activé puis suivre la redirection sécurisée Kobara. La confirmation fiable vient du backend. Pour une erreur, identifier le cours, l’étape avant/pendant/après paiement, le texte exact et si l’utilisateur indique un débit. Un code promotionnel peut être appliqué avant confirmation. Si le total devient 0 HTG, utiliser Activer ma formation : le serveur vérifie le code puis active l’inscription sans paiement Kobara ni numéro MonCash/NatCash.",
+    "conditions": "Ne pas recommander de payer à nouveau si un débit est signalé. Un débit déclaré n’est pas une confirmation backend. L’IA ne valide aucun paiement et n’accorde aucun accès. Les opérations de remboursement ou de correction nécessitent un administrateur. Un code expiré, désactivé ou dont la limite est atteinte est refusé. Une prévisualisation de réduction seule ne donne pas accès au cours.",
     "known_errors": "Codes réellement utilisés : provider_disabled (moyen désactivé), alreadyEnrolled (inscription déjà active), couponInvalid, rateLimit (429), order_write_unavailable, payment_lookup_unavailable, payment_binding_unavailable, gateway_auth (401/403 fournisseur), gateway_validation (400/422), gateway_rate_limited (429), gateway_unavailable, payment_checkout_unavailable, payment_checkout_invalid, payment_id_missing. Les trois erreurs de configuration ou de liaison nécessitent le support ; ne pas répéter le paiement. Statuts commande : pending, paid, failed, cancelled ; paiement : pending, awaiting_validation, validated, failed. Le retour du navigateur ne suffit pas à confirmer le paiement.",
     "solutions": "Codes réellement utilisés : provider_disabled (moyen désactivé), alreadyEnrolled (inscription déjà active), couponInvalid, rateLimit (429), order_write_unavailable, payment_lookup_unavailable, payment_binding_unavailable, gateway_auth (401/403 fournisseur), gateway_validation (400/422), gateway_rate_limited (429), gateway_unavailable, payment_checkout_unavailable, payment_checkout_invalid, payment_id_missing. Les trois erreurs de configuration ou de liaison nécessitent le support ; ne pas répéter le paiement. Statuts commande : pending, paid, failed, cancelled ; paiement : pending, awaiting_validation, validated, failed. Le retour du navigateur ne suffit pas à confirmer le paiement.",
     "source_refs": [
       "src/app/api/payments/create/route.ts",
       "src/lib/payments/kobara.ts",
       "src/lib/payments/types.ts",
-      "src/app/api/orders/[orderId]/status/route.ts"
+      "src/app/api/orders/[orderId]/status/route.ts",
+      "src/lib/payments/coupon.ts",
+      "docs/COUPONS_AND_ZERO_TOTAL_CHECKOUT.md"
     ],
     "system_version": "support-kb-v1",
     "links": [

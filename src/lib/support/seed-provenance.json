@@ -9,11 +9,11 @@
   },
   "catalog": {
     "legacy": "c5760ee2abc3f747a44bbf4eb9bbb564782ad10343bb5d499d20b86502409d0b",
-    "canonical": "a4455e739a52c742dbf1df2a459ce3fc0b646f0d2ff1dcfe30072ad2f9e15982"
+    "canonical": "7beecb8a66c2ad667e64a25d7a6c64e1d17bffa8c5c6d13b717e68b528bb82a7"
   },
   "payments": {
     "legacy": "42306ec115bad86ff18f130a33e07415210219cc6643f227ac8444e921c7dffc",
-    "canonical": "42306ec115bad86ff18f130a33e07415210219cc6643f227ac8444e921c7dffc"
+    "canonical": "944a0c9e18dfa1183a0f5835f289294592cb7536e1cc9dd00ad65b7c51989a05"
   },
   "access": {
     "legacy": "6216de49ff5f9e70bb43d6976bfbad620c4896f6d207e6c7c266a7dd4f109feb",

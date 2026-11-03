@@ -18,6 +18,7 @@ export const couponFormSchema = z.object({
   id: z.string().optional(),
   code: z
     .string()
+    .trim().toUpperCase()
     .min(3, "Le code doit comporter au moins 3 caractères")
     .max(30, "Le code ne peut dépasser 30 caractères")
     .regex(/^[A-Z0-9_-]+$/, "Le code ne doit contenir que des majuscules, chiffres et tirets"),

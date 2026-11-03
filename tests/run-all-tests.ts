@@ -5,6 +5,8 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Coupon transactions, zero total and exact usage",cmd:"npx tsx tests/coupon-sql.test.ts"},
+  {name:"Coupon administration, real preview and checkout",cmd:"npx tsx tests/coupon-http.test.ts"},
   {name:"Realtime token refresh and logout fencing",cmd:"npx tsx tests/realtime-client.test.ts"},
   {name:"Web Push RFC encryption and VAPID signatures",cmd:"npx tsx tests/web-push-crypto.test.ts"},
   {name:"Live private delivery and Push SQL authorization",cmd:"npx tsx tests/live-message-push-sql.test.ts"},

@@ -33,7 +33,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
 
   const isHt = locale === "ht";
 
-  const actionError=(code?:string)=>code==='duplicate_code'?(isHt?'Kòd promo sa a egziste deja.':'Ce code promotionnel existe déjà.'):(isHt?'Aksyon an pa disponib. Verifye done yo epi eseye ankò.':'Action indisponible. Vérifiez les données puis réessayez.');
+  const actionError=(code?:string)=>['invalid_data','invalid_date','invalid_id'].includes(code||'')?(isHt?'Verifye kòd la, rabè a, limit la ak dat la.':'Vérifiez le code, la réduction, la limite et la date.'):code==='duplicate_code'?(isHt?'Kòd promo sa a egziste deja.':'Ce code promotionnel existe déjà.'):(isHt?'Aksyon an pa disponib. Verifye done yo epi eseye ankò.':'Action indisponible. Vérifiez les données puis réessayez.');
   // Escape key handler
   useEffect(() => {
     if (!isDialogOpen && !deleteTarget) return;
@@ -113,7 +113,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
       discountType: formType,
       discountValue: val,
       maxUses: maxU,
-      expiresAt: formExpiresAt ? new Date(formExpiresAt).toISOString() : null,
+      expiresAt: formExpiresAt ? new Date(formExpiresAt+'T23:59:59.999Z').toISOString() : null,
       isActive: formIsActive,
     };
 
@@ -530,7 +530,7 @@ export function AdminPromotionsClient({ initialCoupons, locale }: AdminPromotion
                 </div>
                 <div className="space-y-1">
                   <label className="font-heading font-semibold text-ink block">
-                    {isHt ? "Dat ekspirasyon" : "Date d'expiration"}
+                    {isHt ? "Dat ekspirasyon (UTC)" : "Date d'expiration (UTC)"}
                   </label>
                   <input
                     type="date"

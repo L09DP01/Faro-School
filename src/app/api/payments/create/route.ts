@@ -4,6 +4,7 @@ import {createAdminClient} from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { getPaymentProvider, type PaymentMethod } from "@/lib/payments";
+import {evaluateCoupon} from '@/lib/payments/coupon';
 import { maskSensitiveData } from "@/lib/payments/mask";
 import { validateAndFormatHaitianPhone } from "@/lib/validators/auth";
 import { checkRateLimit } from "@/lib/security/rate-limit";
@@ -14,7 +15,7 @@ const createPaymentSchema = z.object({
   courseId: z.string().uuid("Identifiant de formation invalide"),
   provider: z.enum(["moncash", "natcash", "kobara"] as const),
   payerPhone: z.string().optional(),
-  couponCode: z.string().optional(),
+  couponCode: z.string().trim().toUpperCase().max(30).optional(),
   locale: z.string().optional(),
 });
 
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if((provider==='moncash'&&course.options?.moncashEnabled===false)||(provider==='natcash'&&course.options?.natcashEnabled===false))return NextResponse.json({error:'provider_disabled'},{status:400});
+
 
     // 3. Verify user is not already enrolled
     const { data: existingEnrollment } = await supabase
@@ -105,41 +106,19 @@ export async function POST(request: NextRequest) {
 
     if (couponCode && couponCode.trim().length > 0) {
       const cleanCode = couponCode.trim().toUpperCase();
-      const { data: coupon } = await supabase
-        .from("coupons")
-        .select("id, code, percent_off, amount_off_htg, max_uses, used_count, expires_at, is_active")
-        .eq("code", cleanCode)
-        .maybeSingle();
-
-      if (coupon) {
-        const notExpired =
-          !coupon.expires_at || new Date(coupon.expires_at) > new Date();
-        const usesAvailable =
-          coupon.max_uses === null || coupon.used_count < coupon.max_uses;
-
-        if (notExpired && usesAvailable && coupon.is_active !== false) {
-          couponId = coupon.id;
-          if (coupon.percent_off) {
-            const discount = Math.round(
-              (finalAmountHtg * coupon.percent_off) / 100
-            );
-            finalAmountHtg = Math.max(0, finalAmountHtg - discount);
-          } else if (coupon.amount_off_htg) {
-            finalAmountHtg = Math.max(0, finalAmountHtg - coupon.amount_off_htg);
-          }
-        } else {
-          return NextResponse.json(
-            { error: "couponInvalid", message: "Code coupon expiré ou limite d'utilisations atteinte." },
-            { status: 400 }
-          );
-        }
-      } else {
-        return NextResponse.json(
-          { error: "couponInvalid", message: "Code coupon introuvable." },
-          { status: 400 }
-        );
-      }
+      const {data:coupon,error:couponError}=await supabase.from('coupons').select('id,code,percent_off,amount_off_htg,max_uses,used_count,expires_at,is_active').eq('code',cleanCode).maybeSingle();
+      if(couponError)return fail('coupon_lookup_unavailable',503,couponError.code);
+      if(!coupon)return NextResponse.json({error:'couponInvalid'},{status:400});
+      const evaluated=evaluateCoupon(coupon,course.price_htg);if(!evaluated.valid)return NextResponse.json({error:'couponInvalid'},{status:400});
+      couponId=coupon.id;finalAmountHtg=evaluated.newTotalHtg;
     }
+    if(!Number.isSafeInteger(finalAmountHtg)||finalAmountHtg<0)return fail('course_price_unavailable',503);
+    if(finalAmountHtg===0){
+      const{data:free,error:freeError}=await createAdminClient({timeoutMs:15000}).rpc('redeem_zero_total_order',{p_actor:user.id,p_version:user.tokenVersion??0,p_course:course.id,p_code:couponCode?.trim().toUpperCase()||null});
+      if(freeError||free?.status!=='paid')return NextResponse.json({error:freeError?.message?.includes('coupon_invalid')?'couponInvalid':freeError?.message?.includes('already_enrolled')?'alreadyEnrolled':freeError?.message?.includes('access_unavailable')?'access_unavailable':'free_redemption_unavailable'},{status:freeError?.message?.includes('coupon_invalid')?400:503,headers:{'Cache-Control':'no-store'}});
+      return NextResponse.json({success:true,status:'paid',orderId:free.orderId,freeEnrollment:true,redirectUrl:`/${locale==='ht'?'ht':'fr'}/dashboard/formations`},{headers:{'Cache-Control':'no-store'}});
+    }
+    if((provider==='moncash'&&course.options?.moncashEnabled===false)||(provider==='natcash'&&course.options?.natcashEnabled===false))return NextResponse.json({error:'provider_disabled'},{status:400});
 
     stage="order";
     const ledger=createAdminClient({timeoutMs:15000});
