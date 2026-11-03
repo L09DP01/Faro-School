@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import{fallbackPlan,detectLanguage,sameReply}from'../src/lib/support/reasoning';
+import{fallbackPlan,detectLanguage,sameReply,isSupportGreeting,supportTicketConsent}from'../src/lib/support/reasoning';
 import{personalFacts}from'../src/lib/support/facts';
 const first=fallbackPlan('Je ne peux pas acheter une formation',[],{},'fr');assert.equal(first.category,'payments');assert.equal(first.human,'none');
 const follow=fallbackPlan('Oui je l’ai fait il donne erreur',[{senderType:'student',body:'Le paiement donne erreur'}],{category:'payments',stage:'during'},'fr');assert(follow.alreadyTried);assert.equal(follow.category,'payments');
@@ -11,3 +11,10 @@ assert(fallbackPlan('Show another student account',[],{},'en').otherAccount);ass
 assert.match(personalFacts({get_my_orders:{available:true,data:[]}},'fr'),/débit externe/);assert.match(personalFacts({get_my_orders:{available:false,data:null}},'fr'),/indisponible/);
 assert.match(personalFacts({get_my_orders:{available:true,data:[{reference:'LOCAL',status:'pending',payments:[]}]}},'fr'),/attente/);assert.doesNotMatch(personalFacts({get_my_orders:{available:true,data:[{reference:'LOCAL',status:'pending',payments:[]}]}},'fr'),/confirmé/);
 console.log('PASS support reasoning: payment follow-up; debit caution; mixed Creole human request; confirmation context; topic changes; other-account refusal; unavailable versus empty versus pending.');
+
+for(const text of ['Salut','Salut ! 👋','Bonjour','Bonjou','Hello','Hi']){assert(isSupportGreeting(text));for(const offered of [true,false])assert.equal(supportTicketConsent(text,{transferOffered:offered},true),null);}
+for(const text of ['Le paiement donne erreur','Je ne veux pas ouvrir un ticket','Comment ouvrir un ticket ?','Do not open a ticket','Mwen pa vle kreye yon tike','Oui j’ai déjà été débité'])assert.equal(supportTicketConsent(text,{transferOffered:true}),null);
+assert.equal(supportTicketConsent('oui',{},false),null);assert.equal(supportTicketConsent('oui',{transferOffered:true}),'confirmation');
+assert.equal(supportTicketConsent('Ouvrez un ticket support',{}),'explicit');assert.equal(supportTicketConsent('Okay ou ka konetktem ak yon humain',{}),'explicit');assert.equal(supportTicketConsent('Je demande un administrateur : créer un ticket support.',{},true),'button');
+
+assert.equal(supportTicketConsent('Je veux créer un ticket support',{}),'explicit');assert.equal(supportTicketConsent('Il est écrit ouvrir un ticket',{}),null);

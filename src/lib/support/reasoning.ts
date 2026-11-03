@@ -15,3 +15,21 @@ export function fallbackPlan(question:string,history:{senderType:string;body:str
 }
 export function sameReply(a:string,b:string){return normalize(a).replace(/\W/g,'')===normalize(b).replace(/\W/g,'');}
 export function say(language:string,fr:string,ht:string,en:string){return language==='ht'?ht:language==='en'?en:fr;}
+
+/** Ticket permission is determined by the server, independently of model output. */
+export function isSupportGreeting(question:string){
+ const text=normalize(question).replace(/[^\p{L}\p{N}\s]/gu,' ').replace(/\s+/g,' ').trim();
+ return /^(salut|bonjour|bonsoir|bonjou|bonswa|hello|hi|hey|coucou|salut tout le monde)$/.test(text);
+}
+export function supportTicketConsent(question:string,memory:any,buttonRequested=false):'button'|'explicit'|'confirmation'|null{
+ if(isSupportGreeting(question))return null;
+ const text=normalize(question);
+ if(/\b(?:ne|n)\b.{0,45}\b(?:pas|plus)\b|je.{0,20}pas.{0,35}(?:ticket|humain|admin)|don't|do not|dont|pa vle|pa kreye|pa ouvri|pas de ticket|sans ticket|no ticket|not yet|non merci/.test(text))return null;
+ if(/(?:comment|how to|kijan|explique|affiche|il est ecrit|exemple|example|says).{0,45}(?:ouvrir|creer|open|kreye|ticket|tike)/.test(text))return null;
+ if(buttonRequested&&['je demande un administrateur : creer un ticket support.','mwen mande yon administrate : kreye yon tike sipo.'].includes(text))return 'button';
+ const ticket=/(?:^(?:ouvrez|creez|ouvrir|creer|open|kreye|ouvri)\b|(?:je (?:veux|souhaite|demande)|j aimerais|peux tu|pouvez vous|mwen (?:vle|bezwen)|ou ka|please|can you|i (?:want|need)).{0,30}(?:ouvrir|creer|open|kreye|ouvri)).{0,30}(?:ticket|tike)/.test(text);
+ if(ticket)return 'explicit';
+ const decision=fallbackPlan(question,[],memory,'fr').human;
+ const connect=/(?:humain|human|admin|responsab|direksyon)/.test(text)&&/(?:contactez|connect|konekt|konetk|transmet|kontak|mettez|transf)/.test(text);
+ return decision==='open'&&connect?'explicit':decision==='confirm'?'confirmation':null;
+}
