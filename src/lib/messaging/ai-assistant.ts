@@ -247,7 +247,6 @@ export async function callAiAssistant({
   const model=assistantModel(process.env.AI_MODEL?.trim()||globalSettings.defaultModel,!!process.env.GEMINI_API_KEY,!!process.env.ANTHROPIC_API_KEY);
   const isGemini=model.startsWith('gemini-');
   const apiKey=isGemini?process.env.GEMINI_API_KEY:process.env.ANTHROPIC_API_KEY;
-  if(!ASSISTANT_MODELS.some(id=>id===model))return{answer:'',can_answer:false,confidence:0,escalate_reason:'Modèle IA non pris en charge. Transmission au responsable.',model,inputTokens:0,outputTokens:0};
 
   // 1. Kill Switch Check (env variable OR persisted setting)
   const isEnvDisabled =
@@ -267,6 +266,8 @@ export async function callAiAssistant({
 
   const intake=intakeReply(currentQuestion,mode,locale);
   if(intake)return{answer:intake,can_answer:true,confidence:1,model:'faro-intake',inputTokens:0,outputTokens:0};
+  if(!ASSISTANT_MODELS.some(id=>id===model))return{answer:'',can_answer:false,confidence:0,escalate_reason:'Modèle IA non pris en charge. Transmission au responsable.',model,inputTokens:0,outputTokens:0};
+
   // 2. Quotas and Daily Cost Cap Check
   const limitCheck = await checkAiLimits(
     studentId,

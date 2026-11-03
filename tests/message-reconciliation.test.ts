@@ -1,0 +1,8 @@
+import assert from 'node:assert/strict';import {mergeMessages} from '../src/lib/messaging/merge-messages';import {intakeReply} from '../src/lib/messaging/assistant-policy';import type {PrivateMessage} from '../src/lib/messaging/types';
+const base:PrivateMessage={id:'saved',conversationId:'conversation',senderType:'student',senderId:'student',body:'Same words',createdAt:'2026-11-02T12:00:00Z'};
+assert.deepEqual(mergeMessages([base],[]),[base],'Empty refresh must preserve existing history');
+const pending={...base,id:'temp',clientMessageId:'retry',isOptimistic:true,failedToSend:true};const saved={...base,id:'server',clientMessageId:'retry'};let list=mergeMessages([pending],[saved]);assert.equal(list.length,1);assert.equal(list[0].id,'server');assert.equal(list[0].failedToSend,false);assert.equal(list[0].isOptimistic,false);
+list=mergeMessages(list,[{...saved,deliveredAt:'2026-11-02T12:01:00Z',readAt:'2026-11-02T12:02:00Z'}]);list=mergeMessages(list,[saved]);assert(list[0].readAt);assert(list[0].deliveredAt);
+assert.equal(mergeMessages([base],[{...base,id:'another',clientMessageId:'another'}]).length,2,'Identical texts with distinct IDs are distinct messages');
+for(const locale of ['fr','ht']){const help=intakeReply(locale==='fr'?'Je ne peux pas acheter une formation':'Mwen paka achte formation','support',locale);assert(help?.includes('Kobara'));assert(help?.includes('MonCash'));assert(!help?.includes('Créer un ticket'));assert.equal(intakeReply('Mwen vle yon ranbousman sou MonCash mwen','support',locale),null,'Account operation requires human permissions');}
+console.log('PASS message reconciliation: preserved history, exact IDs, successful retry, monotonic receipts; verified FR/KR purchase guidance without claiming transaction status.');

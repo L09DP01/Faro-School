@@ -1,8 +1,11 @@
 "use client";
+import {MessageDeliveryStatus} from './MessageDeliveryStatus';
+import {mergeMessages} from '@/lib/messaging/merge-messages';
+import {useStaffOnline} from '@/lib/messaging/use-staff-online';
 import {MessageSources} from "@/components/messaging/MessageSources";
 import {scrollMessagePane} from "@/lib/messaging/scroll";
 
-import { useState, useEffect, useRef, useTransition, useMemo } from "react";
+import { useState, useEffect, useRef, useTransition, useMemo, useCallback } from "react";
 import {useTranslations} from "next-intl";
 import {markSystemNotificationsReadAction} from "@/app/actions/student-messaging";
 import type {getStudentSystemNotifications} from "@/lib/messaging/data";
@@ -25,6 +28,9 @@ import {
 import { initAuthenticatedRealtimeClient } from "@/lib/supabase/client";
 import {
   sendPrivateMessageAction,
+  loadStudentInboxAction,
+  loadStaffInboxAction,
+  acknowledgeConversationDeliveryAction,
   markConversationReadAction,
 } from "@/app/actions/private-messaging";
 import { NewConversationModal } from "./NewConversationModal";
@@ -50,7 +56,7 @@ interface StudentStaffChatViewProps {
 export function StudentStaffChatView({
   systemNotifications=[],
   conversations: initialConversations,
-  activeConversation,
+  activeConversation:initialConversation,
   initialMessages,
   currentUserId,
   currentUserRole,
@@ -58,6 +64,8 @@ export function StudentStaffChatView({
   enrolledCourses,
   locale,
 }: StudentStaffChatViewProps) {
+  const [activeConversation,setActiveConversation]=useState(initialConversation);
+  useEffect(()=>{setActiveConversation(initialConversation);},[initialConversation]);
   const [conversations,setConversations] = useState<Conversation[]>(initialConversations);
   const router=useRouter();
   useEffect(()=>{setConversations(initialConversations);},[initialConversations]);
@@ -77,11 +85,32 @@ export function StudentStaffChatView({
   const isHt = locale === "ht";
   const isStaffView = currentUserRole === "instructor" || currentUserRole === "admin";
 
+  const refreshingInbox=useRef(false);
+  const selectedConversationId=activeConversation?.id;
+  const activeConversationIdRef=useRef(selectedConversationId);
+  activeConversationIdRef.current=selectedConversationId;
+  const refreshInbox=useCallback(async()=>{
+    if(refreshingInbox.current)return;
+    refreshingInbox.current=true;
+    try{
+      const result=await (isStaffView?loadStaffInboxAction:loadStudentInboxAction)(selectedConversationId);
+      if(activeConversationIdRef.current!==selectedConversationId)return;
+      if(result.success&&result.data){
+        setConversations(result.data.conversations);
+        if(selectedConversationId){
+          const updated=result.data.conversations.find(c=>c.id===selectedConversationId);
+          if(updated)setActiveConversation(updated);
+          setMessages(prev=>mergeMessages(prev,result.data!.messages));
+        }
+      }else if(result.error)setErrorMessage(locale==='ht'?'Koneksyon an pa disponib. Istorik la rete konsève.':'Connexion indisponible. L’historique affiché est conservé.');
+    }catch{setErrorMessage(locale==='ht'?'Koneksyon an pa disponib. Istorik la rete konsève.':'Connexion indisponible. L’historique affiché est conservé.');}
+    finally{refreshingInbox.current=false;}
+  },[selectedConversationId,isStaffView,locale]);
   // Refresh the inbox when its own conversations/system notifications change.
   useEffect(()=>{
     if(isStaffView)return;
     let disposed=false,channel:any=null,timer:ReturnType<typeof setTimeout>|undefined;
-    const refresh=()=>{if(timer)clearTimeout(timer);timer=setTimeout(()=>router.refresh(),200);};
+    const refresh=(event?:any)=>{const conversationId=event?.new?.payload?.conversationId;if(typeof conversationId==='string')void acknowledgeConversationDeliveryAction(conversationId);if(timer)clearTimeout(timer);timer=setTimeout(()=>void refreshInbox(),200);};
     void initAuthenticatedRealtimeClient().then(client=>{
       if(disposed)return;
       channel=client.channel('student-inbox-'+currentUserId)
@@ -90,15 +119,21 @@ export function StudentStaffChatView({
        .subscribe();
     }).catch(()=>{});
     return()=>{disposed=true;if(timer)clearTimeout(timer);if(channel)void channel.unsubscribe();};
-  },[currentUserId,isStaffView,router]);
+  },[currentUserId,isStaffView,refreshInbox]);
 
   const activeReadId=activeConversation?.id;
-  const composerPaused=activeConversation?.status==='closed'||(!activeConversation?.courseId&&activeConversation?.status==='waiting_staff');
-  useEffect(()=>{setMessages(initialMessages);},[initialMessages,activeReadId]);
-  useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')router.refresh();};const timer=setInterval(refresh,5000);return()=>clearInterval(timer);},[activeReadId,router]);
+  const composerPaused=activeConversation?.status==='closed';
+  const staffOnline=useStaffOnline(activeConversation?.staffId);
+  const humanSupport=activeConversation?.assistanceMode==='HUMAN_SUPPORT';
+  const nearBottom=useRef(true);
+  const messageConversation=useRef(activeReadId);
+  useEffect(()=>{if(messageConversation.current!==activeReadId){messageConversation.current=activeReadId;nearBottom.current=true;setMessages(initialMessages);}else setMessages(prev=>mergeMessages(prev,initialMessages));},[initialMessages,activeReadId]);
+  useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')void refreshInbox();};const timer=setInterval(refresh,5000);return()=>clearInterval(timer);},[activeReadId,refreshInbox]);
 
   // Read receipts are sent only while the conversation is visible.
-  useEffect(()=>{const mark=()=>{if(activeReadId&&document.visibilityState==='visible')void markConversationReadAction(activeReadId).then(r=>{if(r.success)window.dispatchEvent(new Event('faro:unread-changed'));}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[activeReadId,messages.length]);
+  useEffect(()=>{const mark=()=>{if(activeReadId&&document.visibilityState==='visible'&&document.hasFocus()&&nearBottom.current)void markConversationReadAction(activeReadId).then(r=>{if(r.success)window.dispatchEvent(new Event('faro:unread-changed'));}).catch(()=>{});};mark();window.addEventListener('focus',mark);document.addEventListener('visibilitychange',mark);return()=>{window.removeEventListener('focus',mark);document.removeEventListener('visibilitychange',mark);};},[activeReadId,messages.length]);
+
+  useEffect(()=>{if(activeReadId)void acknowledgeConversationDeliveryAction(activeReadId);},[activeReadId,messages.length]);
 
   // Realtime subscription for incoming messages
   useEffect(() => {
@@ -120,26 +155,15 @@ export function StudentStaffChatView({
           .on(
             "postgres_changes",
             {
-              event: "INSERT",
+              event: "*",
               schema: "public",
               table: "messages",
               filter: `conversation_id=eq.${convId}`,
             },
             (payload: any) => {
               const newRow = payload.new;
+              if(!newRow?.id||activeConversationIdRef.current!==convId)return;
               setMessages((prev) => {
-                if (prev.some((m) => m.id === newRow.id)) return prev;
-
-                // Filter out optimistic match
-                const filtered = prev.filter(
-                  (m) =>
-                    !(
-                      m.isOptimistic &&
-                      m.senderId === newRow.sender_id &&
-                      m.body === newRow.body
-                    )
-                );
-
                 const mappedMsg: PrivateMessage = {
                   id: newRow.id,
                   conversationId: newRow.conversation_id,
@@ -158,13 +182,15 @@ export function StudentStaffChatView({
                   meta: newRow.meta || {},
                   createdAt: newRow.created_at,
                   readAt: newRow.read_at,
+                  deliveredAt:newRow.delivered_at,
+                  clientMessageId:newRow.client_message_id,
                 };
 
-                return [...filtered, mappedMsg];
+                return mergeMessages(prev,[mappedMsg]);
               });
 
               setTimeout(() => {
-                scrollMessagePane(messagesEndRef.current,"smooth");
+                if(nearBottom.current)scrollMessagePane(messagesEndRef.current,"smooth");
               }, 50);
             }
           )
@@ -184,7 +210,7 @@ export function StudentStaffChatView({
 
   // Scroll to bottom on initial render
   useEffect(() => {
-    scrollMessagePane(messagesEndRef.current);
+    if(nearBottom.current)scrollMessagePane(messagesEndRef.current);
   }, [messages.length]);
 
   // Filtered conversations list
@@ -204,21 +230,21 @@ export function StudentStaffChatView({
   const isSendingRef = useRef(false);
 
   // Handle message submission
-  const handleSendMessage = (requestTicket = false) => {
+  const handleSendMessage = (requestTicket = false,retry?:PrivateMessage) => {
     if (isSendingRef.current || isPending || composerPaused) return;
-    const trimmed = requestTicket ? (isHt?'Mwen mande yon administratè : kreye yon tikè sipò.':'Je demande un administrateur : créer un ticket support.') : inputText.trim();
+    const trimmed = retry?retry.body:requestTicket ? (isHt?'Mwen mande yon administratè : kreye yon tikè sipò.':'Je demande un administrateur : créer un ticket support.') : inputText.trim();
     if (!trimmed || !activeConversation) return;
 
     isSendingRef.current = true;
     setErrorMessage(null);
 
     const clientMessageId =
-      typeof crypto !== "undefined" && crypto.randomUUID
+      retry?.clientMessageId || (typeof crypto !== "undefined" && crypto.randomUUID
         ? crypto.randomUUID()
-        : `cid-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        : `cid-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
 
     const optimisticMessage: PrivateMessage = {
-      id: clientMessageId,
+      id: retry?.id||clientMessageId,
       conversationId: activeConversation.id,
       senderType: isStaffView ? "staff" : "student",
       senderId: currentUserId,
@@ -227,10 +253,12 @@ export function StudentStaffChatView({
       body: trimmed,
       createdAt: new Date().toISOString(),
       isOptimistic: true,
+      meta:{supportTicketRequested:requestTicket},
       clientMessageId,
     } as any;
 
-    setMessages((prev) => [...prev, optimisticMessage]);
+    nearBottom.current=true;
+    setMessages((prev) => mergeMessages(prev,[optimisticMessage]));
     setInputText("");
 
     setTimeout(() => {
@@ -250,20 +278,17 @@ export function StudentStaffChatView({
           setErrorMessage(res.error || "Impossible d'envoyer le message.");
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === clientMessageId
+              m.clientMessageId === clientMessageId
                 ? ({ ...m, failedToSend: true, errorMessage: res.error } as any)
                 : m
             )
           );
-        } else if (res.data) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === clientMessageId || (m as any).clientMessageId === clientMessageId
-                ? res.data!
-                : m
-            )
-          );
+        } else if (res.data&&activeConversationIdRef.current===activeConversation.id) {
+          setMessages(prev=>mergeMessages(prev,[{...res.data!,clientMessageId}]));
         }
+      } catch {
+        setMessages(prev=>prev.map(m=>m.clientMessageId===clientMessageId?{...m,isOptimistic:false,failedToSend:true}:m));
+        setErrorMessage(isHt?'Mesaj la pa voye. Ou ka eseye ankò.':'Message non envoyé. Vous pouvez réessayer.');
       } finally {
         isSendingRef.current = false;
       }
@@ -482,17 +507,17 @@ export function StudentStaffChatView({
                       <span className="inline-flex items-center gap-1.5 font-medium text-[11px]">
                         <span
                           className={`w-2 h-2 rounded-full ${
-                            activeConversation.isStaffOnline
+                            staffOnline
                               ? "bg-ok"
                               : "bg-slate-300"
                           }`}
                         />
                         <span
                           className={
-                            activeConversation.isStaffOnline ? "text-ok font-semibold" : "text-muted-faro"
+                            staffOnline ? "text-ok font-semibold" : "text-muted-faro"
                           }
                         >
-                          {activeConversation.isStaffOnline
+                          {staffOnline
                             ? isHt
                               ? "An liy"
                               : "En ligne"
@@ -511,7 +536,7 @@ export function StudentStaffChatView({
               </header>
 
               {/* Message Stream */}
-              <div data-message-stream className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]">
+              <div data-message-stream onScroll={e=>{const pane=e.currentTarget;nearBottom.current=pane.scrollHeight-pane.scrollTop-pane.clientHeight<80;if(nearBottom.current&&document.hasFocus()&&activeReadId)void markConversationReadAction(activeReadId);}} className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 space-y-4 focus-visible:outline-none bg-chat-bg chat-dotted-background [background-size:20px_20px]">
                 {/* Subject Header Banner */}
                 <div className="p-3.5 rounded-2xl bg-white border border-line/60 shadow-2xs flex items-center justify-between text-xs">
                   <div>
@@ -618,22 +643,7 @@ export function StudentStaffChatView({
                               })}
                             </span>
 
-                            {isOwn && (
-                              <>
-                                {(msg as any).failedToSend ? (
-                                  <span className="text-red flex items-center gap-0.5 ml-1">
-                                    <AlertCircle className="w-3 h-3 text-red" />
-                                    <RotateCcw className="w-3 h-3 text-red" />
-                                  </span>
-                                ) : msg.isOptimistic ? (
-                                  <Clock className="w-3 h-3 text-muted-faro ml-1" />
-                                ) : (
-                                  <span className="text-ok font-bold text-xs ml-1 flex items-center">
-                                    <CheckCheck className="w-3.5 h-3.5 text-ok" />
-                                  </span>
-                                )}
-                              </>
-                            )}
+                            {isOwn&&<MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendMessage(msg.meta?.supportTicketRequested===true,msg)}/>}
                           </div>
                         </div>
                       </div>
@@ -643,6 +653,7 @@ export function StudentStaffChatView({
                 <div ref={messagesEndRef} />
               </div>
 
+              {!activeConversation.courseId&&!composerPaused&&<p role="status" className="shrink-0 px-4 py-1 text-xs text-muted-faro">{humanSupport?(isHt?'Sipò imen':'Support humain'):(isHt?'Asistan IA aktif':'Assistant IA actif')}</p>}
               {/* Error banner */}
               {errorMessage && (
                 <div className="mx-4 mb-2 p-2.5 rounded-xl bg-red-tint border border-red text-red text-xs flex items-center gap-2">
@@ -651,9 +662,9 @@ export function StudentStaffChatView({
                 </div>
               )}
 
-              {!isStaffView&&!activeConversation.courseId&&!composerPaused&&<div className="shrink-0 px-4 py-2 border-t border-line bg-surface"><button type="button" disabled={isPending} onClick={()=>handleSendMessage(true)} className="min-h-11 text-sm font-semibold text-blue disabled:opacity-50">{isHt?'Kreye yon tikè sipò — mande yon administratè':'Créer un ticket support — demander un administrateur'}</button></div>}
+              {!isStaffView&&!activeConversation.courseId&&!humanSupport&&!composerPaused&&<div className="shrink-0 px-4 py-2 border-t border-line bg-surface"><button type="button" disabled={isPending} onClick={()=>handleSendMessage(true)} className="min-h-11 text-sm font-semibold text-blue disabled:opacity-50">{isHt?'Kreye yon tikè sipò — mande yon administratè':'Créer un ticket support — demander un administrateur'}</button></div>}
               {activeConversation.ticketNumber&&<p className="shrink-0 px-4 py-2 text-xs break-all text-navy-deep bg-blue-tint">{isHt?'Tikè sipò':'Ticket support'} : {activeConversation.ticketNumber}</p>}
-              {composerPaused&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Tikè a ap tann repons ekip sipò a. Saisie a an poz.':'Votre ticket attend la réponse du support. La saisie est suspendue.'}</p>}
+              {humanSupport&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Sipò imen ap pran swen tikè a. Ou ka kontinye ekri.':'Support humain : vous pouvez continuer à écrire pendant le traitement du ticket.'}</p>}
               {activeConversation.courseId&&activeConversation.status==='waiting_staff'&&<p role="status" className="shrink-0 p-3 text-sm text-muted-faro bg-blue-tint">{isHt?'Yon kesyon ap tann pwofesè a. Ou ka poze asistan pedagojik la yon lòt kesyon.':'Une question attend le professeur. Vous pouvez poser une autre question à son assistant pédagogique.'}</p>}
               {/* Composer */}
               <footer data-chat-composer className="shrink-0 bg-white border-t border-line/60 px-3 sm:px-5 py-2.5 sm:py-3.5 pb-[max(0.6rem,env(safe-area-inset-bottom))]">

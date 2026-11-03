@@ -5,6 +5,9 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"History reconciliation, delivery states and verified support guidance",cmd:"npx tsx tests/message-reconciliation.test.ts"},
+  {name:"Presence authenticated HTTP leases",cmd:"npx tsx tests/live-presence-http.test.ts"},
+  {name:"Live messaging sessions, receipts, tickets and preserved history",cmd:"npx tsx tests/live-messaging.test.ts"},
   {name:"Explicit numbered support tickets",cmd:"npx tsx tests/support-ticket.test.ts"},
   {name:"Bunny detached iframe navigation cleanup",cmd:"npx tsx tests/bunny-player-lifecycle.test.ts"},
   {name:"PWA external media never intercepted",cmd:"npx tsx tests/pwa-external-media.test.ts"},

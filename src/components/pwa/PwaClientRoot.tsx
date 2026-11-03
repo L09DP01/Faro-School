@@ -1,5 +1,6 @@
 "use client";
 
+import {LiveStaffPresence} from '@/components/messaging/LiveStaffPresence';
 import {PwaViewport} from "./PwaViewport";
 import { ReactNode } from "react";
 import { PwaProvider } from "@/lib/pwa/use-pwa";
@@ -15,7 +16,7 @@ export function PwaClientRoot({
 }) {
   return (
     <PwaProvider>
-      <PwaViewport/>
+      <PwaViewport/><LiveStaffPresence/>
       <div className="pwa-viewport">{children}</div>
       <PwaUpdateToast locale={locale} />
       <IosInstallModal locale={locale} />

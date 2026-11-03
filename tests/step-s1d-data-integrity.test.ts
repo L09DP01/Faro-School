@@ -30,13 +30,9 @@ async function runStepS1DTests() {
     await assert.rejects(()=>getAdminPaymentsKPIs(),/payments_unavailable/);
     await assert.rejects(()=>getAdminPaymentsList(),/payments_unavailable/);
 
-    // Messaging must return empty array, never mock conversations
-    console.log("   - checking student conversations...");
-    const studentConvs = await getStudentConversations("00000000-0000-0000-0000-000000000001");
-    assert.deepStrictEqual(studentConvs, [], "Production student conversations must be empty");
-
-    const staffConvs = await getStaffConversations("00000000-0000-0000-0000-000000000001");
-    assert.deepStrictEqual(staffConvs, [], "Production staff conversations must be empty");
+    // A failed history read must be explicit, never a fake empty conversation list.
+    await assert.rejects(()=>getStudentConversations("00000000-0000-0000-0000-000000000001"),/conversations_unavailable/);
+    await assert.rejects(()=>getStaffConversations("00000000-0000-0000-0000-000000000001"),/conversations_unavailable/);
 
     await assert.rejects(()=>getUnreadPrivateMessagesCount("00000000-0000-0000-0000-000000000001"),/unread_unavailable/,"Unavailable counts must not masquerade as measured zeros");
 

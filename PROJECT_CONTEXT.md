@@ -4,14 +4,20 @@
 
 ## 2. Stack
 
+Live messaging repair (2026-11-02): private per-session Realtime presence, verified
+heartbeat leases, explicit ticket modes with generation fencing, delivery/read
+receipts and stable retry IDs. Failed refreshes preserve existing history; closed
+conversations remain readable. Owner confirmed migration 20261102230000.
+See docs/LIVE_MESSAGING_AUDIT.md for tests and real-device checks.
+
 Learning and assistant lifecycle repair (2026-11-02): signed Bunny embed URLs are
 rendered as responsive iframes with the official player.js progress/resume API,
 never as video-file URLs. Per-lesson descriptions, optional private-answer quizzes,
 server-graded scores, PDF uploads and private note deletion are implemented.
 Course AI continues until explicit human takeover (with a global staff prompt),
 can help while a course question awaits its author, and resumes after staff absence.
-Technical support pauses student input while a human ticket is pending. Closed
-threads cannot reopen and are hidden from students; timed chat-only sanctions are
+Technical support keeps student input available while a human ticket is pending.
+Closed threads remain readable, and resolving a support ticket resumes AI in the same conversation; timed chat-only sanctions are
 enforced by actions and restrictive SQL policies. Owner confirmed migrations
 20261102200000 and 20261102203000. See docs/LEARNING_AND_ASSISTANT_REPAIR.md.
 

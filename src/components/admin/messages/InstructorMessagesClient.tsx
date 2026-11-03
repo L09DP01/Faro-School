@@ -1,4 +1,7 @@
 "use client";
+import {mergeMessages} from '@/lib/messaging/merge-messages';
+import {MessageDeliveryStatus} from '@/components/messaging/MessageDeliveryStatus';
+import {initAuthenticatedRealtimeClient} from '@/lib/supabase/client';
 import {MessageSources} from "@/components/messaging/MessageSources";
 
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
@@ -25,6 +28,7 @@ import {
   takeConversationControlAction,
   startInstructorConversationAction,
   markConversationReadAction,
+  acknowledgeConversationDeliveryAction,
 } from "@/app/actions/private-messaging";
 import type { Conversation, PrivateMessage } from "@/lib/messaging/types";
 import type { StudentItem, AdminCourseOption } from "@/lib/admin/student-types";
@@ -74,6 +78,7 @@ export function InstructorMessagesClient({
   const [statusFilter, setStatusFilter] = useState<"all" | "waiting" | "ai" | "replied" | "closed">("all");
   const [search, setSearch] = useState("");
   const [inputText, setInputText] = useState("");
+  const nearBottom=useRef(true);
   const [isPending, startTransition] = useTransition();
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -111,9 +116,11 @@ export function InstructorMessagesClient({
   };
 
   // Poll the persisted inbox. Never synthesize a message or an AI reply.
-  useEffect(()=>{let alive=true;const refresh=async()=>{if(document.visibilityState!=='visible')return;try{const result=await loadStaffInboxAction(activeId||undefined);if(alive&&result.success&&result.data){setConversations(result.data.conversations);if(activeId){setMessagesMap(prev=>({...prev,[activeId]:result.data!.messages}));const read=await markConversationReadAction(activeId);if(read.success)window.dispatchEvent(new Event("faro:unread-changed"));}}}catch{if(alive)setNotification({message:isHt?'Mesaj yo pa disponib.':'Chargement des messages indisponible.',type:'error'});}};void refresh();const timer=setInterval(refresh,5000);window.addEventListener('focus',refresh);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);};},[activeId,isHt]);
-  useEffect(()=>{const pane=messagesEndRef.current?.parentElement;if(pane)pane.scrollTop=pane.scrollHeight;},[activeMessages.length]);
+  useEffect(()=>{let alive=true;const refresh=async()=>{if(document.visibilityState!=='visible')return;try{const result=await loadStaffInboxAction(activeId||undefined);if(alive&&result.success&&result.data){setConversations(result.data.conversations);if(activeId){setMessagesMap(prev=>({...prev,[activeId]:mergeMessages(prev[activeId]||[],result.data!.messages)}));const read=document.hasFocus()&&nearBottom.current?await markConversationReadAction(activeId):{success:false};if(read.success)window.dispatchEvent(new Event("faro:unread-changed"));}}}catch{if(alive)setNotification({message:isHt?'Mesaj yo pa disponib.':'Chargement des messages indisponible.',type:'error'});}};void refresh();const timer=setInterval(refresh,5000);window.addEventListener('focus',refresh);window.addEventListener('faro:inbox-refresh',refresh);return()=>{alive=false;clearInterval(timer);window.removeEventListener('focus',refresh);window.removeEventListener('faro:inbox-refresh',refresh);};},[activeId,isHt]);
+  useEffect(()=>{const pane=messagesEndRef.current?.parentElement;if(pane&&nearBottom.current)pane.scrollTop=pane.scrollHeight;},[activeMessages.length]);
 
+  useEffect(()=>{let alive=true,channel:any;void initAuthenticatedRealtimeClient().then(client=>{if(!alive)return;const refresh=()=>window.dispatchEvent(new Event('faro:inbox-refresh'));channel=client.channel('staff-inbox-'+currentUserId).on('postgres_changes',{event:'*',schema:'public',table:'messages'},payload=>{if(payload.new&&'conversation_id' in payload.new)void acknowledgeConversationDeliveryAction(payload.new.conversation_id);refresh();}).on('postgres_changes',{event:'*',schema:'public',table:'conversations'},refresh).subscribe();}).catch(()=>{});return()=>{alive=false;void channel?.unsubscribe();};},[currentUserId]);
+  useEffect(()=>{nearBottom.current=true;},[activeId]);
   // Filtered conversations
   const filteredConversations = useMemo(() => {
     return conversations.filter((c) => {
@@ -153,14 +160,15 @@ export function InstructorMessagesClient({
   }, [conversations]);
 
   // Send reply handler
-  const handleSendReply = () => {
-    if (!activeId || !inputText.trim() || isPending || activeConversation?.status==="closed") return;
+  const handleSendReply = (retry?:PrivateMessage) => {
+    if (!activeId || (!retry&&!inputText.trim()) || isPending || activeConversation?.status==="closed") return;
 
-    const trimmed = inputText.trim();
+    const trimmed = retry?.body||inputText.trim();
     const nowIso = new Date().toISOString();
 
     const optimisticMsg: PrivateMessage = {
-      id: `opt-${Date.now()}`,
+      id: retry?.id||crypto.randomUUID(),
+      clientMessageId:retry?.clientMessageId||crypto.randomUUID(),
       conversationId: activeId,
       senderType: "staff",
       senderId: currentUserId,
@@ -173,7 +181,7 @@ export function InstructorMessagesClient({
 
     setMessagesMap((prev) => ({
       ...prev,
-      [activeId]: [...(prev[activeId] || []), optimisticMsg],
+      [activeId]: mergeMessages(prev[activeId]||[],[optimisticMsg]),
     }));
 
     setConversations((prev) =>
@@ -191,14 +199,16 @@ export function InstructorMessagesClient({
 
     setInputText("");
 
+    nearBottom.current=true;
     startTransition(async () => {
-      const res = await sendPrivateMessageAction(activeId, trimmed, crypto.randomUUID(), locale);
+      try{const res = await sendPrivateMessageAction(activeId, trimmed, optimisticMsg.clientMessageId, locale);
       if (!res.success) {
-        setMessagesMap(prev=>({...prev,[activeId]:(prev[activeId]||[]).filter(m=>m.id!==optimisticMsg.id)}));
+        setMessagesMap(prev=>({...prev,[activeId]:(prev[activeId]||[]).map(m=>m.id===optimisticMsg.id?{...m,failedToSend:true,isOptimistic:false}:m)}));
         setInputText(trimmed);
         showNotification(res.error || "Erreur lors de l'envoi.", "error");
         if(activeConversation)setConversations(prev=>prev.map(c=>c.id===activeId?activeConversation:c));
-      }
+      }else if(res.data)setMessagesMap(prev=>({...prev,[activeId]:mergeMessages(prev[activeId]||[],[{...res.data!,clientMessageId:optimisticMsg.clientMessageId}])}));
+      }catch{setMessagesMap(prev=>({...prev,[activeId]:(prev[activeId]||[]).map(m=>m.id===optimisticMsg.id?{...m,failedToSend:true,isOptimistic:false}:m)}));}
     });
   };
 
@@ -213,7 +223,7 @@ export function InstructorMessagesClient({
       if (res.success) {
         setConversations((prev) =>
           prev.map((c) =>
-            c.id === activeConversation.id ? { ...c, status: newStatus } : c
+            c.id === activeConversation.id ? { ...c, status: c.courseId?newStatus:"ai_handling",assistanceMode:c.courseId?c.assistanceMode:"AI_RESUMED" } : c
           )
         );
         showNotification(
@@ -223,7 +233,7 @@ export function InstructorMessagesClient({
               : "Discussion rouverte avec succès."
             : isHt
               ? "Konvèsasyon an make kòm fèmen."
-              : "Discussion clôturée avec succès.",
+              : activeConversation.courseId?"Discussion clôturée avec succès.":"Ticket résolu. L’historique reste disponible et l’IA reprend.",
           "success"
         );
       } else {
@@ -542,7 +552,7 @@ export function InstructorMessagesClient({
                     </div>
 
                     <div className="flex items-center gap-2 text-[11px] text-muted-faro mt-0.5">
-                      <span className="truncate">{activeConversation.courseTitle}</span>
+                      <span className="truncate">{activeConversation.courseTitle}</span>{!activeConversation.courseId&&<span className="text-xs text-blue">{activeConversation.assistanceMode==='HUMAN_SUPPORT'?(isHt?'Sipò imen':'Support humain'):(isHt?'Asistan IA aktif':'Assistant IA actif')}</span>}
                       {activeStudent?.progressPercent !== undefined && (
                         <>
                           <span>•</span>
@@ -574,20 +584,20 @@ export function InstructorMessagesClient({
                         ? "Fèmen"
                         : "Clôturé"
                       : isHt
-                        ? "Fèmen diskisyon an"
-                        : activeConversation.courseId ? "Clôturer la discussion" : "Résoudre et fermer le ticket"}
+                        ? activeConversation.courseId?"Fèmen diskisyon an":"Rezoud tikè a"
+                        : activeConversation.courseId ? "Clôturer la discussion" : "Résoudre le ticket"}
                   </button>
                 </div>
               </div>
 
               {/* Messages scroll area */}
-              <div data-message-stream tabIndex={0} aria-label={isHt?"Mesaj diskisyon an":"Messages de la conversation"} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar p-4 sm:p-5 space-y-4 bg-bg/30">
+              <div data-message-stream onScroll={e=>{const p=e.currentTarget;nearBottom.current=p.scrollHeight-p.scrollTop-p.clientHeight<80;if(nearBottom.current&&document.hasFocus()&&activeId)void markConversationReadAction(activeId);}} tabIndex={0} aria-label={isHt?"Mesaj diskisyon an":"Messages de la conversation"} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar p-4 sm:p-5 space-y-4 bg-bg/30">
                 {activeMessages.map((msg) => {
                   if (msg.senderType === "system") {
                     return (
                       <div key={msg.id} className="flex justify-center my-2">
                         <span className="px-3 py-1 rounded-full bg-line/60 text-muted-faro text-[11px] font-medium text-center max-w-md">
-                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
+                          {msg.body}<MessageSources meta={msg.meta} locale={locale}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
                         </span>
                       </div>
                     );
@@ -640,7 +650,7 @@ export function InstructorMessagesClient({
                               : "bg-surface border border-line text-ink rounded-bl-sm"
                         }`}
                       >
-                        {msg.body}<MessageSources meta={msg.meta} locale={locale}/>
+                        {msg.body}<MessageSources meta={msg.meta} locale={locale}/>{msg.senderId===currentUserId&&<div className="flex justify-end mt-1"><MessageDeliveryStatus message={msg} locale={locale} onRetry={()=>handleSendReply(msg)}/></div>}
 
                         {isAiSender && (
                           <div className="mt-2 pt-2 border-t border-blue/15 flex items-center justify-between text-[10px] text-muted-faro">
@@ -696,7 +706,7 @@ export function InstructorMessagesClient({
                   </div>
 
                   <button
-                    onClick={handleSendReply}
+                    onClick={()=>handleSendReply()}
                     disabled={isPending || !inputText.trim() || activeConversation.status==="closed"}
                     className={`min-h-11 min-w-11 p-3 rounded-xl bg-orange text-white font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm ${
                       !inputText.trim()

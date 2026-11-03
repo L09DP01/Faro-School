@@ -1,5 +1,7 @@
 "use server";
 
+import {scheduleAssistant} from '@/lib/messaging/background';
+import {intakeReply,requestsHumanSupport} from '@/lib/messaging/assistant-policy';
 import {resolveStudentRecipient,RecipientError} from "@/lib/messaging/recipients";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-user";
@@ -385,12 +387,13 @@ export async function sendPrivateMessageAction(
               body: existingMsg.body,
               createdAt: existingMsg.created_at,
               readAt: existingMsg.read_at,
+              clientMessageId,
             },
           };
         }
       } catch {}
 
-      const messagesStore = getMockMessagesStore();
+      const messagesStore = isDemoMode()?getMockMessagesStore():new Map();
       const existingMsgs = messagesStore.get(conversationId) || [];
       const foundInStore = existingMsgs.find(
         (m: any) => m.senderId === user.id && m.clientMessageId === clientMessageId
@@ -418,6 +421,8 @@ export async function sendPrivateMessageAction(
           status,
           created_at,
           last_message_at,
+          assistance_epoch,
+          assistance_mode,
           courses (
             id,
             title_fr,
@@ -457,6 +462,8 @@ export async function sendPrivateMessageAction(
           courseTitle: (row.courses as any)?.title_fr || (row.courses as any)?.title_ht || "Support Général",
           subject: row.subject,
           status: row.status,
+          assistanceEpoch:row.assistance_epoch,
+          assistanceMode:row.assistance_mode,
           createdAt: row.created_at,
           lastMessageAt: row.last_message_at,
         };
@@ -481,7 +488,7 @@ export async function sendPrivateMessageAction(
     const isStaff = user.id === conv.staffId;
     if (!isStudent && !isStaff) return {success:false,error:"forbidden"};
     if (conv.status === "closed") return {success:false,error:locale === "ht" ? "Konvèsasyon sa a fèmen." : "Cette discussion est clôturée."};
-    if(isStudent&&!conv.courseId&&conv.status==='waiting_staff')return{success:false,error:locale==='ht'?'Tikè a ap tann ekip sipò a. Ou pa ka ekri pou kounye a.':'Votre ticket attend le support. La saisie est suspendue.'};
+
     const senderType = isStudent ? "student" : "staff";
 
     // Create user message
@@ -512,6 +519,7 @@ export async function sendPrivateMessageAction(
         client_message_id: clientMessageId || null,
       });
 
+      if(msgErr?.code==='23505'&&clientMessageId){const {data:existing}=await supabase.from('messages').select('id,created_at,read_at,delivered_at').eq('sender_id',user.id).eq('client_message_id',clientMessageId).eq('conversation_id',conversationId).maybeSingle();if(existing)return{success:true,data:{...studentMessage,id:existing.id,createdAt:existing.created_at,readAt:existing.read_at,deliveredAt:existing.delivered_at}};}
       if (msgErr && !isDemoMode()) {
         return {
           success: false,
@@ -529,7 +537,7 @@ export async function sendPrivateMessageAction(
 
     // Load persisted context for the assistant, not the per-instance demo map.
     const {getConversationMessages}=await import('@/lib/messaging/data');
-    const existingMsgs=await getConversationMessages(conversationId);
+
     conv.lastMessageAt = nowIso;
     conv.lastMessagePreview = trimmedBody;
 
@@ -539,8 +547,8 @@ export async function sendPrivateMessageAction(
     if (!isStudent && isStaff) {
       conv.status = "staff_replied";
 
-      await createAdminClient().from('escalations').update({resolved_at:nowIso}).eq('conversation_id',conversationId).is('resolved_at',null);
-      const escalations = getMockEscalationsStore();
+      if(conv.courseId)await createAdminClient().from('escalations').update({resolved_at:nowIso}).eq('conversation_id',conversationId).is('resolved_at',null);
+      const escalations = isDemoMode()?getMockEscalationsStore():[];
       escalations.forEach((esc) => {
         if (esc.conversationId === conversationId && !esc.resolvedAt) {
           esc.resolvedAt = nowIso;
@@ -554,16 +562,18 @@ export async function sendPrivateMessageAction(
       return { success: true, data: studentMessage };
     }
 
-    // The message is already committed. Assistant failures never ask the client to resend it.
-    try {
+    // Acknowledge persistence before AI generation; late replies are fenced in SQL.
+    await scheduleAssistant(async()=>{try {
+      const existingMsgs=await getConversationMessages(conversationId);
       const trusted=createAdminClient();
       const {data:pending,error:pendingError}=await trusted.from('escalations').select('id').eq('conversation_id',conversationId).is('resolved_at',null).limit(1).maybeSingle();
       if(pendingError)throw Error('handoff_state_unavailable');
       const staffOnline=await isStaffOnline(conv.staffId);
-      if((!conv.courseId&&pending)||(staffOnline&&conv.status==='staff_replied'))return{success:true,data:studentMessage};
+      if((!conv.courseId&&pending)||(conv.courseId&&staffOnline&&conv.status==='staff_replied'))return;
       const {data:staff}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();
       if(staff){conv.staffName=staff.full_name||staff.display_name||'Faro School';conv.staffRole=staff.role;}
       const mode=conv.courseId?'course':'support';
+      requestSupportTicket=requestSupportTicket===true||(!conv.courseId&&requestsHumanSupport(trimmedBody));
       let summary='',settings:Partial<import('@/lib/messaging/types').InstructorAiSettings>|undefined,web=false,contextError=false;
       if(conv.courseId){
         const {data:context,error}=await trusted.from('course_ai_context').select('summary_fr,summary_ht,enabled,web_search_enabled').eq('course_id',conv.courseId).maybeSingle();
@@ -571,11 +581,12 @@ export async function sendPrivateMessageAction(
         contextError=!!error||!!version.error;settings=version.data?.settings||undefined;
         if(context){summary=(user.locale==='ht'?context.summary_ht||context.summary_fr:context.summary_fr||context.summary_ht).slice(0,12000);settings={...settings,enabled:context.enabled&&settings?.enabled!==false};web=context.web_search_enabled===true;}
       }
-      const result=!conv.courseId&&requestSupportTicket===true?{can_answer:false,answer:'',confidence:0,escalate_reason:'explicit_support_ticket',model:'faro-handoff',inputTokens:0,outputTokens:0}:contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system'&&m.id!==messageId).slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:user.locale||locale});
+      const result=!conv.courseId&&requestSupportTicket===true?{can_answer:false,answer:'',confidence:0,escalate_reason:'explicit_support_ticket',model:'faro-handoff',inputTokens:0,outputTokens:0}:contextError?{can_answer:false,answer:'',confidence:0,escalate_reason:'course_context_unavailable',model:'',inputTokens:0,outputTokens:0}:await callAiAssistant({conversationId,studentId:conv.studentId,studentName:conv.studentName,staffName:conv.staffName,courseTitle:conv.courseTitle,courseContextSummary:summary,mode,webSearchEnabled:web,instructorSettings:settings,recentMessages:existingMsgs.filter(m=>m.senderType!=='system'&&m.id!==messageId).slice(-12).map(m=>({senderType:m.senderType,body:m.body.slice(0,2000)})),currentQuestion:trimmedBody,locale:locale});
+      if(result.escalate_reason?.includes('Kill Switch'))return;
       const answer=result.answer.trim().slice(0,4000),safeAnswer=answer&&!(await checkStoredProfanity(answer)).blocked;
-      const meta={supportTicketRequested:!conv.courseId&&requestSupportTicket===true,assistantMode:mode,assistantOwner:conv.courseId?conv.staffId:'faro-support',confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
+      const meta={assistanceEpoch:conv.assistanceEpoch||0,supportTicketRequested:!conv.courseId&&requestSupportTicket===true,assistantMode:mode,assistantOwner:conv.courseId?conv.staffId:'faro-support',confidence:result.confidence,model:result.model,inputTokens:result.inputTokens,outputTokens:result.outputTokens,sources:'sources'in result?result.sources:undefined,searchWidget:'searchWidget'in result?result.searchWidget:undefined};
       if(!conv.courseId&&requestSupportTicket!==true&&!result.can_answer){
-        const clarification=user.locale==='ht'?'Eksplike pwoblèm ou an pou m ka ede w. Si ou vle yon administratè pran dosye a, peze « Kreye yon tikè sipò ». Pa gen tikè ki kreye pou kounye a.':'Décrivez votre problème pour que je puisse vous aider. Pour demander l’intervention d’un administrateur, appuyez sur « Créer un ticket support ». Aucun ticket n’est créé pour le moment.';
+        const clarification=intakeReply(trimmedBody,'support',locale)||(user.locale==='ht'?'Di mwen ki etap ki bloke, non fòmasyon an si sa nesesè ak mesaj erè a egzakteman. Mwen ka gide w sou Faro School, men mwen pa ka modifye kont ou ni konfime yon tranzaksyon.':'Indiquez l’étape qui bloque, le nom de la formation si nécessaire et le message d’erreur exact. Je peux vous guider sur l’utilisation de Faro School, mais je ne peux ni modifier votre compte ni confirmer une transaction.');
         const {error}=await trusted.rpc('commit_assistant_reply',{p_actor:user.id,p_conversation:conversationId,p_message:messageId,p_body:clarification,p_meta:meta});
         if(error)throw Error('assistant_message_unavailable');
       }else if(result.can_answer&&safeAnswer){
@@ -593,7 +604,7 @@ export async function sendPrivateMessageAction(
           if(noticeError)throw Error('waiting_notice_unavailable');
         }
       }
-    }catch{console.error('[messaging] assistant_or_handoff_unavailable');}
+    }catch{console.error('[messaging] assistant_or_handoff_unavailable');}});
     try{revalidatePath('/[locale]/dashboard/messages','page');revalidatePath('/[locale]/admin/messages','page');}catch{}
     return { success: true, data: studentMessage };
   } catch (err: any) {
@@ -661,7 +672,7 @@ export async function closeConversationAction(
     if(newStatus!=='closed')return{success:false,error:'conversation_closed'};
     const db=await createClient();const {error}=await db.rpc('set_conversation_control',{p_conversation:conversationId,p_control:'closed'});
     if(error)return{success:false,error:'forbidden'};
-    const trusted=createAdminClient();await trusted.from('messages').update({read_at:new Date().toISOString()}).eq('conversation_id',conversationId).is('read_at',null);await trusted.from('notifications').update({read_at:new Date().toISOString()}).eq('payload->>conversationId',conversationId).is('read_at',null);
+
     revalidatePath('/[locale]/admin/messages','page');return{success:true};
   }catch{return{success:false,error:'unavailable'};}
 }
@@ -708,4 +719,11 @@ export async function loadAssistantTakeoversAction():Promise<MessagingActionResu
  if(error||!profile)return{success:false,error:'unavailable'};if(!profile.staff_available)return{success:true,data:[]};
  const {getStaffConversations}=await import('@/lib/messaging/data');const conversations=await getStaffConversations(user.id,false,user.role==='admin');
  return{success:true,data:conversations.filter(c=>c.courseId&&c.staffId===user.id&&['open','ai_handling','waiting_staff'].includes(c.status)).slice(0,10)};
+}
+
+export async function acknowledgeConversationDeliveryAction(conversationId:string){const user=await getCurrentUser();if(!user)return{success:false};const db=await createClient();const {error}=await db.rpc('acknowledge_private_messages',{p_conversation:conversationId,p_read:false});return{success:!error};}
+
+/** Failed refreshes are explicit: never replace a loaded history with an empty list. */
+export async function loadStudentInboxAction(conversationId?:string):Promise<MessagingActionResult<{conversations:Conversation[];messages:PrivateMessage[]}>>{
+ try{const user=await getCurrentUser();if(!user)return{success:false,error:'forbidden'};const {getStudentConversations,getConversationMessages}=await import('@/lib/messaging/data');const conversations=await getStudentConversations(user.id);if(conversationId&&!conversations.some(c=>c.id===conversationId))return{success:false,error:'not_found'};return{success:true,data:{conversations,messages:conversationId?await getConversationMessages(conversationId):[]}};}catch{return{success:false,error:'history_unavailable'};}
 }

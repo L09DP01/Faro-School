@@ -35,8 +35,8 @@ async function main(){
  }
  (process.env as any).NODE_ENV=oldMode;
  const Logout=req(resolve('tmp/pwa-controls/components/auth/LogoutButton.js')).LogoutButton;
- g.states=[];g.cursor=0;g.logoutEvents=[];g.window={location:{replace:(path:string)=>g.logoutEvents.push(path)}};
- let button=Logout({locale:'ht',children:'exit'}).props.children[0];await button.props.onClick();assert.deepEqual(g.logoutEvents,['session-cleared','/ht/connexion']);assert.deepEqual(g.logoutOptions,{redirect:false});
+ g.states=[];g.cursor=0;g.logoutEvents=[];g.window={dispatchEvent:(e:any)=>{g.presenceEnded=e.type==='faro:logout'},location:{replace:(path:string)=>g.logoutEvents.push(path)}};
+ let button=Logout({locale:'ht',children:'exit'}).props.children[0];await button.props.onClick();assert.deepEqual(g.logoutEvents,['session-cleared','/ht/connexion']);assert.deepEqual(g.logoutOptions,{redirect:false});assert.equal(g.presenceEnded,true,'Logout ends live presence before navigation');
  g.states=[];g.cursor=0;g.logoutEvents=[];g.logoutFailure=true;button=Logout({locale:'fr',children:'exit'}).props.children[0];await button.props.onClick();assert.deepEqual(g.logoutEvents,[],'failed signout must not pretend the user logged out');
  console.log('PASS actual PWA provider: desktop native UI untouched, Android prompt, iPhone instructions despite old cookie; viewport inset/keyboard/blur height, logout clears session before redirect and handles failure');
 }

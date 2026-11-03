@@ -19,16 +19,7 @@ export function StaffAvailabilityToggle({
   // Heartbeat every 30 seconds
   useEffect(() => {
     void getStaffAvailabilityAction().then(r=>{if(r.success&&r.data)setIsAvailable(r.data.available);});
-    // Send immediate heartbeat on mount
-    const beat=()=>{if(document.visibilityState==="visible")void staffHeartbeatAction();};
-    beat();
 
-    const interval = setInterval(() => {
-      beat();
-    }, 30000);
-
-    document.addEventListener("visibilitychange",beat);
-    return () => {clearInterval(interval);document.removeEventListener("visibilitychange",beat);};
   }, []);
 
   const handleToggle = () => {
@@ -38,6 +29,7 @@ export function StaffAvailabilityToggle({
     startTransition(async () => {
       const result=await toggleStaffAvailabilityAction(nextState);
       if(!result.success)setIsAvailable(!nextState);
+      window.dispatchEvent(new Event("faro:availability"));
     });
   };
 

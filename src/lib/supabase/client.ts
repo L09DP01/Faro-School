@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient, SupabaseClient } from "@supabase/supabase-js";
 
 let clientInstance: SupabaseClient | null = null;
+let realtimeTokenRefresh: ReturnType<typeof setInterval>|null=null;
 
 /**
  * Creates or retrieves Supabase client for browser usage.
@@ -67,9 +68,10 @@ export async function getSupabaseToken(): Promise<string | null> {
  */
 export async function initAuthenticatedRealtimeClient(): Promise<SupabaseClient> {
   const token = await getSupabaseToken();
-  const client = createClient(token || undefined);
+  const client = createClient();
   if (token && (client as any).realtime) {
-    (client as any).realtime.setAuth(token);
+    await client.realtime.setAuth(token);
+    if(typeof window!=="undefined"&&!realtimeTokenRefresh)realtimeTokenRefresh=setInterval(()=>{void getSupabaseToken().then(next=>{if(next)void client.realtime.setAuth(next);else void client.removeAllChannels();});},40*60*1000);
   }
   return client;
 }

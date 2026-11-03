@@ -109,6 +109,8 @@ export async function getStudentConversations(studentId: string): Promise<Conver
         status,
         created_at,
         last_message_at,
+        assistance_mode,
+        assistance_epoch,
         courses (
           id,
           title_fr,
@@ -122,7 +124,6 @@ export async function getStudentConversations(studentId: string): Promise<Conver
         )
       `)
       .eq("student_id", studentId)
-      .neq("status","closed")
       .order("last_message_at", { ascending: false });
 
     if (!error && data && data.length > 0) {
@@ -154,6 +155,8 @@ export async function getStudentConversations(studentId: string): Promise<Conver
             courseTitle: cTitle,
             subject: row.subject,
             status: row.status,
+            assistanceMode:row.assistance_mode,
+            assistanceEpoch:row.assistance_epoch,
             createdAt: row.created_at,
             lastMessageAt: row.last_message_at,
             isStaffOnline: staffOnline,
@@ -182,7 +185,7 @@ export async function getStudentConversations(studentId: string): Promise<Conver
     return studentConvs;
   }
 
-  return [];
+  throw new Error("conversations_unavailable");
 }
 
 /**
@@ -206,6 +209,8 @@ export async function getStaffConversations(
         status,
         created_at,
         last_message_at,
+        assistance_mode,
+        assistance_epoch,
         courses (
           id,
           title_fr,
@@ -241,6 +246,8 @@ export async function getStaffConversations(
           (row.course_id ? "Formation" : "Support Général"),
         subject: row.subject,
         status: row.status,
+        assistanceMode:row.assistance_mode,
+        assistanceEpoch:row.assistance_epoch,
         createdAt: row.created_at,
         lastMessageAt: row.last_message_at,
       }));
@@ -261,7 +268,7 @@ export async function getStaffConversations(
     return store.filter((c) => c.staffId === staffId || c.staffId === "instructor-mock-id");
   }
 
-  return [];
+  throw new Error("conversations_unavailable");
 }
 
 /**
@@ -285,6 +292,8 @@ export async function getConversationById(
         status,
         created_at,
         last_message_at,
+        assistance_mode,
+        assistance_epoch,
         courses (
           id,
           title_fr,
@@ -307,7 +316,6 @@ export async function getConversationById(
 
     if (!error && row) {
       const rowData: any = row;
-      if(currentUserId===rowData.student_id&&rowData.status==="closed")return null;
       // Permission check
       if (
         currentUserRole !== "admin" &&
@@ -357,6 +365,8 @@ export async function getConversationById(
         courseTitle: cTitle,
         subject: rowData.subject,
         status: rowData.status,
+        assistanceMode:rowData.assistance_mode,
+        assistanceEpoch:rowData.assistance_epoch,
         createdAt: rowData.created_at,
         lastMessageAt: rowData.last_message_at,
         isStaffOnline: staffOnline,
@@ -395,6 +405,8 @@ export async function getConversationMessages(conversationId: string): Promise<P
         meta,
         created_at,
         read_at,
+        delivered_at,
+        client_message_id,
         profiles (
           display_name,
           full_name,
@@ -418,6 +430,8 @@ export async function getConversationMessages(conversationId: string): Promise<P
         meta: row.meta || {},
         createdAt: row.created_at,
         readAt: row.read_at,
+        deliveredAt:row.delivered_at,
+        clientMessageId:row.client_message_id,
       }));
     }
 
@@ -433,7 +447,7 @@ export async function getConversationMessages(conversationId: string): Promise<P
     return messagesMap.get(conversationId) || [];
   }
 
-  return [];
+  throw new Error("messages_unavailable");
 }
 
 /**

@@ -26,11 +26,16 @@ export interface PrivateMessage {
   };
   createdAt: string;
   readAt?: string | null;
+  deliveredAt?: string | null;
+  clientMessageId?: string | null;
+  failedToSend?: boolean;
   isOptimistic?: boolean;
 }
 
 export interface Conversation {
   ticketNumber?: string | null;
+  assistanceMode?: "AI_ACTIVE"|"HUMAN_SUPPORT"|"AI_RESUMED";
+  assistanceEpoch?: number;
   id: string;
   studentId: string;
   studentName: string;
@@ -116,5 +121,8 @@ export interface AppNotification {
     [key: string]: any;
   };
   readAt?: string | null;
+  deliveredAt?: string | null;
+  clientMessageId?: string | null;
+  failedToSend?: boolean;
   createdAt: string;
 }

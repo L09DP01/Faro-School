@@ -5,7 +5,7 @@ export function LogoutButton({locale="fr",className,children}:{locale?:string;cl
  const [busy,setBusy]=useState(false),[failed,setFailed]=useState(false);
  async function logout(){
   if(busy)return;setBusy(true);setFailed(false);
-  try{await signOut({redirect:false});window.location.replace(`/${locale}/connexion`);}
+  try{window.dispatchEvent(new Event('faro:logout'));await signOut({redirect:false});window.location.replace(`/${locale}/connexion`);}
   catch{setFailed(true);setBusy(false);}
  }
  return <><button type="button" onClick={logout} disabled={busy} aria-busy={busy} className={className}>{children}</button>{failed&&<p role="alert" className="text-xs text-red">{locale==="ht"?"Dekoneksyon an pa reyisi. Eseye ankò.":"La déconnexion a échoué. Réessayez."}</p>}</>;
