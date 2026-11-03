@@ -1,0 +1,38 @@
+{
+  "platform": {
+    "legacy": "4178e21bf465f4ccf6536cc21dd16abc07264a5d68ea5b6de6936a21619e0e98",
+    "canonical": "4178e21bf465f4ccf6536cc21dd16abc07264a5d68ea5b6de6936a21619e0e98"
+  },
+  "accounts": {
+    "legacy": "f41937d9b529c10621215aedbc873f37322219e8ffc996f5f51147901b4d2893",
+    "canonical": "51e7f3f86702de358b79d50ef988984b9fffbb4f26a2d33d2aa9d3df0bb35264"
+  },
+  "catalog": {
+    "legacy": "c5760ee2abc3f747a44bbf4eb9bbb564782ad10343bb5d499d20b86502409d0b",
+    "canonical": "a4455e739a52c742dbf1df2a459ce3fc0b646f0d2ff1dcfe30072ad2f9e15982"
+  },
+  "payments": {
+    "legacy": "42306ec115bad86ff18f130a33e07415210219cc6643f227ac8444e921c7dffc",
+    "canonical": "42306ec115bad86ff18f130a33e07415210219cc6643f227ac8444e921c7dffc"
+  },
+  "access": {
+    "legacy": "6216de49ff5f9e70bb43d6976bfbad620c4896f6d207e6c7c266a7dd4f109feb",
+    "canonical": "6216de49ff5f9e70bb43d6976bfbad620c4896f6d207e6c7c266a7dd4f109feb"
+  },
+  "media": {
+    "legacy": "04bf279f96aa68144c2fa72494cc717d2360b6fd0a2996e1d7b083da4cb19a27",
+    "canonical": "36d3e79a8fc08c49803e5eace756887b2d3d5a0ad21b62195b689f0649c9b21e"
+  },
+  "assessment": {
+    "legacy": "a6c75f02abe1bb64db89e34b698004e3507a7bca7e534cf6814a863e65be5e88",
+    "canonical": "a6c75f02abe1bb64db89e34b698004e3507a7bca7e534cf6814a863e65be5e88"
+  },
+  "community": {
+    "legacy": "434b67afe7fe938e376095d8b3e7ef3a911f6adb63d3b76391577a7d22003aa1",
+    "canonical": "01b88a8dad4359ff711aea9948bf2a46a75975cb66455fe64154c176fd617fea"
+  },
+  "support": {
+    "legacy": "cc009f4191368bf7386fbe7ff49339e74d314114e26dc5ed9e1cdbeb35752a4c",
+    "canonical": "228865f3b7874b3855359051af6d3f262781c9af0e4fc61ef8c89cce839cc344"
+  }
+}

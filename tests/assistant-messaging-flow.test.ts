@@ -7,6 +7,7 @@ async function main(){
  await mkdir('tmp/assistant-flow',{recursive:true});const g=globalThis as any;
  g.flow={course:false,online:false,pending:false,status:"open",muted:false,calls:[],writes:[],rpc:[],result:{answer:'Bonjour ! Comment puis-je vous aider ?',can_answer:true,confidence:1,model:'fixture',inputTokens:0,outputTokens:0}};
  const modules:Record<string,string>={
+ '@/lib/support/service':`export const handleSupportMessage=async input=>{globalThis.flow.calls.push({mode:'support',courseContextSummary:'',...input});};`,
   '@/lib/messaging/background':`export const scheduleAssistant=async work=>{if(globalThis.queueAi){globalThis.aiTasks.push(work);}else await work();};`,
   '@/lib/auth/get-user':`export const getCurrentUser=async()=>({id:'student',role:'student',fullName:'Student',locale:'fr'});`,
   '@/lib/supabase/admin':`export const createAdminClient=()=>globalThis.flowDb;`,
@@ -28,7 +29,7 @@ async function main(){
  const actions=createRequire(resolve('package.json'))(resolve('tmp/assistant-flow/actions.cjs'));
 
  const reset=()=>{g.flow.calls=[];g.flow.writes=[];g.flow.rpc=[];};
- let response=await actions.sendPrivateMessageAction('conversation','Salut');assert(response.success);assert.equal(g.flow.calls[0].mode,'support');assert.equal(g.flow.calls[0].courseContextSummary,'');assert.equal(g.flow.rpc[0].name,'commit_assistant_reply');
+ let response=await actions.sendPrivateMessageAction('conversation','Salut');assert(response.success);assert.equal(g.flow.calls[0].mode,'support');assert.equal(g.flow.calls[0].courseContextSummary,'');assert.equal(g.flow.calls[0].question,'Salut');
  reset();g.flow.course=true;
  for(const question of ['Comment faire cet exercice ?','Peux-tu donner un exemple ?','Je ne comprends pas la suite']){response=await actions.sendPrivateMessageAction('conversation',question);assert(response.success);}
  assert.equal(g.flow.calls.length,3);assert(g.flow.calls.every((p:any)=>p.mode==='course'&&p.courseContextSummary.includes('PRIVATE_SUMMARY')));
@@ -37,8 +38,8 @@ async function main(){
  reset();g.flow.online=false;await actions.sendPrivateMessageAction('conversation','Le professeur est absent');assert.equal(g.flow.calls.length,1,'Resume after staff absence');
  reset();g.flow.status='waiting_staff';g.flow.pending=true;await actions.sendPrivateMessageAction('conversation','Une autre question');assert.equal(g.flow.calls.length,1);assert.equal(g.flow.rpc[0].name,'commit_assistant_reply');
  reset();g.flow.course=false;response=await actions.sendPrivateMessageAction('conversation','Autre question support');assert(response.success);assert(g.flow.writes.length>0,'Human support keeps accepting student messages');assert.equal(g.flow.calls.length,0);
- reset();g.flow.status='open';g.flow.pending=false;g.flow.result={...g.flow.result,can_answer:false,answer:'Je préfère vérifier avec le responsable.'};await actions.sendPrivateMessageAction('conversation','Je veux un humain',null,'fr',true);assert.equal(g.flow.rpc[0].name,'queue_assistant_handoff');assert.match(g.flow.rpc[0].args.p_notice,/équipe support/);assert.match(g.flow.rpc[0].args.p_notice,/suspendue/);
- reset();await actions.sendPrivateMessageAction('conversation','Salut');assert.equal(g.flow.rpc[0].name,'commit_assistant_reply','An uncertain ordinary message never creates a support ticket');assert.match(g.flow.rpc[0].args.p_body,/Bonjour/);
+ reset();g.flow.status='open';g.flow.pending=false;await actions.sendPrivateMessageAction('conversation','Je veux un humain',null,'fr',true);assert.equal(g.flow.calls[0].explicitTicket,true);
+ reset();await actions.sendPrivateMessageAction('conversation','Salut');assert.equal(g.flow.calls[0].mode,'support');assert.equal(g.flow.rpc.length,0,'Support delegates to isolated backend');
  reset();g.flow.result={...g.flow.result,can_answer:true,answer:'Useful answer'};g.queueAi=true;g.aiTasks=[];response=await actions.sendPrivateMessageAction('conversation','Question before a ticket opens');assert(response.success);assert.equal(g.flow.calls.length,0,'Persistence acknowledged before background AI');g.flow.pending=true;await g.aiTasks[0]();assert.equal(g.flow.calls.length,0,'Ticket opened before generation suppresses provider call');g.queueAi=false;g.flow.pending=false;
  reset();g.flow.muted=true;response=await actions.sendPrivateMessageAction('conversation','Interdit');assert(!response.success);assert.equal(g.flow.writes.length,0);
  console.log('PASS actions: multi-turn course assistant, same author context, presence vs explicit takeover, offline resume, pending course questions, continuous human support, correct handoff and timed mute.');

@@ -168,6 +168,7 @@ export function AdminLayoutClient({
       ];
 
   if (!isInstructor) contentNavItems.push({href:"/admin/assistant-ia",exact:false,label:isHt?"Rezime kou ak IA":"Résumés des cours et IA",icon:<BookOpen className="w-5 h-5 shrink-0"/>});
+  if (!isInstructor) contentNavItems.push({href:"/admin/connaissances",exact:false,label:isHt?"Konesans sipò IA":"Connaissances support IA",icon:<BookOpen className="w-5 h-5 shrink-0"/>});
   if (!isInstructor) contentNavItems.push({href:"/admin/certificats",exact:false,label:isHt?"Sètifika":"Certificats",icon:<GraduationCap className="w-5 h-5 shrink-0"/>});
 
 

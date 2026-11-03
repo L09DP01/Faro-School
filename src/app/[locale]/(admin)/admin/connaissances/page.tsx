@@ -1,0 +1,3 @@
+import{requireAdmin}from'@/lib/auth';import{getSupportKnowledgeAction}from'@/app/actions/support-knowledge';import{SupportKnowledgeEditor}from'@/components/admin/support/SupportKnowledgeEditor';
+export const metadata={title:'Connaissances support | Faro School',robots:{index:false,follow:false}};
+export default async function KnowledgePage({params}:{params:Promise<{locale:string}>}){const{locale}=await params;await requireAdmin(locale);const result=await getSupportKnowledgeAction();if(!result.success)return <p role="alert" className="text-red">{locale==='ht'?'Konesans yo pa disponib. Aplike migrasyon an epi eseye ankò.':'Connaissances indisponibles. Appliquez la migration puis réessayez.'}</p>;return <SupportKnowledgeEditor initial={result.data} locale={locale}/>;}

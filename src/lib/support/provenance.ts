@@ -1,0 +1,2 @@
+import 'server-only';import{evidenceVersions,markdownSources}from'./markdown-manifest';
+export async function sourceVersion(refs:string[]){const entries=refs.map(path=>[path,(evidenceVersions as Record<string,string>)[path]||markdownSources.find(s=>s.path===path)?.checksum||'manual']);const data=new TextEncoder().encode(JSON.stringify(entries));const digest=await crypto.subtle.digest('SHA-256',data);return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');}

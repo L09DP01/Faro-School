@@ -5,6 +5,12 @@ console.log("FARO SCHOOL - COMPREHENSIVE SECURITY VERIFICATION");
 console.log("=================================================\n");
 
 const suites = [
+  {name:"Support source provenance across deployment platforms",cmd:"npx tsx tests/support-provenance.test.ts"},
+  {name:"Support multi-turn orchestration and human transfer",cmd:"npx tsx tests/support-flow.test.ts"},
+  {name:"Support own-account tool authorization",cmd:"npx tsx tests/support-tools.test.ts"},
+  {name:"Support provider data minimization contract",cmd:"npx tsx tests/support-provider-contract.test.ts"},
+  {name:"Support knowledge SQL and generation fencing",cmd:"npx tsx tests/support-knowledge.test.ts"},
+  {name:"Support contextual intent and private facts",cmd:"npx tsx tests/support-reasoning.test.ts"},
   {name:"History reconciliation, delivery states and verified support guidance",cmd:"npx tsx tests/message-reconciliation.test.ts"},
   {name:"Presence authenticated HTTP leases",cmd:"npx tsx tests/live-presence-http.test.ts"},
   {name:"Live messaging sessions, receipts, tickets and preserved history",cmd:"npx tsx tests/live-messaging.test.ts"},

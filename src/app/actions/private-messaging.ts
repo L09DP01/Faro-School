@@ -568,6 +568,8 @@ export async function sendPrivateMessageAction(
       const trusted=createAdminClient();
       const {data:pending,error:pendingError}=await trusted.from('escalations').select('id').eq('conversation_id',conversationId).is('resolved_at',null).limit(1).maybeSingle();
       if(pendingError)throw Error('handoff_state_unavailable');
+      if(!conv.courseId&&pending)return;
+      if(!conv.courseId){const {handleSupportMessage}=await import('@/lib/support/service');await handleSupportMessage({conversationId,messageId,actorId:user.id,epoch:conv.assistanceEpoch||0,question:trimmedBody,locale,explicitTicket:requestSupportTicket===true});return;}
       const staffOnline=await isStaffOnline(conv.staffId);
       if((!conv.courseId&&pending)||(conv.courseId&&staffOnline&&conv.status==='staff_replied'))return;
       const {data:staff}=await trusted.from('profiles').select('full_name,display_name,role').eq('id',conv.staffId).single();

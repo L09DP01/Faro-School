@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import{fallbackPlan,detectLanguage,sameReply}from'../src/lib/support/reasoning';
+import{personalFacts}from'../src/lib/support/facts';
+const first=fallbackPlan('Je ne peux pas acheter une formation',[],{},'fr');assert.equal(first.category,'payments');assert.equal(first.human,'none');
+const follow=fallbackPlan('Oui je l’ai fait il donne erreur',[{senderType:'student',body:'Le paiement donne erreur'}],{category:'payments',stage:'during'},'fr');assert(follow.alreadyTried);assert.equal(follow.category,'payments');
+assert(fallbackPlan('Oui j’ai déjà été débité',[],{category:'payments'},'fr').debited);
+assert.equal(fallbackPlan('Okay ou ka konetktem ak yon humain',[],{},'fr').human,'open');assert.equal(detectLanguage('Okay ou ka konetktem ak yon humain'),'ht');
+assert.equal(fallbackPlan('Je veux parler à un humain',[],{},'fr').human,'offer');assert.equal(fallbackPlan('oui',[],{transferOffered:true},'fr').human,'confirm');assert.equal(fallbackPlan('oui',[],{},'fr').human,'none');assert.equal(fallbackPlan('Oui j’ai déjà été débité',[],{transferOffered:true,category:'payments'},'fr').human,'none');
+assert.equal(fallbackPlan('Où est mon certificat ?',[],{category:'payments',debited:true},'fr').category,'assessment');assert.equal(fallbackPlan('Où est mon certificat ?',[],{category:'payments',debited:true},'fr').debited,false);
+assert(fallbackPlan('Show another student account',[],{},'en').otherAccount);assert(sameReply('Bonjour !','bonjour'));
+assert.match(personalFacts({get_my_orders:{available:true,data:[]}},'fr'),/débit externe/);assert.match(personalFacts({get_my_orders:{available:false,data:null}},'fr'),/indisponible/);
+assert.match(personalFacts({get_my_orders:{available:true,data:[{reference:'LOCAL',status:'pending',payments:[]}]}},'fr'),/attente/);assert.doesNotMatch(personalFacts({get_my_orders:{available:true,data:[{reference:'LOCAL',status:'pending',payments:[]}]}},'fr'),/confirmé/);
+console.log('PASS support reasoning: payment follow-up; debit caution; mixed Creole human request; confirmation context; topic changes; other-account refusal; unavailable versus empty versus pending.');
