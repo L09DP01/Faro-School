@@ -30,6 +30,7 @@ export default async function AdminNewCoursePage({ params }: AdminNewCoursePageP
 
   return (
     <CourseFormClient
+      key={user.id+':new'}
       locale={locale}
       userRole={user.role}
       currentUserId={user.id}

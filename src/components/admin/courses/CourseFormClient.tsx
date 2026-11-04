@@ -1,4 +1,5 @@
 "use client";
+import {useCourseDraft} from './use-course-draft';
 import {LessonExtrasEditor} from "./LessonExtrasEditor";
 
 import {uploadVideoFile,validateVideoFile} from "@/lib/video/direct-upload-client";
@@ -130,6 +131,8 @@ export function CourseFormClient({
   const [alertSuccess, setAlertSuccess] = useState<string | null>(null);
   const [publishPrerequisites, setPublishPrerequisites] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+
+  const draft=useCourseDraft(currentUserId,initialCourse?.id,{persistedCourseId,selectedInstructorId,titleFr,titleHt,slug,autoSlug,descriptionFr,descriptionHt,category,level,language,priceHtg,comparePriceHtg,coverUrl,certificateMinProgress,certificate,lifetimeAccess,guaranteeDays,moncashEnabled,natcashEnabled,modules},saved=>{setPersistedCourseId(saved.persistedCourseId);setSelectedInstructorId(saved.selectedInstructorId);setTitleFr(saved.titleFr);setTitleHt(saved.titleHt);setSlug(saved.slug);setAutoSlug(saved.autoSlug);setDescriptionFr(saved.descriptionFr);setDescriptionHt(saved.descriptionHt);setCategory(saved.category);setLevel(saved.level);setLanguage(saved.language);setPriceHtg(saved.priceHtg);setComparePriceHtg(saved.comparePriceHtg);setCoverUrl(saved.coverUrl);setCertificateMinProgress(saved.certificateMinProgress);setCertificate(saved.certificate);setLifetimeAccess(saved.lifetimeAccess);setGuaranteeDays(saved.guaranteeDays);setMoncashEnabled(saved.moncashEnabled);setNatcashEnabled(saved.natcashEnabled);setModules(saved.modules);});
 
   // Auto-slugify as titleFr changes if autoSlug is enabled
   const handleTitleFrChange = (val: string) => {
@@ -291,6 +294,7 @@ export function CourseFormClient({
   // Submit Handler
   const handleSubmit = async (publish: boolean) => {
     if(videoUploadingLessonId||coverUploading||saving||resourceUploadCount>0)return;
+    const submittedSnapshot=draft.snapshot();
     setSaving(true);
     setAlertError(null);
     setAlertSuccess(null);
@@ -387,8 +391,9 @@ export function CourseFormClient({
 
     if(res.courseId)setPersistedCourseId(res.courseId);
     if (res.success) {
-      setAlertSuccess(publish ? t("successPublish") : t("successSave"));
-      setTimeout(() => {
+      const cleared=draft.clear(submittedSnapshot);
+      setAlertSuccess(cleared?(publish ? t("successPublish") : t("successSave")):(isHt?"Anrejistreman konfime. Nouvo chanjman ou yo rete nan brouyon an.":"Enregistrement confirmé. Vos nouvelles modifications restent dans le brouillon."));
+      if(cleared)setTimeout(() => {
         router.push(publish&&res.courseId?`/admin/assistant-ia?tab=courses&courseId=${res.courseId}`:"/admin/formations");
       }, 1200);
     } else {
@@ -406,6 +411,7 @@ export function CourseFormClient({
     0
   );
 
+  if(!draft.ready)return <p role="status">{isHt?'Chajman brouyon an…':'Chargement du brouillon…'}</p>;
   return (
     <div className="pb-20 space-y-6">
 <input ref={videoFileInputRef} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.m4v" onChange={sendSelectedVideo} className="hidden" aria-label={isHt?"Chwazi fichye videyo a":"Choisir le fichier vidéo"}/>
@@ -424,6 +430,7 @@ export function CourseFormClient({
               {isEditing ? t("editTitle") : t("createTitle")}
             </span>
           </nav>
+          <p role="status" className={`text-xs mb-1 ${draft.state==='error'?'text-red':'text-muted-faro'}`}>{draft.state==='error'?(isHt?"Brouyon an pa ka konsève sou aparèy sa a. Sove li anvan ou kite paj la.":"Le brouillon ne peut pas être conservé sur cet appareil. Enregistrez-le avant de quitter."):draft.state==='restored'?(isHt?"Brouyon ou a retabli.":"Votre brouillon a été restauré."):(isHt?"Brouyon otomatik konsève sou aparèy sa a.":"Brouillon automatique conservé sur cet appareil.")}</p>
           <h1 className="font-heading font-bold text-xl sm:text-[30px] leading-tight text-ink">
             {isEditing ? t("editTitle") : t("createTitle")}
           </h1>

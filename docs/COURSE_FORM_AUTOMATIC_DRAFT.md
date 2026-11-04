@@ -1,0 +1,9 @@
+# Brouillon automatique du formulaire de formation
+
+Les formulaires de création et de modification conservent automatiquement leurs champs dans le stockage local persistant du navigateur. Le brouillon est isolé par compte connecté et par formation ; le formulaire de nouvelle formation possède sa propre clé. La PWA et le site retrouvent ce brouillon sur le même appareil et navigateur, après rafraîchissement ou fermeture de l’application.
+
+Le brouillon contient les titres et descriptions français/créole, le slug et son mode automatique, le formateur choisi, la catégorie, le niveau, la langue, les prix, la couverture, les réglages de certificat et d’accès, les moyens de paiement, les modules, les leçons, leurs descriptions, les références des vidéos et ressources déjà téléversées et les quiz, y compris une saisie incomplète. Un fichier dont le téléversement n’est pas terminé doit être sélectionné à nouveau après interruption.
+
+La restauration précède l’affichage des champs. Une saisie vide ne remplace pas un brouillon enregistré au démarrage. Les écritures suivent chaque changement de formulaire ; les événements de masquage et de fermeture servent de secours. Une erreur ou un quota de stockage est affiché au lieu d’annoncer une sauvegarde réussie. Un enregistrement serveur en échec conserve le brouillon et l’identifiant éventuellement attribué afin d’éviter une nouvelle création. Le brouillon local est retiré uniquement après confirmation de l’enregistrement manuel sur le serveur.
+
+La sauvegarde automatique est locale à cet appareil ; elle ne publie pas la formation et ne synchronise pas les brouillons entre appareils. Les boutons existants d’enregistrement et de publication continuent d’utiliser les contrôles serveur habituels. Aucun accès au Supabase distant ni aucune donnée de test en production.

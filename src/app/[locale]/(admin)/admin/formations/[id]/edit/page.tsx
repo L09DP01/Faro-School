@@ -47,6 +47,7 @@ export default async function AdminEditCoursePage({
 
   return (
     <CourseFormClient
+      key={user.id+':'+course.id}
       initialCourse={course}
       locale={locale}
       userRole={user.role}

@@ -3,7 +3,7 @@
  * Compatible with Next.js 15 and Cloudflare Workers (OpenNext)
  */
 
-const CACHE_NAME = "faro-pwa-v6-message-push";
+const CACHE_NAME = "faro-pwa-v7-course-draft";
 
 const PRECACHE_ASSETS = [
   "/offline",
